@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>kosit_validator</id>
+    <name>KoSIT Validator</name>
+    <summary>Validiert XRechnung/ZUGFeRD XML mit dem KoSIT Validator</summary>
+    <description>Separate Nextcloud-App zur zentralen KoSIT-Validierung per Service-Klasse.</description>
+    <version>0.1.0</version>
+    <licence>agpl</licence>
+    <author>Frank Busse</author>
+    <namespace>KoSITValidator</namespace>
+    <category>tools</category>
+
+    <navigations>
+      <navigation>
+        <name>KoSIT Validator</name>
+        <route>kosit_validator.page.index</route>
+        <icon>app.svg</icon>
+      </navigation>
+    </navigations>
+</info>
