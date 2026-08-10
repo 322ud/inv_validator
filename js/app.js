@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const validator = document.getElementById('kosit-validator');
     const fileInput = document.getElementById('kosit-xml-file');
+    const dropZone = document.getElementById('kosit-drop-zone');
+    const selectedFileName = document.getElementById('kosit-selected-file');
     const button = document.getElementById('kosit-validate-button');
     const status = document.getElementById('kosit-status');
     const reportActions = document.getElementById('kosit-report-actions');
@@ -15,6 +17,53 @@ document.addEventListener('DOMContentLoaded', () => {
     let resetHeightBeforeResize = false;
     let reportContentWidth = 0;
     let reportHtml = '';
+    let selectedFile = null;
+
+    const selectFile = (file) => {
+        selectedFile = file || null;
+        selectedFileName.textContent = selectedFile
+            ? selectedFile.name
+            : 'Keine Datei ausgewählt';
+    };
+
+    fileInput.addEventListener('change', () => {
+        selectFile(fileInput.files[0]);
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            fileInput.click();
+        }
+    });
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+            dropZone.classList.add('is-dragover');
+        });
+    });
+
+    dropZone.addEventListener('dragleave', (event) => {
+        if (!dropZone.contains(event.relatedTarget)) {
+            dropZone.classList.remove('is-dragover');
+        }
+    });
+
+    dropZone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropZone.classList.remove('is-dragover');
+
+        if (event.dataTransfer.files.length !== 1) {
+            status.textContent = 'Bitte genau eine XML-Datei ablegen.';
+            return;
+        }
+
+        fileInput.value = '';
+        selectFile(event.dataTransfer.files[0]);
+    });
 
     const addPrintStyles = (frameDocument) => {
         if (!frameDocument.head || frameDocument.getElementById('kosit-print-styles')) {
@@ -274,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeValidator();
 
     button.addEventListener('click', async () => {
-        const file = fileInput.files[0];
+        const file = selectedFile;
 
         if (!file) {
             status.textContent = 'Bitte eine XML-Datei auswählen.';

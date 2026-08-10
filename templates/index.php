@@ -12,7 +12,20 @@
 
         <p>XML-Datei hochladen und gegen den KoSIT Validator prüfen.</p>
 
-        <input type="file" id="kosit-xml-file" accept=".xml,text/xml,application/xml">
+        <div id="kosit-upload-options">
+            <input type="file" id="kosit-xml-file" accept=".xml,text/xml,application/xml">
+
+            <div
+                id="kosit-drop-zone"
+                role="button"
+                tabindex="0"
+                aria-controls="kosit-xml-file"
+                aria-describedby="kosit-selected-file"
+            >
+                <span>XML-Datei hier fallenlassen</span>
+                <small id="kosit-selected-file" aria-live="polite">Keine Datei ausgewählt</small>
+            </div>
+        </div>
 
         <button id="kosit-validate-button" class="primary">
             Validieren

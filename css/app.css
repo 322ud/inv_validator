@@ -15,9 +15,47 @@ box-sizing: border-box;
 align-self: stretch;
 }
 
-#kosit-validator input[type="file"] {
-display: block;
+#kosit-upload-options {
+display: flex;
+align-items: center;
+flex-wrap: wrap;
+gap: 12px;
 margin: 16px 0;
+}
+
+#kosit-drop-zone {
+display: flex;
+flex: 1 1 280px;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+min-height: 88px;
+padding: 16px;
+box-sizing: border-box;
+border: 2px dashed var(--color-border-dark);
+border-radius: var(--border-radius-large);
+background: var(--color-background-hover);
+cursor: pointer;
+text-align: center;
+transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+#kosit-drop-zone:hover,
+#kosit-drop-zone:focus-visible,
+#kosit-drop-zone.is-dragover {
+border-color: var(--color-primary-element);
+background: var(--color-primary-element-light);
+outline: none;
+}
+
+#kosit-drop-zone span {
+font-weight: 600;
+}
+
+#kosit-selected-file {
+margin-top: 6px;
+color: var(--color-text-maxcontrast);
+overflow-wrap: anywhere;
 }
 
 #kosit-status {
