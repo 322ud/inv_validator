@@ -347,13 +347,15 @@ class KoSITValidatorService {
             }
 
             $xpath = new \DOMXPath($document);
-            $xpath->registerNamespace('rep', 'http://www.xoev.de/de/validator/varl/1');
+            // Use an internal prefix that cannot be shadowed by prefixes declared
+            // in an untrusted validator report.
+            $xpath->registerNamespace('varl', 'http://www.xoev.de/de/validator/varl/1');
 
-            if ($xpath->query('/rep:report/rep:assessment/rep:accept')?->length > 0) {
+            if ($xpath->query('/varl:report/varl:assessment/varl:accept')?->length > 0) {
                 return true;
             }
 
-            if ($xpath->query('/rep:report/rep:assessment/rep:reject')?->length > 0) {
+            if ($xpath->query('/varl:report/varl:assessment/varl:reject')?->length > 0) {
                 return false;
             }
 

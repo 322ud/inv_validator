@@ -1,0 +1,26 @@
+{
+    "name": "kosit/nextcloud-validator",
+    "description": "KoSIT Validator app for Nextcloud",
+    "type": "project",
+    "license": "AGPL-3.0-or-later",
+    "require-dev": {
+        "phpunit/phpunit": "^11.5",
+        "psr/log": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "OCA\\KoSITValidator\\": "lib/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OCA\\KoSITValidator\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

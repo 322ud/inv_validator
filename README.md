@@ -254,6 +254,21 @@ zurückgegeben. Sie werden nicht als fachlich ungültige Rechnung dargestellt.
 
 ---
 
+## Entwicklung und Tests
+
+Die PHP-Abhängigkeiten installieren und die Unit-Tests ausführen:
+
+```bash
+composer install
+composer test
+```
+
+Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die
+Pfadkonfiguration, atomare Szenario-Updates und den HTTP-Vertrag des
+Validierungsendpunkts ab.
+
+---
+
 ## Bekannte Einschränkungen
 
 - Pfade können von Administratoren bearbeitet werden. Bereits gespeicherte
