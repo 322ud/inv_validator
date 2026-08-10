@@ -18,18 +18,34 @@ Die App ermöglicht das Hochladen bzw. Einfügen von XML-Dokumenten, führt eine
 
 ## Voraussetzungen
 
-Die aktuelle Implementierung verwendet feste Systempfade:
+Die Anwendung verwendet folgende Standardpfade:
 
 | Komponente | Pfad |
 |------------|-------|
 | Java | `/usr/bin/java` |
 | Validator JAR | `/opt/kosit/validator-1.6.2-standalone.jar` |
 | Repository | `/opt/kosit` |
-| Szenario-Datei | `/opt/kosit/scenarios.xml` |
+| Szenario-Datei | `config/scenarios.xml` innerhalb der App |
 
-Diese Pfade müssen auf dem Zielsystem vorhanden sein.
+Diese Pfade müssen auf dem Zielsystem vorhanden sein. Sie können in der
+Nextcloud-`config.php` überschrieben werden:
 
-Die Pfade sind derzeit nicht über die Nextcloud-App-Konfiguration anpassbar.
+```php
+'kosit_validator_java_binary' => '/usr/bin/java',
+'kosit_validator_jar' => '/opt/kosit/validator-1.6.2-standalone.jar',
+'kosit_validator_repository' => '/opt/kosit',
+'kosit_validator_scenarios' => '/pfad/zu/eigener/scenarios.xml',
+'kosit_validator_temp_directory' => '/tmp/nextcloud-kosit-validator',
+```
+
+Validator-JAR und Szenario-Konfiguration müssen zueinander kompatibel sein.
+Eine bloß vorhandene `scenarios.xml` reicht nicht aus; der Validator prüft sie
+beim Start gegen sein Szenario-Schema.
+
+Die mitgelieferte Szenariodatei stammt aus der offiziellen KoSIT-Konfiguration
+für XRechnung 3.0.2 vom 31. Januar 2026. Die zugehörigen Schema- und
+Schematron-Ressourcen müssen weiterhin vollständig im konfigurierten Repository
+vorliegen.
 
 ---
 
@@ -63,7 +79,8 @@ Die Pfade müssen mit den im Code hinterlegten Pfaden übereinstimmen.
 1. XML-Datei auswählen oder XML-Inhalt bereitstellen.
 2. Validierung starten.
 3. KoSIT Validator wird ausgeführt.
-4. Ergebnis wird angezeigt.
+4. Die fachliche Bewertung wird aus `rep:accept` beziehungsweise `rep:reject`
+   im XML-Bericht gelesen.
 5. HTML-Bericht wird im Browser dargestellt.
 
 ---
@@ -124,8 +141,8 @@ POST /apps/kosit_validator/validate
 | Feld | Bedeutung |
 |--------|------------|
 | success | Request erfolgreich verarbeitet |
-| valid | Fachliche Validierung erfolgreich |
-| exitCode | Rückgabecode des Validators |
+| valid | Fachliche Bewertung aus dem XML-Prüfbericht |
+| exitCode | Technischer Rückgabecode des Validator-Prozesses |
 | reportHtml | HTML-Bericht des Validators |
 | message | Fehlermeldung |
 
@@ -137,6 +154,9 @@ Aktueller Implementierungsstand:
 
 - Die Oberfläche ist für alle angemeldeten Nextcloud-Benutzer verfügbar.
 - Der Validierungsendpunkt kann von jedem angemeldeten Benutzer aufgerufen werden.
+- Der Endpunkt ist durch den Nextcloud-CSRF-Token geschützt.
+- Es wird höchstens ein Validator-Prozess gleichzeitig ausgeführt.
+- Prozessausgaben und Berichte besitzen serverseitige Größenlimits.
 - Es existiert derzeit keine Gruppen- oder Rollenprüfung.
 
 Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administratoren oder definierte Benutzergruppen beschränkt werden soll.
@@ -159,6 +179,8 @@ Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administra
 - `KoSITValidatorService`
   - Erzeugt temporäre Dateien.
   - Führt den Validator-Prozess aus.
+  - Extrahiert den HTML-Bericht mit der Validator-Option `-h`.
+  - Begrenzt Laufzeit, Parallelität und Speichernutzung für Ausgaben.
   - Liest den HTML-Bericht ein.
   - Bereinigt temporäre Dateien.
 
@@ -185,17 +207,23 @@ Mögliche Fehler:
 - Validator-JAR nicht gefunden
 - Repository nicht gefunden
 - Timeout des Validator-Prozesses
+- Inkompatible oder ungültige Szenario-Konfiguration
+- Validator ist bereits durch eine andere Prüfung belegt
 - Interner Fehler während der Validierung
+
+Technische Validator-Fehler werden serverseitig protokolliert und als HTTP 503
+zurückgegeben. Sie werden nicht als fachlich ungültige Rechnung dargestellt.
 
 ---
 
 ## Bekannte Einschränkungen
 
-- Pfade sind fest im Code hinterlegt.
-- Keine Konfiguration über die Nextcloud-Oberfläche.
+- Keine Konfiguration über die Nextcloud-Oberfläche; die Einstellungen erfolgen
+  in `config.php`.
 - Keine rollenbasierte Zugriffskontrolle.
 - XML-Dateien größer als 5 MB werden abgelehnt.
-- HTML-Bericht wird unverändert vom Validator übernommen.
+- Zur Begrenzung der Serverlast wird jeweils nur ein Dokument verarbeitet.
+- HTML-Berichte größer als 10 MB werden abgelehnt.
 
 ---
 

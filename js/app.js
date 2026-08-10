@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         status.textContent = 'Validierung läuft ...';
+        button.disabled = true;
         reportFrame.style.display = 'none';
         reportFrame.srcdoc = '';
 
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const formData = new FormData();
             formData.append('xml', xml);
+            formData.append('requesttoken', OC.requestToken);
 
             const response = await fetch(OC.generateUrl('/apps/kosit_validator/validate'), {
                 method: 'POST',
@@ -57,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             status.textContent = 'Fehler beim Aufruf des Validators.';
+        } finally {
+            button.disabled = false;
         }
     });
 });

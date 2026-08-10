@@ -10,8 +10,6 @@ class ValidationResult {
         private int $exitCode,
         private string $stdout,
         private string $stderr,
-        private ?string $reportHtmlPath = null,
-        private ?string $reportXmlPath = null,
         private ?string $reportHtml = null
     ) {}
 
@@ -29,14 +27,6 @@ class ValidationResult {
 
     public function getStderr(): string {
         return $this->stderr;
-    }
-
-    public function getReportHtmlPath(): ?string {
-        return $this->reportHtmlPath;
-    }
-
-    public function getReportXmlPath(): ?string {
-        return $this->reportXmlPath;
     }
 
     public function getReportHtml(): ?string {

@@ -14,7 +14,7 @@
     Validieren
 </button>
 
-<div id="kosit-status"></div>
+<div id="kosit-status" role="status" aria-live="polite"></div>
 
     <iframe
         id="kosit-report-frame"

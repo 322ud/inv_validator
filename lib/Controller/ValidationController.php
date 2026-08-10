@@ -1,26 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace OCA\KoSITValidator\Controller;
 
+use OCA\KoSITValidator\Exception\ValidationException;
 use OCA\KoSITValidator\Service\KoSITValidatorService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 class ValidationController extends Controller {
 
     public function __construct(
         string $appName,
         IRequest $request,
-        private KoSITValidatorService $validatorService
+        private KoSITValidatorService $validatorService,
+        private LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
     }
 
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function validate(): DataResponse {
         $xml = (string)$this->request->getParam('xml', '');
 
@@ -51,10 +54,24 @@ class ValidationController extends Controller {
             return new DataResponse([
                 'success' => true,
                 'valid' => $result->isValid(),
-                                    'exitCode' => $result->getExitCode(),
-                                    'reportHtml' => $result->getReportHtml(),
+                'exitCode' => $result->getExitCode(),
+                'reportHtml' => $result->getReportHtml(),
             ]);
+        } catch (ValidationException $e) {
+            $this->logger->error('KoSIT validation failed: {message}', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return new DataResponse([
+                'success' => false,
+                'message' => 'Validator ist momentan nicht verfügbar',
+            ], 503);
         } catch (\Throwable $e) {
+            $this->logger->error('Unexpected KoSIT validation error', [
+                'exception' => $e,
+            ]);
+
             return new DataResponse([
                 'success' => false,
                 'message' => 'Validierung fehlgeschlagen',
