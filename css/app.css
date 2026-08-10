@@ -1,5 +1,18 @@
-#kosit-validator {
-max-width: 1200px;
+#kosit-scroll-container {
+flex: 1 1 auto;
+width: 100%;
+height: 100%;
+min-width: 0;
+overflow-x: hidden;
+overflow-y: auto;
+}
+
+#kosit-validator.section {
+width: 100% !important;
+max-width: none !important;
+min-width: 0;
+box-sizing: border-box;
+align-self: stretch;
 }
 
 #kosit-validator input[type="file"] {
@@ -13,8 +26,11 @@ font-weight: 600;
 }
 
 #kosit-report-frame {
-width: 100%;
-height: 800px;
+display: block;
+width: 100% !important;
+max-width: none !important;
+height: 0;
+box-sizing: border-box;
 margin-top: 20px;
 border: 1px solid var(--color-border);
 background: white;

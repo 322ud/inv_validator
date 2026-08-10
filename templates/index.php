@@ -3,6 +3,10 @@
     style('kosit_validator', 'app');
 ?>
 
+<div
+    id="kosit-scroll-container"
+    style="flex:1 1 auto;width:100%;height:100%;min-width:0;overflow-x:hidden;overflow-y:auto;"
+>
 <div id="kosit-validator" class="section">
 <h2>KoSIT Validator</h2>
 
@@ -18,8 +22,10 @@
 
     <iframe
         id="kosit-report-frame"
-        sandbox=""
+        sandbox="allow-same-origin"
+        scrolling="no"
         title="HTML Prüfbericht"
         style="display:none;"
     ></iframe>
+</div>
 </div>
