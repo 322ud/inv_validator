@@ -15,6 +15,7 @@ Die App ermöglicht das Hochladen bzw. Einfügen von XML-Dokumenten, führt eine
 - Größenbegrenzung für XML-Dateien
 - Aufbereitung der Validator-Ergebnisse als JSON-API
 - Admin-Seite mit automatisch ermittelten Systempfaden
+- Bearbeitung der Szenario-Datei direkt in der Admin-Seite
 - Installation des offiziellen Standalone-JAR aus den GitHub-Releases
 - Prüfung auf neue KoSIT-Validator-Versionen und direkte Aktualisierung
 
@@ -38,6 +39,8 @@ nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht.
 Die Pfade können direkt auf der Admin-Seite bearbeitet und gespeichert werden.
 Gespeicherte Werte werden von Validierung, Installation und Update-Prüfung
 sofort verwendet und haben Vorrang vor Einträgen in der Nextcloud-`config.php`.
+Über **Szenario-Datei bearbeiten** kann außerdem der Inhalt der aktuell
+konfigurierten Datei geladen, als XML geprüft und atomar gespeichert werden.
 Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende
 `config.php`-Optionen als Fallback verfügbar:
 

@@ -13,6 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveButton = document.getElementById('kosit-save-paths');
     const checkButton = document.getElementById('kosit-check-update');
     const installButton = document.getElementById('kosit-install');
+    const editScenarioButton = document.getElementById('kosit-edit-scenario');
+    const scenarioMessage = document.getElementById('kosit-scenario-message');
+    const scenarioEditor = document.getElementById('kosit-scenario-editor');
+    const scenarioPath = document.getElementById('kosit-scenario-path');
+    const scenarioContent = document.getElementById('kosit-scenario-content');
+    const saveScenarioButton = document.getElementById('kosit-save-scenario');
+    const cancelScenarioButton = document.getElementById('kosit-cancel-scenario');
+    let scenarioChecksum = '';
 
     const stateLabels = {
         available: 'Vorhanden',
@@ -86,7 +94,14 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             ...options,
         });
-        const result = await response.json();
+        const responseBody = await response.text();
+        let result;
+
+        try {
+            result = JSON.parse(responseBody);
+        } catch (error) {
+            throw new Error(`Unerwartete Serverantwort (HTTP ${response.status}).`);
+        }
 
         if (!response.ok || !result.success) {
             throw new Error(result.message || 'Die Aktion ist fehlgeschlagen.');
@@ -116,6 +131,67 @@ document.addEventListener('DOMContentLoaded', () => {
             message.textContent = error.message;
         } finally {
             saveButton.disabled = false;
+        }
+    });
+
+    editScenarioButton.addEventListener('click', async () => {
+        scenarioEditor.hidden = true;
+        scenarioPath.textContent = '';
+        scenarioContent.value = '';
+        scenarioChecksum = '';
+        scenarioMessage.textContent = 'Szenario-Datei wird geladen …';
+        editScenarioButton.disabled = true;
+
+        try {
+            const result = await request('/apps/kosit_validator/admin/status?scenario=1');
+            scenarioPath.textContent = result.scenario.path;
+            scenarioContent.value = result.scenario.content;
+            scenarioChecksum = result.scenario.checksum;
+            scenarioEditor.hidden = false;
+            scenarioContent.readOnly = !result.scenario.writable;
+            saveScenarioButton.disabled = !result.scenario.writable;
+            scenarioMessage.textContent = result.scenario.writable
+                ? 'Szenario-Datei wurde geladen.'
+                : 'Szenario-Datei wurde geladen, ist aber nicht beschreibbar.';
+            scenarioContent.focus();
+        } catch (error) {
+            scenarioMessage.textContent = error.message;
+        } finally {
+            editScenarioButton.disabled = false;
+        }
+    });
+
+    cancelScenarioButton.addEventListener('click', () => {
+        scenarioEditor.hidden = true;
+        scenarioContent.value = '';
+        scenarioChecksum = '';
+        scenarioMessage.textContent = '';
+        editScenarioButton.focus();
+    });
+
+    saveScenarioButton.addEventListener('click', async () => {
+        const formData = new FormData();
+        formData.append('action', 'saveScenario');
+        formData.append('content', scenarioContent.value);
+        formData.append('checksum', scenarioChecksum);
+
+        scenarioMessage.textContent = 'Szenario-Datei wird geprüft und gespeichert …';
+        saveScenarioButton.disabled = true;
+        cancelScenarioButton.disabled = true;
+
+        try {
+            const result = await request('/apps/kosit_validator/admin/paths', {
+                method: 'POST',
+                body: formData,
+            });
+            scenarioChecksum = result.scenario.checksum;
+            scenarioContent.value = result.scenario.content;
+            scenarioMessage.textContent = result.message;
+        } catch (error) {
+            scenarioMessage.textContent = error.message;
+        } finally {
+            saveScenarioButton.disabled = false;
+            cancelScenarioButton.disabled = false;
         }
     });
 

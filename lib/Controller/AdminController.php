@@ -23,6 +23,25 @@ class AdminController extends Controller {
     }
 
     public function status(): DataResponse {
+        if ($this->request->getParam('scenario') === '1') {
+            try {
+                return new DataResponse([
+                    'success' => true,
+                    'scenario' => $this->adminService->readScenario(),
+                ]);
+            } catch (\Throwable $e) {
+                $this->logger->error('KoSIT scenario file could not be read: {message}', [
+                    'message' => $e->getMessage(),
+                    'exception' => $e,
+                ]);
+
+                return new DataResponse([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 500);
+            }
+        }
+
         return new DataResponse([
             'success' => true,
             'status' => $this->adminService->getStatus(true),
@@ -50,6 +69,10 @@ class AdminController extends Controller {
     }
 
     public function savePaths(): DataResponse {
+        if ($this->request->getParam('action') === 'saveScenario') {
+            return $this->saveScenario();
+        }
+
         try {
             $this->configService->savePaths([
                 'javaBinary' => $this->request->getParam('javaBinary'),
@@ -78,6 +101,36 @@ class AdminController extends Controller {
             return new DataResponse([
                 'success' => false,
                 'message' => 'Pfade konnten nicht gespeichert werden.',
+            ], 500);
+        }
+    }
+
+    private function saveScenario(): DataResponse {
+        try {
+            $this->adminService->saveScenario(
+                $this->request->getParam('content'),
+                $this->request->getParam('checksum')
+            );
+
+            return new DataResponse([
+                'success' => true,
+                'message' => 'Szenario-Datei wurde gespeichert.',
+                'scenario' => $this->adminService->readScenario(),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return new DataResponse([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        } catch (\Throwable $e) {
+            $this->logger->error('KoSIT scenario file could not be saved: {message}', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return new DataResponse([
+                'success' => false,
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

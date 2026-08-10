@@ -62,12 +62,34 @@ $stateLabels = [
 
     <div class="kosit-path-actions">
         <button id="kosit-save-paths" type="button" class="primary">Pfade speichern</button>
+        <button id="kosit-edit-scenario" type="button">Szenario-Datei bearbeiten</button>
     </div>
+    <p id="kosit-scenario-message" role="status" aria-live="polite"></p>
     <p class="settings-hint">
         Gespeicherte Werte haben Vorrang vor den entsprechenden Einträgen in
         der Nextcloud-<code>config.php</code> und werden sofort für Validierungen,
         Installationen und Updates verwendet.
     </p>
+
+    <section id="kosit-scenario-editor" class="kosit-scenario-editor" hidden>
+        <h3>Szenario-Datei bearbeiten</h3>
+        <p>
+            Bearbeitete Datei: <code id="kosit-scenario-path"></code>
+        </p>
+        <textarea
+            id="kosit-scenario-content"
+            aria-label="Inhalt der Szenario-Datei"
+            autocomplete="off"
+            spellcheck="false"
+        ></textarea>
+        <div class="kosit-scenario-actions">
+            <button id="kosit-save-scenario" type="button" class="primary">Szenario-Datei speichern</button>
+            <button id="kosit-cancel-scenario" type="button">Abbrechen</button>
+        </div>
+        <p class="settings-hint">
+            Beim Speichern wird geprüft, ob der Inhalt wohlgeformtes KoSIT-Szenario-XML ist.
+        </p>
+    </section>
 
     <h3>Installation und Updates</h3>
     <dl class="kosit-versions">

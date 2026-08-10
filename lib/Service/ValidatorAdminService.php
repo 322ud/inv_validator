@@ -11,6 +11,8 @@ class ValidatorAdminService {
     private const RELEASE_API = 'https://api.github.com/repos/itplr-kosit/validator/releases/latest';
     private const RELEASE_PAGE = 'https://github.com/itplr-kosit/validator/releases';
     private const MAX_DOWNLOAD_BYTES = 150 * 1024 * 1024;
+    private const MAX_SCENARIO_BYTES = 2 * 1024 * 1024;
+    private const SCENARIO_NAMESPACE = 'http://www.xoev.de/de/validator/framework/1/scenarios';
 
     public function __construct(
         private ValidatorConfigService $config,
@@ -122,6 +124,127 @@ class ValidatorAdminService {
             && version_compare($release['version'], $status['installedVersion'], '>');
 
         return $status;
+    }
+
+    /** @return array{path: string, content: string, checksum: string, writable: bool} */
+    public function readScenario(): array {
+        $path = $this->config->getScenarioFile();
+
+        if (!is_file($path) || !is_readable($path)) {
+            throw new AdministrationException('Szenario-Datei kann nicht gelesen werden: ' . $path);
+        }
+
+        $size = filesize($path);
+        if ($size === false || $size > self::MAX_SCENARIO_BYTES) {
+            throw new AdministrationException('Szenario-Datei ist größer als 2 MB.');
+        }
+
+        $content = file_get_contents($path);
+        if ($content === false) {
+            throw new AdministrationException('Szenario-Datei konnte nicht geladen werden.');
+        }
+
+        return [
+            'path' => $path,
+            'content' => $content,
+            'checksum' => hash('sha256', $content),
+            'writable' => is_writable($path) && is_writable(dirname($path)),
+        ];
+    }
+
+    public function saveScenario(mixed $content, mixed $checksum): void {
+        if (!is_string($content) || $content === '') {
+            throw new \InvalidArgumentException('Der Inhalt der Szenario-Datei darf nicht leer sein.');
+        }
+        if (strlen($content) > self::MAX_SCENARIO_BYTES) {
+            throw new \InvalidArgumentException('Szenario-Datei ist größer als 2 MB.');
+        }
+        if (!is_string($checksum) || preg_match('/^[a-f0-9]{64}$/', $checksum) !== 1) {
+            throw new \InvalidArgumentException('Ungültiger Änderungsstand der Szenario-Datei.');
+        }
+
+        $this->validateScenarioXml($content);
+
+        $path = $this->config->getScenarioFile();
+        if (!is_file($path) || !is_readable($path)) {
+            throw new AdministrationException('Szenario-Datei kann nicht gelesen werden: ' . $path);
+        }
+        if (!is_writable($path) || !is_writable(dirname($path))) {
+            throw new AdministrationException('Keine Schreibberechtigung für die Szenario-Datei: ' . $path);
+        }
+
+        $lock = fopen($path, 'r');
+        if ($lock === false || !flock($lock, LOCK_EX)) {
+            if (is_resource($lock)) {
+                fclose($lock);
+            }
+            throw new AdministrationException('Szenario-Datei konnte nicht gesperrt werden.');
+        }
+
+        $temporary = null;
+        try {
+            $current = file_get_contents($path);
+            if ($current === false) {
+                throw new AdministrationException('Szenario-Datei konnte nicht erneut gelesen werden.');
+            }
+            if (!hash_equals($checksum, hash('sha256', $current))) {
+                throw new AdministrationException(
+                    'Die Szenario-Datei wurde zwischenzeitlich geändert. Bitte neu laden.'
+                );
+            }
+
+            $temporary = tempnam(dirname($path), '.scenario-');
+            if ($temporary === false) {
+                throw new AdministrationException('Temporäre Szenario-Datei konnte nicht angelegt werden.');
+            }
+            if (file_put_contents($temporary, $content, LOCK_EX) !== strlen($content)) {
+                throw new AdministrationException('Szenario-Datei konnte nicht vollständig geschrieben werden.');
+            }
+
+            $mode = fileperms($path);
+            chmod($temporary, $mode === false ? 0640 : ($mode & 0777));
+            if (!rename($temporary, $path)) {
+                throw new AdministrationException('Szenario-Datei konnte nicht aktiviert werden.');
+            }
+            $temporary = null;
+        } finally {
+            if ($temporary !== null && is_file($temporary)) {
+                unlink($temporary);
+            }
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    private function validateScenarioXml(string $content): void {
+        if (preg_match('/<!DOCTYPE\s/i', $content) === 1) {
+            throw new \InvalidArgumentException('DOCTYPE-Deklarationen sind nicht erlaubt.');
+        }
+
+        $previous = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+        try {
+            $document = new \DOMDocument();
+            $loaded = $document->loadXML($content, LIBXML_NONET | LIBXML_NOBLANKS);
+            $error = libxml_get_last_error();
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        if (!$loaded) {
+            $detail = $error instanceof \LibXMLError ? trim($error->message) : 'unbekannter XML-Fehler';
+            throw new \InvalidArgumentException('Ungültiges XML: ' . $detail);
+        }
+
+        $root = $document->documentElement;
+        if ($root === null
+            || $root->localName !== 'scenarios'
+            || $root->namespaceURI !== self::SCENARIO_NAMESPACE) {
+            throw new \InvalidArgumentException(
+                'Das Wurzelelement muss „scenarios“ im KoSIT-Szenario-Namensraum sein.'
+            );
+        }
     }
 
     /** @return array{version: string, asset: array{url: string, digest: ?string}} */

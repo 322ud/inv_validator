@@ -31,8 +31,43 @@ box-sizing: border-box;
 font-family: var(--font-face-monospace, monospace);
 }
 
-.kosit-path-actions {
+.kosit-path-actions,
+.kosit-scenario-actions {
+display: flex;
+align-items: center;
+flex-wrap: wrap;
+gap: 10px;
 margin-top: 14px;
+}
+
+.kosit-scenario-editor {
+margin-top: 24px;
+}
+
+.kosit-scenario-editor[hidden] {
+display: none;
+}
+
+.kosit-scenario-editor h3 {
+margin-top: 0;
+}
+
+#kosit-scenario-path {
+overflow-wrap: anywhere;
+}
+
+#kosit-scenario-content {
+display: block;
+width: 100%;
+height: min(60vh, 620px);
+min-height: 320px;
+margin-top: 12px;
+box-sizing: border-box;
+resize: vertical;
+font-family: var(--font-face-monospace, monospace);
+font-size: 13px;
+line-height: 1.45;
+white-space: pre;
 }
 
 .kosit-state {
@@ -65,6 +100,7 @@ margin: 0;
 }
 
 .kosit-update-summary,
+#kosit-scenario-message,
 #kosit-admin-message {
 margin-top: 14px;
 font-weight: 600;
