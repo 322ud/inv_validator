@@ -27,8 +27,8 @@ font-weight: 600;
 
 #kosit-report-frame {
 display: block;
-width: 100% !important;
-max-width: none !important;
+width: auto;
+max-width: 100%;
 height: 0;
 box-sizing: border-box;
 margin-top: 20px;

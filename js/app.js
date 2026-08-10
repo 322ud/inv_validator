@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let reportMutationObserver = null;
     let resizeAnimationFrame = null;
     let resetHeightBeforeResize = false;
+    let reportContentWidth = 0;
 
     const resizeValidator = () => {
         const left = Math.max(0, validator.getBoundingClientRect().left);
@@ -43,6 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
         reportFrame.style.setProperty('height', `${height}px`, 'important');
     };
 
+    const setReportFrameWidth = (width) => {
+        reportFrame.style.setProperty('width', `${width}px`, 'important');
+    };
+
     const resizeReportFrame = (resetHeight = false) => {
         const frameDocument = reportFrame.contentDocument;
 
@@ -50,7 +55,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const frameBorderWidth = reportFrame.offsetWidth - reportFrame.clientWidth;
         const frameBorderHeight = reportFrame.offsetHeight - reportFrame.clientHeight;
+
+        if (resetHeight) {
+            reportFrame.style.removeProperty('width');
+        }
+
+        const measuredContentWidth = Math.max(
+            frameDocument.documentElement.scrollWidth,
+            frameDocument.documentElement.offsetWidth,
+            frameDocument.body ? frameDocument.body.scrollWidth : 0,
+            frameDocument.body ? frameDocument.body.offsetWidth : 0,
+        );
+        const availableWidth = validator.clientWidth;
+
+        if (resetHeight || reportContentWidth === 0) {
+            reportContentWidth = measuredContentWidth;
+        }
+
+        if (reportContentWidth > 0 && availableWidth > 0) {
+            setReportFrameWidth(Math.min(
+                Math.ceil(reportContentWidth) + frameBorderWidth,
+                availableWidth,
+            ));
+        }
 
         if (resetHeight) {
             setReportFrameHeight(1);
@@ -151,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             reportFrameWidth = entry.contentRect.width;
-            scheduleReportFrameResize(true);
+            scheduleReportFrameResize();
         }).observe(reportFrame);
     } else {
         window.addEventListener('resize', () => scheduleReportFrameResize(true));
@@ -176,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         status.textContent = 'Validierung läuft ...';
         button.disabled = true;
         reportFrame.style.display = 'none';
+        reportContentWidth = 0;
         setReportFrameHeight(0);
         reportFrame.srcdoc = '';
 
