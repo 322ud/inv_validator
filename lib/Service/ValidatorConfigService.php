@@ -71,7 +71,7 @@ class ValidatorConfigService {
         return $this->getConfiguredPath(
             self::PATH_KEYS['scenarioFile'],
             'kosit_validator_scenarios',
-            dirname(__DIR__, 2) . '/config/scenarios.xml'
+            dirname(__DIR__, 2) . '/config/EN16931_(CII)-szenario.xml'
         );
     }
 

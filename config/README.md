@@ -1,6 +1,6 @@
 # KoSIT scenario configuration
 
-`scenarios.xml` stammt unverändert aus der offiziellen Distribution
+`EN16931_(CII)-szenario.xml` stammt unverändert aus der offiziellen Distribution
 `xrechnung-3.0.2-validator-configuration-2026-01-31.zip` (Release
 `v2026-01-31`) des Projekts
 `itplr-kosit/validator-configuration-xrechnung`.

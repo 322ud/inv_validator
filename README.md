@@ -29,7 +29,7 @@ Die Anwendung verwendet folgende Standardpfade:
 | Java | `/usr/bin/java` |
 | Validator JAR | `/opt/kosit/validator-1.6.2-standalone.jar` |
 | Repository | `/opt/kosit` |
-| Szenario-Datei | `config/scenarios.xml` innerhalb der App |
+| Szenario-Datei | `config/EN16931_(CII)-szenario.xml` innerhalb der App |
 
 Die Admin-Seite unter **Administrationseinstellungen → Weitere Einstellungen**
 zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern
@@ -45,12 +45,12 @@ Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende
 'kosit_validator_java_binary' => '/usr/bin/java',
 'kosit_validator_jar' => '/opt/kosit/validator-1.6.2-standalone.jar',
 'kosit_validator_repository' => '/opt/kosit',
-'kosit_validator_scenarios' => '/pfad/zu/eigener/scenarios.xml',
+'kosit_validator_scenarios' => '/pfad/zu/eigener/EN16931_(CII)-szenario.xml',
 'kosit_validator_temp_directory' => '/tmp/nextcloud-kosit-validator',
 ```
 
 Validator-JAR und Szenario-Konfiguration müssen zueinander kompatibel sein.
-Eine bloß vorhandene `scenarios.xml` reicht nicht aus; der Validator prüft sie
+Eine bloß vorhandene Szenario-Datei reicht nicht aus; der Validator prüft sie
 beim Start gegen sein Szenario-Schema.
 
 Die mitgelieferte Szenariodatei stammt aus der offiziellen KoSIT-Konfiguration
@@ -85,7 +85,7 @@ Beispielstruktur:
 ```text
 /opt/kosit/
 ├── validator-1.6.2-standalone.jar
-├── scenarios.xml
+├── EN16931_(CII)-szenario.xml
 └── repository/
 ```
 
