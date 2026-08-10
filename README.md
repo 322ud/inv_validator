@@ -10,6 +10,7 @@ Die App ermöglicht das Hochladen bzw. Einfügen von XML-Dokumenten, führt eine
 
 - XML-Validierung über den KoSIT Validator
 - Anzeige des HTML-Validierungsberichts
+- A4-optimierter Ausdruck und HTML-Download des Prüfberichts
 - Prüfung der XML-Struktur vor dem Validator-Aufruf
 - Größenbegrenzung für XML-Dateien
 - Aufbereitung der Validator-Ergebnisse als JSON-API
@@ -192,6 +193,8 @@ Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administra
 - Upload von XML-Dateien
 - AJAX-Aufruf des Validierungsendpunkts
 - Anzeige des HTML-Berichts über `iframe`
+- Drucken des Berichts über den Browser-Druckdialog
+- Herunterladen des aufbereiteten HTML-Berichts
 - Darstellung des Validierungsstatus
 
 ---

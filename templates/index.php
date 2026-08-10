@@ -7,25 +7,34 @@
     id="kosit-scroll-container"
     style="flex:1 1 auto;width:100%;height:100%;min-width:0;overflow-x:hidden;overflow-y:auto;"
 >
-<div id="kosit-validator" class="section">
-<h2>KoSIT Validator</h2>
+    <div id="kosit-validator" class="section">
+        <h2>KoSIT Validator</h2>
 
-<p>XML-Datei hochladen und gegen den KoSIT Validator prüfen.</p>
+        <p>XML-Datei hochladen und gegen den KoSIT Validator prüfen.</p>
 
-<input type="file" id="kosit-xml-file" accept=".xml,text/xml,application/xml">
+        <input type="file" id="kosit-xml-file" accept=".xml,text/xml,application/xml">
 
-<button id="kosit-validate-button" class="primary">
-    Validieren
-</button>
+        <button id="kosit-validate-button" class="primary">
+            Validieren
+        </button>
 
-<div id="kosit-status" role="status" aria-live="polite"></div>
+        <div id="kosit-status" role="status" aria-live="polite"></div>
 
-    <iframe
-        id="kosit-report-frame"
-        sandbox="allow-same-origin"
-        scrolling="no"
-        title="HTML Prüfbericht"
-        style="display:none;"
-    ></iframe>
-</div>
+        <div id="kosit-report-actions" hidden>
+            <button id="kosit-print-button" type="button" disabled>
+                Prüfbericht drucken
+            </button>
+            <button id="kosit-download-button" type="button" disabled>
+                HTML herunterladen
+            </button>
+        </div>
+
+        <iframe
+            id="kosit-report-frame"
+            sandbox="allow-same-origin allow-modals"
+            scrolling="no"
+            title="HTML Prüfbericht"
+            style="display:none;"
+        ></iframe>
+    </div>
 </div>

@@ -25,6 +25,17 @@ margin-top: 16px;
 font-weight: 600;
 }
 
+#kosit-report-actions {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-top: 16px;
+}
+
+#kosit-report-actions[hidden] {
+display: none;
+}
+
 #kosit-report-frame {
 display: block;
 width: auto;

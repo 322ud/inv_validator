@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('kosit-xml-file');
     const button = document.getElementById('kosit-validate-button');
     const status = document.getElementById('kosit-status');
+    const reportActions = document.getElementById('kosit-report-actions');
+    const printButton = document.getElementById('kosit-print-button');
+    const downloadButton = document.getElementById('kosit-download-button');
     const reportFrame = document.getElementById('kosit-report-frame');
 
     const maxXmlSize = 5 * 1024 * 1024;
@@ -11,6 +14,39 @@ document.addEventListener('DOMContentLoaded', () => {
     let resizeAnimationFrame = null;
     let resetHeightBeforeResize = false;
     let reportContentWidth = 0;
+    let reportHtml = '';
+
+    const addPrintStyles = (frameDocument) => {
+        if (!frameDocument.head || frameDocument.getElementById('kosit-print-styles')) {
+            return;
+        }
+
+        const printStyles = frameDocument.createElement('style');
+
+        printStyles.id = 'kosit-print-styles';
+        printStyles.textContent = `
+            @media print {
+                @page {
+                    size: A4;
+                    margin: 10mm;
+                }
+
+                html,
+                body {
+                    width: auto !important;
+                    max-width: none !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                table {
+                    max-width: 100% !important;
+                }
+            }
+        `;
+
+        frameDocument.head.appendChild(printStyles);
+    };
 
     const resizeValidator = () => {
         const left = Math.max(0, validator.getBoundingClientRect().left);
@@ -27,6 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!frameDocument) {
             return;
         }
+
+        addPrintStyles(frameDocument);
 
         [frameDocument.documentElement, frameDocument.body].forEach((element) => {
             if (!element) {
@@ -170,6 +208,52 @@ document.addEventListener('DOMContentLoaded', () => {
         observeReportContent();
         window.setTimeout(() => resizeReportFrame(true), 250);
         window.setTimeout(() => resizeReportFrame(true), 1000);
+
+        if (reportHtml !== '') {
+            printButton.disabled = false;
+            downloadButton.disabled = false;
+            reportActions.hidden = false;
+        }
+    });
+
+    printButton.addEventListener('click', () => {
+        try {
+            const printWindow = reportFrame.contentWindow;
+
+            if (!printWindow) {
+                throw new Error('Report frame is not available');
+            }
+
+            printWindow.focus();
+            printWindow.print();
+        } catch (error) {
+            status.textContent = 'Der Druckdialog konnte nicht geöffnet werden.';
+        }
+    });
+
+    downloadButton.addEventListener('click', () => {
+        if (reportHtml === '') {
+            return;
+        }
+
+        const reportDocument = new DOMParser().parseFromString(reportHtml, 'text/html');
+
+        addPrintStyles(reportDocument);
+
+        const downloadableHtml = '<!DOCTYPE html>\n' + reportDocument.documentElement.outerHTML;
+        const blob = new Blob([downloadableHtml], {
+            type: 'text/html;charset=utf-8',
+        });
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        link.href = downloadUrl;
+        link.download = 'kosit-pruefbericht.html';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
     });
 
     if ('ResizeObserver' in window) {
@@ -204,6 +288,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         status.textContent = 'Validierung läuft ...';
         button.disabled = true;
+        printButton.disabled = true;
+        downloadButton.disabled = true;
+        reportActions.hidden = true;
+        reportHtml = '';
         reportFrame.style.display = 'none';
         reportContentWidth = 0;
         setReportFrameHeight(0);
@@ -237,7 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
             : 'XML ist nicht gültig.';
 
             if (result.reportHtml) {
-                reportFrame.srcdoc = result.reportHtml;
+                reportHtml = result.reportHtml;
+                reportFrame.srcdoc = reportHtml;
                 reportFrame.style.display = 'block';
             } else {
                 status.textContent += ' Kein HTML-Prüfbericht gefunden.';
