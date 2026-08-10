@@ -1,0 +1,109 @@
+#kosit-admin {
+max-width: 980px;
+}
+
+#kosit-admin h3 {
+margin-top: 28px;
+}
+
+.kosit-paths {
+width: 100%;
+margin-top: 12px;
+border-collapse: collapse;
+}
+
+.kosit-paths th,
+.kosit-paths td {
+padding: 9px 12px;
+border-bottom: 1px solid var(--color-border);
+text-align: left;
+vertical-align: top;
+}
+
+.kosit-paths code {
+overflow-wrap: anywhere;
+}
+
+.kosit-path-input {
+width: 100%;
+min-width: 280px;
+box-sizing: border-box;
+font-family: var(--font-face-monospace, monospace);
+}
+
+.kosit-path-actions {
+margin-top: 14px;
+}
+
+.kosit-state {
+font-weight: 600;
+}
+
+.kosit-state--available,
+.kosit-state--creatable {
+color: var(--color-success);
+}
+
+.kosit-state--missing,
+.kosit-state--not-executable {
+color: var(--color-error);
+}
+
+.kosit-versions > div {
+display: grid;
+grid-template-columns: minmax(180px, 240px) 1fr;
+gap: 12px;
+margin: 8px 0;
+}
+
+.kosit-versions dt {
+font-weight: 600;
+}
+
+.kosit-versions dd {
+margin: 0;
+}
+
+.kosit-update-summary,
+#kosit-admin-message {
+margin-top: 14px;
+font-weight: 600;
+}
+
+.kosit-admin-actions {
+display: flex;
+align-items: center;
+flex-wrap: wrap;
+gap: 10px;
+margin-top: 14px;
+}
+
+@media (max-width: 700px) {
+.kosit-paths,
+.kosit-paths tbody,
+.kosit-paths tr,
+.kosit-paths th,
+.kosit-paths td {
+display: block;
+}
+
+.kosit-paths thead {
+display: none;
+}
+
+.kosit-paths tr {
+padding: 8px 0;
+border-bottom: 1px solid var(--color-border);
+}
+
+.kosit-paths th,
+.kosit-paths td {
+padding: 3px 0;
+border: 0;
+}
+
+.kosit-versions > div {
+grid-template-columns: 1fr;
+gap: 2px;
+}
+}

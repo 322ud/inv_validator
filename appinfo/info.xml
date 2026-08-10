@@ -6,7 +6,7 @@
     <name>KoSIT Validator</name>
     <summary>Validiert XRechnung/ZUGFeRD XML mit dem KoSIT Validator</summary>
     <description>Separate Nextcloud-App zur zentralen KoSIT-Validierung per Service-Klasse.</description>
-    <version>0.3.1</version>
+    <version>0.4.1</version>
     <licence>agpl</licence>
     <author>Frank Busse</author>
     <namespace>KoSITValidator</namespace>
@@ -23,4 +23,8 @@
         <icon>app.svg</icon>
       </navigation>
     </navigations>
+
+    <settings>
+      <admin>OCA\KoSITValidator\Settings\Admin</admin>
+    </settings>
 </info>

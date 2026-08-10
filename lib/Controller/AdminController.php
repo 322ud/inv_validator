@@ -1,0 +1,84 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OCA\KoSITValidator\Controller;
+
+use OCA\KoSITValidator\Service\ValidatorAdminService;
+use OCA\KoSITValidator\Service\ValidatorConfigService;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\DataResponse;
+use OCP\IRequest;
+use Psr\Log\LoggerInterface;
+
+class AdminController extends Controller {
+    public function __construct(
+        string $appName,
+        IRequest $request,
+        private ValidatorAdminService $adminService,
+        private ValidatorConfigService $configService,
+        private LoggerInterface $logger
+    ) {
+        parent::__construct($appName, $request);
+    }
+
+    public function status(): DataResponse {
+        return new DataResponse([
+            'success' => true,
+            'status' => $this->adminService->getStatus(true),
+        ]);
+    }
+
+    public function install(): DataResponse {
+        try {
+            return new DataResponse([
+                'success' => true,
+                'message' => 'KoSIT Validator wurde erfolgreich installiert.',
+                'status' => $this->adminService->installLatest(),
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('KoSIT validator installation failed: {message}', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return new DataResponse([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function savePaths(): DataResponse {
+        try {
+            $this->configService->savePaths([
+                'javaBinary' => $this->request->getParam('javaBinary'),
+                'validatorJar' => $this->request->getParam('validatorJar'),
+                'repositoryPath' => $this->request->getParam('repositoryPath'),
+                'scenarioFile' => $this->request->getParam('scenarioFile'),
+                'tempDirectory' => $this->request->getParam('tempDirectory'),
+            ]);
+
+            return new DataResponse([
+                'success' => true,
+                'message' => 'Pfade wurden gespeichert.',
+                'status' => $this->adminService->getStatus(true),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return new DataResponse([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        } catch (\Throwable $e) {
+            $this->logger->error('KoSIT path configuration failed: {message}', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return new DataResponse([
+                'success' => false,
+                'message' => 'Pfade konnten nicht gespeichert werden.',
+            ], 500);
+        }
+    }
+}

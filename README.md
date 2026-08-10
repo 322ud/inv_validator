@@ -14,6 +14,9 @@ Die App ermöglicht das Hochladen bzw. Einfügen von XML-Dokumenten, führt eine
 - Prüfung der XML-Struktur vor dem Validator-Aufruf
 - Größenbegrenzung für XML-Dateien
 - Aufbereitung der Validator-Ergebnisse als JSON-API
+- Admin-Seite mit automatisch ermittelten Systempfaden
+- Installation des offiziellen Standalone-JAR aus den GitHub-Releases
+- Prüfung auf neue KoSIT-Validator-Versionen und direkte Aktualisierung
 
 ---
 
@@ -28,8 +31,15 @@ Die Anwendung verwendet folgende Standardpfade:
 | Repository | `/opt/kosit` |
 | Szenario-Datei | `config/scenarios.xml` innerhalb der App |
 
-Diese Pfade müssen auf dem Zielsystem vorhanden sein. Sie können in der
-Nextcloud-`config.php` überschrieben werden:
+Die Admin-Seite unter **Administrationseinstellungen → Weitere Einstellungen**
+zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern
+nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht.
+
+Die Pfade können direkt auf der Admin-Seite bearbeitet und gespeichert werden.
+Gespeicherte Werte werden von Validierung, Installation und Update-Prüfung
+sofort verwendet und haben Vorrang vor Einträgen in der Nextcloud-`config.php`.
+Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende
+`config.php`-Optionen als Fallback verfügbar:
 
 ```php
 'kosit_validator_java_binary' => '/usr/bin/java',
@@ -61,6 +71,14 @@ sudo apt install openjdk-17-jre
 ```
 
 ### KoSIT Validator installieren
+
+Die empfohlene Installation erfolgt in der Admin-Seite über **Jetzt
+installieren**. Die App ermittelt das neueste offizielle GitHub-Release, lädt
+das zugehörige `validator-<version>-standalone.jar` und aktiviert es atomar am
+konfigurierten JAR-Pfad. Der Webserver-Benutzer muss für dessen Verzeichnis
+Schreibrechte besitzen.
+
+Alternativ kann das JAR weiterhin manuell installiert werden.
 
 Beispielstruktur:
 
@@ -156,6 +174,8 @@ Aktueller Implementierungsstand:
 - Die Oberfläche ist für alle angemeldeten Nextcloud-Benutzer verfügbar.
 - Der Validierungsendpunkt kann von jedem angemeldeten Benutzer aufgerufen werden.
 - Der Endpunkt ist durch den Nextcloud-CSRF-Token geschützt.
+- Status, Installation und Updates sind ausschließlich für Administratoren
+  erreichbar und ebenfalls CSRF-geschützt.
 - Es wird höchstens ein Validator-Prozess gleichzeitig ausgeführt.
 - Prozessausgaben und Berichte besitzen serverseitige Größenlimits.
 - Es existiert derzeit keine Gruppen- oder Rollenprüfung.
@@ -187,6 +207,18 @@ Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administra
 
 - `ValidationResult`
   - DTO für das Validierungsergebnis.
+
+- `ValidatorConfigService`
+  - Ermittelt Java sowie installierte Validator-JARs und liefert die
+    konfigurierten Systempfade.
+
+- `ValidatorAdminService`
+  - Fragt das neueste offizielle GitHub-Release ab.
+  - Prüft Version und Download und installiert das Standalone-JAR atomar.
+
+- `AdminController` / `Settings\\Admin`
+  - Stellen die nur für Administratoren erreichbare Status-, Installations-
+    und Update-Oberfläche bereit.
 
 ### Frontend
 
@@ -221,8 +253,8 @@ zurückgegeben. Sie werden nicht als fachlich ungültige Rechnung dargestellt.
 
 ## Bekannte Einschränkungen
 
-- Keine Konfiguration über die Nextcloud-Oberfläche; die Einstellungen erfolgen
-  in `config.php`.
+- Pfade können von Administratoren bearbeitet werden. Bereits gespeicherte
+  App-Werte haben Vorrang vor `config.php` und den eingebauten Standardwerten.
 - Keine rollenbasierte Zugriffskontrolle.
 - XML-Dateien größer als 5 MB werden abgelehnt.
 - Zur Begrenzung der Serverlast wird jeweils nur ein Dokument verarbeitet.
