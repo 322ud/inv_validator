@@ -268,7 +268,7 @@ composer test
 Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die
 Pfadkonfiguration, atomare Szenario- und Validator-Updates, externe
 Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den
-HTTP-Vertrag des Validierungsendpunkts ab.
+HTTP-Vertrag der Validierungs- und Admin-Endpunkte ab.
 
 ---
 
