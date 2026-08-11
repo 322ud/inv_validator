@@ -282,6 +282,9 @@ Routen, Templates sowie die Admin- und CSRF-Attribute gegen das echte Framework.
 Ein weiterer Smoke-Test lädt fest versionierte und per SHA-256 geprüfte KoSIT-
 und XRechnung-Artefakte, validiert eine offizielle Testrechnung mit dem echten
 Java-Prozess und prüft außerdem die Ablehnung einer gezielt beschädigten Variante.
+Der Nextcloud-Job führt zusätzlich mit Playwright den vollständigen Browserfluss
+vom Login und Datei-Upload bis zum eingebetteten und herunterladbaren Prüfbericht
+für gültige, fachlich ungültige und nicht wohlgeformte XML-Dateien aus.
 
 ---
 
