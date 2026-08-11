@@ -15,6 +15,32 @@ box-sizing: border-box;
 align-self: stretch;
 }
 
+.kosit-validator-intro {
+display: flex;
+align-items: baseline;
+flex-wrap: wrap;
+gap: 0 0.25em;
+}
+
+.kosit-external-link {
+display: inline-flex;
+align-items: center;
+color: var(--color-primary-element);
+vertical-align: text-top;
+}
+
+.kosit-external-link svg {
+width: 0.8em;
+height: 0.8em;
+fill: currentColor;
+}
+
+#kosit-update-notice {
+margin-top: 8px;
+color: var(--color-warning-text, #8a4b08);
+font-weight: 600;
+}
+
 #kosit-upload-options {
 display: flex;
 align-items: center;

@@ -83,6 +83,11 @@ namespace OCP\AppFramework\Http {
             private string $templateName,
             private array $parameters = []
         ) {}
+
+        /** @return array<string, mixed> */
+        public function getParams(): array {
+            return $this->parameters;
+        }
     }
 }
 
