@@ -279,6 +279,9 @@ Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2,
 8.3, 8.4 und 8.5 sowie die JavaScript-Suite mit Node.js 22 aus. Ein zusätzlicher
 Integrationsjob installiert Nextcloud 34, aktiviert die App und prüft Container,
 Routen, Templates sowie die Admin- und CSRF-Attribute gegen das echte Framework.
+Ein weiterer Smoke-Test lädt fest versionierte und per SHA-256 geprüfte KoSIT-
+und XRechnung-Artefakte, validiert eine offizielle Testrechnung mit dem echten
+Java-Prozess und prüft außerdem die Ablehnung einer gezielt beschädigten Variante.
 
 ---
 

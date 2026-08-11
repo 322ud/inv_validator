@@ -107,3 +107,76 @@ jobs:
         run: |
           "$NEXTCLOUD_ROOT/apps/kosit_validator/vendor/bin/phpunit" \
             --configuration "$NEXTCLOUD_ROOT/apps/kosit_validator/tests/Nextcloud/phpunit.xml"
+
+  kosit:
+    name: KoSIT end-to-end smoke test
+    runs-on: ubuntu-latest
+    env:
+      KOSIT_ASSET_DIRECTORY: ${{ runner.temp }}/kosit-smoke-assets
+      KOSIT_REPOSITORY: ${{ runner.temp }}/kosit-xrechnung-configuration
+      KOSIT_VALIDATOR_VERSION: 1.6.2
+      KOSIT_CONFIGURATION_VERSION: 2026-01-31
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: dom, libxml, mbstring, xml, zip
+          tools: composer:v2
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Cache KoSIT test assets
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.KOSIT_ASSET_DIRECTORY }}
+          key: kosit-${{ env.KOSIT_VALIDATOR_VERSION }}-xrechnung-${{ env.KOSIT_CONFIGURATION_VERSION }}-smoke-assets-v1
+      - name: Download and verify KoSIT test assets
+        run: |
+          mkdir --parents "$KOSIT_ASSET_DIRECTORY"
+          cd "$KOSIT_ASSET_DIRECTORY"
+
+          validator="validator-${KOSIT_VALIDATOR_VERSION}-standalone.jar"
+          configuration="xrechnung-3.0.2-validator-configuration-${KOSIT_CONFIGURATION_VERSION}.zip"
+          invoice="01.01a-INVOICE_ubl.xml"
+
+          if [ ! -f "$validator" ]; then
+            curl --fail --silent --show-error --location \
+              "https://github.com/itplr-kosit/validator/releases/download/v${KOSIT_VALIDATOR_VERSION}/$validator" \
+              --output "$validator"
+          fi
+          if [ ! -f "$configuration" ]; then
+            curl --fail --silent --show-error --location \
+              "https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/v${KOSIT_CONFIGURATION_VERSION}/$configuration" \
+              --output "$configuration"
+          fi
+          if [ ! -f "$invoice" ]; then
+            curl --fail --silent --show-error --location \
+              "https://projekte.kosit.org/xrechnung/xrechnung-testsuite/-/raw/33cf3bdf13fb0d8443c51371ab892f25a9468d79/src/test/business-cases/standard/$invoice" \
+              --output "$invoice"
+          fi
+
+          echo '244978514ad48f67c7573acfffc8f4fd73d81feda6f276710033f9913579857e  validator-1.6.2-standalone.jar' | sha256sum --check --strict -
+          echo '6a5a5911a421b25fbc423f62f93f894df7b236f5d73ca4f84bb222a945082704  xrechnung-3.0.2-validator-configuration-2026-01-31.zip' | sha256sum --check --strict -
+          echo '74fb09c609d5fba15a8c543060998d3b92858f56a81fb5b0ed244d6794e498d1  01.01a-INVOICE_ubl.xml' | sha256sum --check --strict -
+      - name: Extract XRechnung configuration
+        run: |
+          mkdir --parents "$KOSIT_REPOSITORY"
+          unzip -q \
+            "$KOSIT_ASSET_DIRECTORY/xrechnung-3.0.2-validator-configuration-${KOSIT_CONFIGURATION_VERSION}.zip" \
+            -d "$KOSIT_REPOSITORY"
+      - name: Run real KoSIT validation
+        env:
+          KOSIT_VALIDATOR_JAR: ${{ env.KOSIT_ASSET_DIRECTORY }}/validator-1.6.2-standalone.jar
+          KOSIT_SCENARIO_FILE: ${{ github.workspace }}/config/EN16931_(CII)-szenario.xml
+          KOSIT_VALID_INVOICE: ${{ env.KOSIT_ASSET_DIRECTORY }}/01.01a-INVOICE_ubl.xml
+        run: |
+          export KOSIT_JAVA_BINARY="$JAVA_HOME/bin/java"
+          vendor/bin/phpunit --configuration tests/EndToEnd/phpunit.xml
