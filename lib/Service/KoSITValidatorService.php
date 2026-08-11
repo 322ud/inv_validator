@@ -7,13 +7,16 @@ namespace OCA\KoSITValidator\Service;
 use OCA\KoSITValidator\Exception\ValidationException;
 
 class KoSITValidatorService {
-    private const PROCESS_TIMEOUT_SECONDS = 60;
-    private const MAX_PROCESS_OUTPUT_BYTES = 1024 * 1024;
     private const MAX_REPORT_BYTES = 10 * 1024 * 1024;
 
+    private ValidatorProcessRunner $processRunner;
+
     public function __construct(
-        private ValidatorConfigService $config
-    ) {}
+        private ValidatorConfigService $config,
+        ?ValidatorProcessRunner $processRunner = null
+    ) {
+        $this->processRunner = $processRunner ?? new ValidatorProcessRunner();
+    }
 
     public function validateXml(string $xmlContent): ValidationResult {
         $this->validateEnvironment();
@@ -25,7 +28,7 @@ class KoSITValidatorService {
             $lock = $this->acquireExecutionLock();
             $xmlPath = $this->writeXmlFile($xmlContent, $tempDir);
             $command = $this->buildCommand($xmlPath, $tempDir);
-            $processResult = $this->runCommand($command);
+            $processResult = $this->processRunner->run($command);
 
             return $this->buildValidationResult($processResult, $tempDir);
         } finally {
@@ -173,93 +176,6 @@ class KoSITValidatorService {
             '-h',
             $xmlFile,
         ];
-    }
-
-    private function runCommand(array $command): array {
-        $process = proc_open(
-            $command,
-            [
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
-            ],
-            $pipes
-        );
-
-        if (!is_resource($process)) {
-            throw new ValidationException('Validator process could not be started');
-        }
-
-        stream_set_blocking($pipes[1], false);
-        stream_set_blocking($pipes[2], false);
-
-        $stdout = '';
-        $stderr = '';
-
-        $start = microtime(true);
-        $lastStatus = null;
-
-        while (true) {
-            $this->appendProcessOutput($stdout, stream_get_contents($pipes[1]));
-            $this->appendProcessOutput($stderr, stream_get_contents($pipes[2]));
-
-            $status = proc_get_status($process);
-            $lastStatus = $status;
-
-            if (!$status['running']) {
-                break;
-            }
-
-            if ((microtime(true) - $start) >= self::PROCESS_TIMEOUT_SECONDS) {
-                proc_terminate($process);
-
-                $graceDeadline = microtime(true) + 2.0;
-                do {
-                    usleep(100000);
-                    $status = proc_get_status($process);
-                } while ($status['running'] && microtime(true) < $graceDeadline);
-
-                if ($status['running']) {
-                    proc_terminate($process, 9);
-                }
-
-                fclose($pipes[1]);
-                fclose($pipes[2]);
-
-                proc_close($process);
-
-                throw new ValidationException('Validator process timed out');
-            }
-
-            usleep(100000);
-        }
-
-        $this->appendProcessOutput($stdout, stream_get_contents($pipes[1]));
-        $this->appendProcessOutput($stderr, stream_get_contents($pipes[2]));
-
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-
-        $closeExitCode = proc_close($process);
-        $statusExitCode = is_array($lastStatus) ? $lastStatus['exitcode'] : -1;
-        $exitCode = $statusExitCode >= 0 ? $statusExitCode : $closeExitCode;
-
-        return [
-            'exitCode' => $exitCode,
-            'stdout' => $stdout,
-            'stderr' => $stderr,
-        ];
-    }
-
-    private function appendProcessOutput(string &$target, string|false $chunk): void {
-        if ($chunk === false || $chunk === '') {
-            return;
-        }
-
-        $remaining = self::MAX_PROCESS_OUTPUT_BYTES - strlen($target);
-
-        if ($remaining > 0) {
-            $target .= substr($chunk, 0, $remaining);
-        }
     }
 
     private function buildValidationResult(

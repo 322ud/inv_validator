@@ -89,16 +89,6 @@ final class KoSITValidatorServiceTest extends TestCase {
         self::assertNull($reports['xml']);
     }
 
-    public function testProcessOutputIsLimitedToOneMegabyte(): void {
-        $target = '';
-        $chunk = str_repeat('x', 1024 * 1024 + 100);
-
-        $this->invokeByReference('appendProcessOutput', $target, $chunk);
-        $this->invokeByReference('appendProcessOutput', $target, 'more');
-
-        self::assertSame(1024 * 1024, strlen($target));
-    }
-
     private function writeReport(string $content): string {
         $path = $this->temporaryDirectory . '/report.xml';
         file_put_contents($path, $content);
@@ -108,12 +98,6 @@ final class KoSITValidatorServiceTest extends TestCase {
     private function invoke(string $method, mixed ...$arguments): mixed {
         $reflection = new \ReflectionMethod($this->service, $method);
         return $reflection->invoke($this->service, ...$arguments);
-    }
-
-    private function invokeByReference(string $method, string &$target, string $chunk): void {
-        $reflection = new \ReflectionMethod($this->service, $method);
-        $arguments = [&$target, $chunk];
-        $reflection->invokeArgs($this->service, $arguments);
     }
 
     private function removeDirectory(string $directory): void {
