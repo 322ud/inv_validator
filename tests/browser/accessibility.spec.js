@@ -50,7 +50,7 @@ test('validation UI meets WCAG rules and supports keyboard file selection', asyn
 
 test('admin UI meets WCAG rules and moves focus into the scenario editor', async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto('/index.php/settings/admin/additional');
+    await page.goto('/index.php/settings/admin/kosit_validator');
     await expect(page.locator('#kosit-admin')).toBeVisible();
 
     await page.locator('#kosit-edit-scenario').click();

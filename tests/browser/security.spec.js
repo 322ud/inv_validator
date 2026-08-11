@@ -61,7 +61,7 @@ test('enforces admin authorization and CSRF without changing configuration', asy
     const adminPage = await adminContext.newPage();
 
     await login(adminPage, 'admin', 'integration-test-password');
-    await adminPage.goto('/index.php/settings/admin/additional');
+    await adminPage.goto('/index.php/settings/admin/kosit_validator');
     await expect(adminPage.locator('#kosit-admin')).toBeVisible();
 
     const temporaryDirectory = adminPage.locator('input[name="tempDirectory"]');

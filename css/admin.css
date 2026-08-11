@@ -2,7 +2,7 @@
 max-width: 980px;
 }
 
-#kosit-admin h3 {
+#kosit-admin h4 {
 margin-top: 28px;
 }
 
@@ -48,7 +48,7 @@ margin-top: 24px;
 display: none;
 }
 
-.kosit-scenario-editor h3 {
+.kosit-scenario-editor h4 {
 margin-top: 0;
 }
 

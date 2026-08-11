@@ -26,5 +26,6 @@
 
     <settings>
       <admin>OCA\KoSITValidator\Settings\Admin</admin>
+      <admin-section>OCA\KoSITValidator\Settings\AdminSection</admin-section>
     </settings>
 </info>

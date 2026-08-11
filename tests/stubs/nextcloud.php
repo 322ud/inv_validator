@@ -3,12 +3,20 @@
 declare(strict_types=1);
 
 namespace OCP {
+    interface IL10N {
+        public function t(string $text, array $parameters = [], ?int $count = null): string;
+    }
+
     interface IConfig {
         public function getSystemValueString(string $key, string $default = ''): string;
     }
 
     interface IRequest {
         public function getParam(string $key, mixed $default = null): mixed;
+    }
+
+    interface IURLGenerator {
+        public function imagePath(string $appName, string $file): string;
     }
 }
 
@@ -95,5 +103,15 @@ namespace OCP\Settings {
         public function getSection(): string;
 
         public function getPriority(): int;
+    }
+
+    interface IIconSection {
+        public function getID(): string;
+
+        public function getName(): string;
+
+        public function getPriority(): int;
+
+        public function getIcon(): string;
     }
 }

@@ -12,6 +12,7 @@ use OCA\KoSITValidator\Service\KoSITValidatorService;
 use OCA\KoSITValidator\Service\ValidatorAdminService;
 use OCA\KoSITValidator\Service\ValidatorConfigService;
 use OCA\KoSITValidator\Settings\Admin;
+use OCA\KoSITValidator\Settings\AdminSection;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -43,8 +44,14 @@ final class FrameworkIntegrationTest extends TestCase
         self::assertInstanceOf(ValidationController::class, $container->get(ValidationController::class));
 
         $settings = $container->get(Admin::class);
-        self::assertSame('additional', $settings->getSection());
+        self::assertSame('kosit_validator', $settings->getSection());
         self::assertSame(50, $settings->getPriority());
+
+        $section = $container->get(AdminSection::class);
+        self::assertSame('kosit_validator', $section->getID());
+        self::assertSame('KoSIT Validator', $section->getName());
+        self::assertSame(80, $section->getPriority());
+        self::assertStringContainsString('/apps/kosit_validator/img/app.svg', $section->getIcon());
     }
 
     public function testNamedRoutesAreRegistered(): void

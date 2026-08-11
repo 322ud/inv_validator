@@ -15,14 +15,14 @@ $stateLabels = [
 ];
 ?>
 
-<div id="kosit-admin" class="section">
+<div id="kosit-admin">
     <h2>KoSIT Validator</h2>
     <p>
         Systempfade, Installation und verfügbare Updates des offiziellen
         KoSIT Validators verwalten.
     </p>
 
-    <h3>Systempfade</h3>
+    <h4>Systempfade</h4>
     <table class="kosit-paths">
         <thead>
             <tr>
@@ -72,7 +72,7 @@ $stateLabels = [
     </p>
 
     <section id="kosit-scenario-editor" class="kosit-scenario-editor" hidden>
-        <h3>Szenario-Datei bearbeiten</h3>
+        <h4>Szenario-Datei bearbeiten</h4>
         <p>
             Bearbeitete Datei: <code id="kosit-scenario-path"></code>
         </p>
@@ -91,7 +91,7 @@ $stateLabels = [
         </p>
     </section>
 
-    <h3>Installation und Updates</h3>
+    <h4>Installation und Updates</h4>
     <dl class="kosit-versions">
         <div>
             <dt>Installierte Version</dt>

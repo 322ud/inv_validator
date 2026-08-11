@@ -24,7 +24,7 @@ class Admin implements ISettings
 
     public function getSection(): string
     {
-        return 'additional';
+        return 'kosit_validator';
     }
 
     public function getPriority(): int

@@ -33,7 +33,7 @@ test('configures paths and edits the scenario through Nextcloud administration',
     page.on('pageerror', (error) => pageErrors.push(error.message));
 
     await loginAsAdmin(page);
-    await page.goto('/index.php/settings/admin/additional');
+    await page.goto('/index.php/settings/admin/kosit_validator');
     await expect(page.locator('#kosit-admin')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'KoSIT Validator' })).toBeVisible();
 
