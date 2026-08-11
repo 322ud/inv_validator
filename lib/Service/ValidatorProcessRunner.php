@@ -6,18 +6,21 @@ namespace OCA\KoSITValidator\Service;
 
 use OCA\KoSITValidator\Exception\ValidationException;
 
-final class ValidatorProcessRunner {
+final class ValidatorProcessRunner
+{
     public function __construct(
         private float $timeoutSeconds = 60.0,
         private float $terminationGraceSeconds = 2.0,
         private int $maxOutputBytes = 1024 * 1024
-    ) {}
+    ) {
+    }
 
     /**
      * @param list<string> $command
      * @return array{exitCode: int, stdout: string, stderr: string}
      */
-    public function run(array $command): array {
+    public function run(array $command): array
+    {
         $process = proc_open(
             $command,
             [
@@ -65,7 +68,7 @@ final class ValidatorProcessRunner {
         fclose($pipes[2]);
 
         $closeExitCode = proc_close($process);
-        $statusExitCode = is_array($lastStatus) ? $lastStatus['exitcode'] : -1;
+        $statusExitCode = $lastStatus['exitcode'];
 
         return [
             'exitCode' => $statusExitCode >= 0 ? $statusExitCode : $closeExitCode,
@@ -78,7 +81,8 @@ final class ValidatorProcessRunner {
      * @param resource $process
      * @param array<int, resource> $pipes
      */
-    private function terminate($process, array $pipes): void {
+    private function terminate($process, array $pipes): void
+    {
         proc_terminate($process);
 
         $graceDeadline = microtime(true) + $this->terminationGraceSeconds;
@@ -96,7 +100,8 @@ final class ValidatorProcessRunner {
         proc_close($process);
     }
 
-    private function appendOutput(string &$target, string|false $chunk): void {
+    private function appendOutput(string &$target, string|false $chunk): void
+    {
         if ($chunk === false || $chunk === '') {
             return;
         }

@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             printWindow.focus();
             printWindow.print();
-        } catch (error) {
+        } catch {
             status.textContent = 'Der Druckdialog konnte nicht geöffnet werden.';
         }
     });
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 status.textContent += ' Kein HTML-Prüfbericht gefunden.';
             }
-        } catch (error) {
+        } catch {
             status.textContent = 'Fehler beim Aufruf des Validators.';
         } finally {
             selectFileButton.disabled = false;

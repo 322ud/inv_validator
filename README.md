@@ -262,8 +262,11 @@ Die Abhängigkeiten installieren und die PHP- sowie JavaScript-Tests ausführen:
 
 ```bash
 composer install
+composer lint
+composer analyse
 composer test
 npm ci
+npm run lint
 npm test
 ```
 

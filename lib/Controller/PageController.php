@@ -10,8 +10,8 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 
-class PageController extends Controller {
-
+class PageController extends Controller
+{
     public function __construct(
         string $appName,
         IRequest $request
@@ -21,7 +21,8 @@ class PageController extends Controller {
 
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    public function index(): TemplateResponse {
+    public function index(): TemplateResponse
+    {
         return new TemplateResponse(
             'kosit_validator',
             'index'

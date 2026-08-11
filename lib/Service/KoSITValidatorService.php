@@ -6,7 +6,8 @@ namespace OCA\KoSITValidator\Service;
 
 use OCA\KoSITValidator\Exception\ValidationException;
 
-class KoSITValidatorService {
+class KoSITValidatorService
+{
     private const MAX_REPORT_BYTES = 10 * 1024 * 1024;
 
     private ValidatorProcessRunner $processRunner;
@@ -18,7 +19,8 @@ class KoSITValidatorService {
         $this->processRunner = $processRunner ?? new ValidatorProcessRunner();
     }
 
-    public function validateXml(string $xmlContent): ValidationResult {
+    public function validateXml(string $xmlContent): ValidationResult
+    {
         $this->validateEnvironment();
 
         $tempDir = $this->createTempDirectory();
@@ -42,7 +44,8 @@ class KoSITValidatorService {
     }
 
     /** @return resource */
-    private function acquireExecutionLock() {
+    private function acquireExecutionLock()
+    {
         $lockPath = $this->config->getTempDirectory() . '/validator.lock';
         $lock = fopen($lockPath, 'c');
 
@@ -60,7 +63,8 @@ class KoSITValidatorService {
         return $lock;
     }
 
-    private function removeDirectory(string $dir): void {
+    private function removeDirectory(string $dir): void
+    {
         if (!is_dir($dir) || is_link($dir)) {
             return;
         }
@@ -133,7 +137,8 @@ class KoSITValidatorService {
         }
     }
 
-    private function createTempDirectory(): string {
+    private function createTempDirectory(): string
+    {
         $tempDir = $this->config->getTempDirectory()
         . '/kosit-validator-'
         . bin2hex(random_bytes(16));
@@ -160,7 +165,9 @@ class KoSITValidatorService {
         return $xmlFile;
     }
 
-    private function buildCommand(string $xmlFile, string $tempDir): array {
+    /** @return list<string> */
+    private function buildCommand(string $xmlFile, string $tempDir): array
+    {
         return [
             $this->config->getJavaBinary(),
             '-Xmx512m',
@@ -178,6 +185,7 @@ class KoSITValidatorService {
         ];
     }
 
+    /** @param array{exitCode: int, stdout: string, stderr: string} $processResult */
     private function buildValidationResult(
         array $processResult,
         string $tempDir
@@ -222,7 +230,8 @@ class KoSITValidatorService {
         );
     }
 
-    private function readReportValidity(string $reportPath): bool {
+    private function readReportValidity(string $reportPath): bool
+    {
         $reportSize = filesize($reportPath);
 
         if ($reportSize === false || $reportSize > self::MAX_REPORT_BYTES) {
@@ -265,16 +274,23 @@ class KoSITValidatorService {
             // in an untrusted validator report.
             $xpath->registerNamespace('varl', 'http://www.xoev.de/de/validator/varl/1');
 
-            $accepted = $xpath->query(
+            $acceptedNodes = $xpath->query(
                 '/varl:report/varl:assessment/varl:accept',
                 null,
                 false
-            )?->length > 0;
-            $rejected = $xpath->query(
+            );
+            $rejectedNodes = $xpath->query(
                 '/varl:report/varl:assessment/varl:reject',
                 null,
                 false
-            )?->length > 0;
+            );
+
+            if ($acceptedNodes === false || $rejectedNodes === false) {
+                throw new ValidationException('Validator report assessment could not be queried');
+            }
+
+            $accepted = $acceptedNodes->length > 0;
+            $rejected = $rejectedNodes->length > 0;
 
             if ($accepted && $rejected) {
                 throw new ValidationException('Validator report contains conflicting assessments');
@@ -295,7 +311,9 @@ class KoSITValidatorService {
         }
     }
 
-    private function findReportFiles(string $tempDir): array {
+    /** @return array{html: ?string, xml: ?string} */
+    private function findReportFiles(string $tempDir): array
+    {
         $result = [
             'html' => null,
             'xml' => null,

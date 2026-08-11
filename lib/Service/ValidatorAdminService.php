@@ -7,7 +7,8 @@ namespace OCA\KoSITValidator\Service;
 use OCA\KoSITValidator\Exception\AdministrationException;
 use OCP\Http\Client\IClientService;
 
-class ValidatorAdminService {
+class ValidatorAdminService
+{
     private const RELEASE_API = 'https://api.github.com/repos/itplr-kosit/validator/releases/latest';
     private const RELEASE_PAGE = 'https://github.com/itplr-kosit/validator/releases';
     private const MAX_DOWNLOAD_BYTES = 150 * 1024 * 1024;
@@ -25,7 +26,8 @@ class ValidatorAdminService {
     }
 
     /** @return array<string, mixed> */
-    public function getStatus(bool $checkUpdates = true): array {
+    public function getStatus(bool $checkUpdates = true): array
+    {
         $jar = $this->config->getValidatorJar();
         $installedVersion = $this->readInstalledVersion($jar);
         $release = null;
@@ -63,15 +65,18 @@ class ValidatorAdminService {
     }
 
     /** @return array<string, mixed> */
-    public function installLatest(): array {
+    public function installLatest(): array
+    {
         $release = $this->fetchLatestRelease();
         $asset = $release['asset'];
         $target = $this->config->getValidatorJar();
         $targetDirectory = dirname($target);
 
-        if (!is_dir($targetDirectory)
+        if (
+            !is_dir($targetDirectory)
             && !mkdir($targetDirectory, 0750, true)
-            && !is_dir($targetDirectory)) {
+            && !is_dir($targetDirectory)
+        ) {
             throw new AdministrationException(
                 'Installationsverzeichnis konnte nicht angelegt werden: ' . $targetDirectory
             );
@@ -99,10 +104,11 @@ class ValidatorAdminService {
             $body = $this->download($asset['url']);
             $this->verifyDownload($body, $asset['digest'] ?? null);
 
-            $temporary = tempnam($targetDirectory, '.validator-');
-            if ($temporary === false) {
+            $candidate = tempnam($targetDirectory, '.validator-');
+            if ($candidate === false) {
                 throw new AdministrationException('Temporäre Installationsdatei konnte nicht angelegt werden.');
             }
+            $temporary = $candidate;
 
             if (file_put_contents($temporary, $body, LOCK_EX) !== strlen($body)) {
                 throw new AdministrationException('Validator-JAR konnte nicht vollständig geschrieben werden.');
@@ -132,7 +138,8 @@ class ValidatorAdminService {
     }
 
     /** @return array{path: string, content: string, checksum: string, writable: bool} */
-    public function readScenario(): array {
+    public function readScenario(): array
+    {
         $path = $this->config->getScenarioFile();
 
         if (!is_file($path) || !is_readable($path)) {
@@ -157,7 +164,8 @@ class ValidatorAdminService {
         ];
     }
 
-    public function saveScenario(mixed $content, mixed $checksum): void {
+    public function saveScenario(mixed $content, mixed $checksum): void
+    {
         if (!is_string($content) || $content === '') {
             throw new \InvalidArgumentException('Der Inhalt der Szenario-Datei darf nicht leer sein.');
         }
@@ -198,10 +206,11 @@ class ValidatorAdminService {
                 );
             }
 
-            $temporary = tempnam(dirname($path), '.scenario-');
-            if ($temporary === false) {
+            $candidate = tempnam(dirname($path), '.scenario-');
+            if ($candidate === false) {
                 throw new AdministrationException('Temporäre Szenario-Datei konnte nicht angelegt werden.');
             }
+            $temporary = $candidate;
             if (file_put_contents($temporary, $content, LOCK_EX) !== strlen($content)) {
                 throw new AdministrationException('Szenario-Datei konnte nicht vollständig geschrieben werden.');
             }
@@ -221,7 +230,8 @@ class ValidatorAdminService {
         }
     }
 
-    private function validateScenarioXml(string $content): void {
+    private function validateScenarioXml(string $content): void
+    {
         if (preg_match('/<!DOCTYPE\s/i', $content) === 1) {
             throw new \InvalidArgumentException('DOCTYPE-Deklarationen sind nicht erlaubt.');
         }
@@ -243,9 +253,11 @@ class ValidatorAdminService {
         }
 
         $root = $document->documentElement;
-        if ($root === null
+        if (
+            $root === null
             || $root->localName !== 'scenarios'
-            || $root->namespaceURI !== self::SCENARIO_NAMESPACE) {
+            || $root->namespaceURI !== self::SCENARIO_NAMESPACE
+        ) {
             throw new \InvalidArgumentException(
                 'Das Wurzelelement muss „scenarios“ im KoSIT-Szenario-Namensraum sein.'
             );
@@ -253,7 +265,8 @@ class ValidatorAdminService {
     }
 
     /** @return array{version: string, asset: array{url: string, digest: ?string}} */
-    private function fetchLatestRelease(): array {
+    private function fetchLatestRelease(): array
+    {
         $response = $this->clientService->newClient()->get(self::RELEASE_API, [
             'connect_timeout' => 10,
             'timeout' => 20,
@@ -320,7 +333,8 @@ class ValidatorAdminService {
         throw new AdministrationException('Standalone-JAR im neuesten GitHub-Release nicht gefunden.');
     }
 
-    private function download(string $url): string {
+    private function download(string $url): string
+    {
         $response = $this->clientService->newClient()->get($url, [
             'connect_timeout' => 15,
             'timeout' => 120,
@@ -341,7 +355,8 @@ class ValidatorAdminService {
         return $body;
     }
 
-    private function verifyDownload(string $body, ?string $digest): void {
+    private function verifyDownload(string $body, ?string $digest): void
+    {
         if (!str_starts_with($body, "PK\x03\x04")) {
             throw new AdministrationException('Der Download ist keine gültige JAR-Datei.');
         }
@@ -358,7 +373,8 @@ class ValidatorAdminService {
         }
     }
 
-    private function isExpectedDownloadUrl(string $url, string $expectedName): bool {
+    private function isExpectedDownloadUrl(string $url, string $expectedName): bool
+    {
         $parts = parse_url($url);
 
         return is_array($parts)
@@ -375,7 +391,8 @@ class ValidatorAdminService {
             && basename($parts['path']) === $expectedName;
     }
 
-    private function readInstalledVersion(string $jar): ?string {
+    private function readInstalledVersion(string $jar): ?string
+    {
         if (!is_file($jar)) {
             return null;
         }
@@ -394,8 +411,10 @@ class ValidatorAdminService {
                     $zip->close();
                 }
 
-                if (is_string($manifest)
-                    && preg_match('/^(?:Implementation-Version|Bundle-Version):\s*(\S+)/mi', $manifest, $matches) === 1) {
+                if (
+                    is_string($manifest)
+                    && preg_match('/^(?:Implementation-Version|Bundle-Version):\s*(\S+)/mi', $manifest, $matches) === 1
+                ) {
                     return ltrim(trim($matches[1]), 'vV');
                 }
             }
@@ -408,7 +427,8 @@ class ValidatorAdminService {
         ) === 1 ? $matches[1] : null;
     }
 
-    private function writeVersionMarker(string $jar, string $version): void {
+    private function writeVersionMarker(string $jar, string $version): void
+    {
         $metadata = json_encode([
             'version' => $version,
             'size' => filesize($jar),
@@ -422,7 +442,8 @@ class ValidatorAdminService {
         chmod($jar . '.version', 0640);
     }
 
-    private function readVersionMarker(string $jar): ?string {
+    private function readVersionMarker(string $jar): ?string
+    {
         $marker = @file_get_contents($jar . '.version');
         if ($marker === false) {
             return null;
@@ -435,17 +456,20 @@ class ValidatorAdminService {
         }
 
         $version = is_array($metadata) ? ($metadata['version'] ?? null) : null;
-        if (!is_string($version)
+        if (
+            !is_string($version)
             || !preg_match('/^[0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$/', $version)
             || ($metadata['size'] ?? null) !== filesize($jar)
-            || ($metadata['modified'] ?? null) !== filemtime($jar)) {
+            || ($metadata['modified'] ?? null) !== filemtime($jar)
+        ) {
             return null;
         }
 
         return $version;
     }
 
-    private function fileState(string $path, bool $executable = false): string {
+    private function fileState(string $path, bool $executable = false): string
+    {
         if (!is_file($path)) {
             return 'missing';
         }
@@ -453,7 +477,8 @@ class ValidatorAdminService {
         return !$executable || is_executable($path) ? 'available' : 'not-executable';
     }
 
-    private function directoryState(string $path, bool $mayBeCreated = false): string {
+    private function directoryState(string $path, bool $mayBeCreated = false): string
+    {
         if (is_dir($path)) {
             return 'available';
         }

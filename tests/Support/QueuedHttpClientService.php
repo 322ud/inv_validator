@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\KoSITValidator\Tests\Support;
 
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IClient;
 
 final class QueuedHttpClientService implements IClientService {
     /** @var list<FakeHttpResponse|\Throwable> */
@@ -18,12 +19,12 @@ final class QueuedHttpClientService implements IClientService {
         $this->responses = $responses;
     }
 
-    public function newClient(): object {
-        return new class($this) {
+    public function newClient(): IClient {
+        return new class($this) implements IClient {
             public function __construct(private QueuedHttpClientService $service) {}
 
             /** @param array<string, mixed> $options */
-            public function get(string $url, array $options): FakeHttpResponse {
+            public function get(string $url, array $options = []): FakeHttpResponse {
                 return $this->service->respond($url, $options);
             }
         };

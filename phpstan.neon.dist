@@ -1,0 +1,9 @@
+parameters:
+    level: 8
+    paths:
+        - lib
+    bootstrapFiles:
+        - tests/stubs/nextcloud.php
+    tmpDir: .phpstan-cache
+    parallel:
+        maximumNumberOfProcesses: 1

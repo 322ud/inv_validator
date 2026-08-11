@@ -1,6 +1,7 @@
 /deploy.sh
 /.vscode/
 /.phpunit.cache/
+/.phpstan-cache/
 /vendor/
 /coverage/
 /node_modules/

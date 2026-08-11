@@ -2,5 +2,6 @@
 
 namespace OCA\KoSITValidator\Exception;
 
-class ValidationException extends \RuntimeException {
+class ValidationException extends \RuntimeException
+{
 }

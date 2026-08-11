@@ -11,7 +11,8 @@ use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
-class AdminController extends Controller {
+class AdminController extends Controller
+{
     public function __construct(
         string $appName,
         IRequest $request,
@@ -22,7 +23,8 @@ class AdminController extends Controller {
         parent::__construct($appName, $request);
     }
 
-    public function status(): DataResponse {
+    public function status(): DataResponse
+    {
         if ($this->request->getParam('scenario') === '1') {
             try {
                 return new DataResponse([
@@ -48,7 +50,8 @@ class AdminController extends Controller {
         ]);
     }
 
-    public function install(): DataResponse {
+    public function install(): DataResponse
+    {
         try {
             return new DataResponse([
                 'success' => true,
@@ -68,7 +71,8 @@ class AdminController extends Controller {
         }
     }
 
-    public function savePaths(): DataResponse {
+    public function savePaths(): DataResponse
+    {
         if ($this->request->getParam('action') === 'saveScenario') {
             return $this->saveScenario();
         }
@@ -105,7 +109,8 @@ class AdminController extends Controller {
         }
     }
 
-    private function saveScenario(): DataResponse {
+    private function saveScenario(): DataResponse
+    {
         try {
             $this->adminService->saveScenario(
                 $this->request->getParam('content'),

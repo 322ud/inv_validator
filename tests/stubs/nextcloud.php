@@ -21,13 +21,28 @@ namespace OCP\AppFramework\Services {
 }
 
 namespace OCP\Http\Client {
+    interface IResponse {
+        public function getStatusCode(): int;
+
+        public function getBody(): mixed;
+    }
+
+    interface IClient {
+        /** @param array<string, mixed> $options */
+        public function get(string $url, array $options = []): IResponse;
+    }
+
     interface IClientService {
-        public function newClient(): object;
+        public function newClient(): IClient;
     }
 }
 
 namespace OCP\AppFramework {
     use OCP\IRequest;
+
+    class App {
+        public function __construct(protected string $appName) {}
+    }
 
     class Controller {
         public function __construct(
@@ -52,9 +67,33 @@ namespace OCP\AppFramework\Http {
             return $this->status;
         }
     }
+
+    class TemplateResponse {
+        /** @param array<string, mixed> $parameters */
+        public function __construct(
+            private string $appName,
+            private string $templateName,
+            private array $parameters = []
+        ) {}
+    }
 }
 
 namespace OCP\AppFramework\Http\Attribute {
     #[\Attribute(\Attribute::TARGET_METHOD)]
     class NoAdminRequired {}
+
+    #[\Attribute(\Attribute::TARGET_METHOD)]
+    class NoCSRFRequired {}
+}
+
+namespace OCP\Settings {
+    use OCP\AppFramework\Http\TemplateResponse;
+
+    interface ISettings {
+        public function getForm(): TemplateResponse;
+
+        public function getSection(): string;
+
+        public function getPriority(): int;
+    }
 }

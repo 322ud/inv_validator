@@ -7,7 +7,8 @@ namespace OCA\KoSITValidator\Service;
 use OCP\AppFramework\Services\IAppConfig;
 use OCP\IConfig;
 
-class ValidatorConfigService {
+class ValidatorConfigService
+{
     private const DEFAULT_VALIDATOR_JAR = '/opt/kosit/validator-1.6.2-standalone.jar';
 
     private const PATH_KEYS = [
@@ -21,9 +22,11 @@ class ValidatorConfigService {
     public function __construct(
         private IConfig $config,
         private IAppConfig $appConfig
-    ) {}
+    ) {
+    }
 
-    public function getJavaBinary(): string {
+    public function getJavaBinary(): string
+    {
         $configured = $this->getConfiguredPath(
             self::PATH_KEYS['javaBinary'],
             'kosit_validator_java_binary',
@@ -37,7 +40,8 @@ class ValidatorConfigService {
         return $this->findExecutable('java') ?? '/usr/bin/java';
     }
 
-    public function getValidatorJar(): string {
+    public function getValidatorJar(): string
+    {
         $configured = $this->getConfiguredPath(
             self::PATH_KEYS['validatorJar'],
             'kosit_validator_jar',
@@ -59,7 +63,8 @@ class ValidatorConfigService {
         return $jars[0] ?? self::DEFAULT_VALIDATOR_JAR;
     }
 
-    public function getRepositoryPath(): string {
+    public function getRepositoryPath(): string
+    {
         return $this->getConfiguredPath(
             self::PATH_KEYS['repositoryPath'],
             'kosit_validator_repository',
@@ -67,7 +72,8 @@ class ValidatorConfigService {
         );
     }
 
-    public function getScenarioFile(): string {
+    public function getScenarioFile(): string
+    {
         return $this->getConfiguredPath(
             self::PATH_KEYS['scenarioFile'],
             'kosit_validator_scenarios',
@@ -75,7 +81,8 @@ class ValidatorConfigService {
         );
     }
 
-    public function getTempDirectory(): string {
+    public function getTempDirectory(): string
+    {
         return $this->getConfiguredPath(
             self::PATH_KEYS['tempDirectory'],
             'kosit_validator_temp_directory',
@@ -83,16 +90,19 @@ class ValidatorConfigService {
         );
     }
 
-    public function getPhpBinary(): string {
+    public function getPhpBinary(): string
+    {
         return PHP_BINARY;
     }
 
-    public function getAppDirectory(): string {
+    public function getAppDirectory(): string
+    {
         return dirname(__DIR__, 2);
     }
 
     /** @param array<string, mixed> $paths */
-    public function savePaths(array $paths): void {
+    public function savePaths(array $paths): void
+    {
         $labels = [
             'javaBinary' => 'Java',
             'validatorJar' => 'Validator-JAR',
@@ -128,7 +138,8 @@ class ValidatorConfigService {
         return $this->config->getSystemValueString($systemKey, $default);
     }
 
-    private function normalizeAbsolutePath(string $label, mixed $value): string {
+    private function normalizeAbsolutePath(string $label, mixed $value): string
+    {
         if (!is_string($value)) {
             throw new \InvalidArgumentException($label . ': ungültiger Pfad.');
         }
@@ -150,7 +161,8 @@ class ValidatorConfigService {
         return $value === '/' ? $value : rtrim($value, '/');
     }
 
-    private function findExecutable(string $name): ?string {
+    private function findExecutable(string $name): ?string
+    {
         $path = getenv('PATH');
 
         if (!is_string($path) || $path === '') {
@@ -173,7 +185,8 @@ class ValidatorConfigService {
         return null;
     }
 
-    private static function versionFromFilename(string $path): ?string {
+    private static function versionFromFilename(string $path): ?string
+    {
         return preg_match(
             '/validator-([0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?)-standalone\.jar$/',
             basename($path),

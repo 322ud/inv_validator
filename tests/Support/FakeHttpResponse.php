@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace OCA\KoSITValidator\Tests\Support;
 
-final class FakeHttpResponse {
+use OCP\Http\Client\IResponse;
+
+final class FakeHttpResponse implements IResponse {
     public function __construct(
         private int $statusCode,
         private string $body

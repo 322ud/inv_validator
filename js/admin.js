@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             result = JSON.parse(responseBody);
-        } catch (error) {
+        } catch {
             throw new Error(`Unerwartete Serverantwort (HTTP ${response.status}).`);
         }
 

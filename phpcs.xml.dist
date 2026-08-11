@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset name="KoSIT Validator">
+    <description>Code style rules for the KoSIT Validator production code.</description>
+
+    <file>lib</file>
+
+    <arg name="colors"/>
+    <arg name="extensions" value="php"/>
+    <arg name="parallel" value="4"/>
+    <arg name="warning-severity" value="0"/>
+    <arg value="sp"/>
+
+    <rule ref="PSR12"/>
+</ruleset>

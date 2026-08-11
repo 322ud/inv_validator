@@ -12,8 +12,8 @@ use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
-class ValidationController extends Controller {
-
+class ValidationController extends Controller
+{
     public function __construct(
         string $appName,
         IRequest $request,
@@ -24,7 +24,8 @@ class ValidationController extends Controller {
     }
 
     #[NoAdminRequired]
-    public function validate(): DataResponse {
+    public function validate(): DataResponse
+    {
         $xml = (string)$this->request->getParam('xml', '');
 
         if ($xml === '') {
@@ -79,7 +80,8 @@ class ValidationController extends Controller {
         }
     }
 
-    private function isWellFormedXml(string $xml): bool {
+    private function isWellFormedXml(string $xml): bool
+    {
         if (trim($xml) === '') {
             return false;
         }
