@@ -181,6 +181,8 @@ Aktueller Implementierungsstand:
   erreichbar und ebenfalls CSRF-geschützt.
 - Es wird höchstens ein Validator-Prozess gleichzeitig ausgeführt.
 - Prozessausgaben und Berichte besitzen serverseitige Größenlimits.
+- XML-Berichte müssen wohlgeformt sein, den KoSIT-Namensraum verwenden und
+  genau eine eindeutige Bewertung enthalten; `DOCTYPE` ist nicht erlaubt.
 - Es existiert derzeit keine Gruppen- oder Rollenprüfung.
 
 Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administratoren oder definierte Benutzergruppen beschränkt werden soll.

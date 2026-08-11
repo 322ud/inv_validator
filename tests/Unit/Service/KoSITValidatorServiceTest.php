@@ -69,6 +69,58 @@ final class KoSITValidatorServiceTest extends TestCase {
         $this->invoke('readReportValidity', $report);
     }
 
+    public function testRejectsMalformedReportContainingRawAcceptMarker(): void {
+        $report = $this->writeReport(
+            '<rep:report xmlns:rep="http://www.xoev.de/de/validator/varl/1">'
+            . '<rep:assessment><rep:accept/></rep:assessment><broken></rep:report>'
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('unreadable XML report');
+        $this->invoke('readReportValidity', $report);
+    }
+
+    public function testAcceptsCorrectNamespaceWithArbitraryDocumentPrefix(): void {
+        $report = $this->writeReport(
+            '<result:report xmlns:result="http://www.xoev.de/de/validator/varl/1">'
+            . '<result:assessment><result:accept/></result:assessment></result:report>'
+        );
+
+        self::assertTrue($this->invoke('readReportValidity', $report));
+    }
+
+    public function testDocumentCannotShadowInternalXpathPrefix(): void {
+        $report = $this->writeReport(
+            '<rep:report xmlns:rep="http://www.xoev.de/de/validator/varl/1" xmlns:varl="urn:attacker">'
+            . '<rep:assessment><rep:accept/></rep:assessment></rep:report>'
+        );
+
+        self::assertTrue($this->invoke('readReportValidity', $report));
+    }
+
+    public function testRejectsConflictingAssessments(): void {
+        $report = $this->writeReport(
+            '<rep:report xmlns:rep="http://www.xoev.de/de/validator/varl/1"><rep:assessment>'
+            . '<rep:accept/><rep:reject/></rep:assessment></rep:report>'
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('conflicting assessments');
+        $this->invoke('readReportValidity', $report);
+    }
+
+    public function testRejectsDoctypeAndExternalEntityDeclaration(): void {
+        $report = $this->writeReport(
+            '<!DOCTYPE rep:report [<!ENTITY secret SYSTEM "file:///etc/passwd">]>'
+            . '<rep:report xmlns:rep="http://www.xoev.de/de/validator/varl/1">'
+            . '<rep:assessment><rep:accept/></rep:assessment></rep:report>'
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('DOCTYPE');
+        $this->invoke('readReportValidity', $report);
+    }
+
     public function testFindsReportsRecursively(): void {
         $nested = $this->temporaryDirectory . '/nested';
         mkdir($nested);

@@ -235,6 +235,10 @@ class KoSITValidatorService {
             throw new ValidationException('Validator XML report could not be read');
         }
 
+        if (preg_match('/<!DOCTYPE\s/i', $reportXml) === 1) {
+            throw new ValidationException('Validator report contains a DOCTYPE declaration');
+        }
+
         $previous = libxml_use_internal_errors(true);
         libxml_clear_errors();
 
@@ -246,12 +250,6 @@ class KoSITValidatorService {
             );
 
             if (!$loaded) {
-                $fallbackValidity = $this->readRawReportValidity($reportXml);
-
-                if ($fallbackValidity !== null) {
-                    return $fallbackValidity;
-                }
-
                 $errors = libxml_get_errors();
                 $detail = isset($errors[0])
                     ? trim($errors[0]->message) . ' at line ' . $errors[0]->line
@@ -267,11 +265,26 @@ class KoSITValidatorService {
             // in an untrusted validator report.
             $xpath->registerNamespace('varl', 'http://www.xoev.de/de/validator/varl/1');
 
-            if ($xpath->query('/varl:report/varl:assessment/varl:accept')?->length > 0) {
+            $accepted = $xpath->query(
+                '/varl:report/varl:assessment/varl:accept',
+                null,
+                false
+            )?->length > 0;
+            $rejected = $xpath->query(
+                '/varl:report/varl:assessment/varl:reject',
+                null,
+                false
+            )?->length > 0;
+
+            if ($accepted && $rejected) {
+                throw new ValidationException('Validator report contains conflicting assessments');
+            }
+
+            if ($accepted) {
                 return true;
             }
 
-            if ($xpath->query('/varl:report/varl:assessment/varl:reject')?->length > 0) {
+            if ($rejected) {
                 return false;
             }
 
@@ -280,24 +293,6 @@ class KoSITValidatorService {
             libxml_clear_errors();
             libxml_use_internal_errors($previous);
         }
-    }
-
-    private function readRawReportValidity(string $reportXml): ?bool {
-        if (preg_match(
-            '~<rep:assessment\b[^>]*>.*?<rep:accept\b~s',
-            $reportXml
-        ) === 1) {
-            return true;
-        }
-
-        if (preg_match(
-            '~<rep:assessment\b[^>]*>.*?<rep:reject\b~s',
-            $reportXml
-        ) === 1) {
-            return false;
-        }
-
-        return null;
     }
 
     private function findReportFiles(string $tempDir): array {
