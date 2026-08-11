@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('kosit-xml-file');
     const dropZone = document.getElementById('kosit-drop-zone');
     const selectedFileName = document.getElementById('kosit-selected-file');
-    const button = document.getElementById('kosit-validate-button');
+    const selectFileButton = document.getElementById('kosit-select-file-button');
     const status = document.getElementById('kosit-status');
     const reportActions = document.getElementById('kosit-report-actions');
     const printButton = document.getElementById('kosit-print-button');
@@ -17,30 +17,39 @@ document.addEventListener('DOMContentLoaded', () => {
     let resetHeightBeforeResize = false;
     let reportContentWidth = 0;
     let reportHtml = '';
-    let selectedFile = null;
 
     const selectFile = (file) => {
-        selectedFile = file || null;
-        selectedFileName.textContent = selectedFile
-            ? selectedFile.name
+        selectedFileName.textContent = file
+            ? file.name
             : 'Keine Datei ausgewählt';
     };
 
-    fileInput.addEventListener('change', () => {
-        selectFile(fileInput.files[0]);
-    });
+    const openFileDialog = () => {
+        if (selectFileButton.disabled) {
+            return;
+        }
 
-    dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.value = '';
+        fileInput.click();
+    };
+
+    selectFileButton.addEventListener('click', openFileDialog);
+    dropZone.addEventListener('click', openFileDialog);
     dropZone.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            fileInput.click();
+            openFileDialog();
         }
     });
 
     ['dragenter', 'dragover'].forEach((eventName) => {
         dropZone.addEventListener(eventName, (event) => {
             event.preventDefault();
+
+            if (selectFileButton.disabled) {
+                return;
+            }
+
             event.dataTransfer.dropEffect = 'copy';
             dropZone.classList.add('is-dragover');
         });
@@ -56,13 +65,20 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         dropZone.classList.remove('is-dragover');
 
+        if (selectFileButton.disabled) {
+            return;
+        }
+
         if (event.dataTransfer.files.length !== 1) {
             status.textContent = 'Bitte genau eine XML-Datei ablegen.';
             return;
         }
 
+        const file = event.dataTransfer.files[0];
+
         fileInput.value = '';
-        selectFile(event.dataTransfer.files[0]);
+        selectFile(file);
+        validateFile(file);
     });
 
     const addPrintStyles = (frameDocument) => {
@@ -322,21 +338,15 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', resizeValidator);
     resizeValidator();
 
-    button.addEventListener('click', async () => {
-        const file = selectedFile;
-
-        if (!file) {
-            status.textContent = 'Bitte eine XML-Datei auswählen.';
-            return;
-        }
-
+    const validateFile = async (file) => {
         if (file.size > maxXmlSize) {
             status.textContent = 'XML-Datei ist zu groß. Maximal erlaubt sind 5 MB.';
             return;
         }
 
         status.textContent = 'Validierung läuft ...';
-        button.disabled = true;
+        selectFileButton.disabled = true;
+        dropZone.setAttribute('aria-disabled', 'true');
         printButton.disabled = true;
         downloadButton.disabled = true;
         reportActions.hidden = true;
@@ -383,7 +393,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             status.textContent = 'Fehler beim Aufruf des Validators.';
         } finally {
-            button.disabled = false;
+            selectFileButton.disabled = false;
+            dropZone.removeAttribute('aria-disabled');
         }
+    };
+
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        selectFile(file);
+        validateFile(file);
     });
 });
