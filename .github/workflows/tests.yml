@@ -51,3 +51,59 @@ jobs:
         run: npm run lint
       - name: Run JavaScript tests
         run: npm test
+
+  nextcloud:
+    name: Nextcloud 34 integration
+    runs-on: ubuntu-latest
+    env:
+      NEXTCLOUD_VERSION: 34.0.2
+      NEXTCLOUD_ROOT: ${{ runner.temp }}/nextcloud-integration
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: apcu, bz2, curl, dom, fileinfo, gd, intl, libxml, mbstring, pdo_sqlite, posix, session, simplexml, sqlite3, xml, xmlreader, xmlwriter, zip
+          tools: composer:v2
+      - name: Install app dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Cache Nextcloud release
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/nextcloud-${{ env.NEXTCLOUD_VERSION }}.tar.bz2
+          key: nextcloud-${{ env.NEXTCLOUD_VERSION }}-release
+      - name: Download and verify Nextcloud
+        working-directory: ${{ runner.temp }}
+        run: |
+          archive="nextcloud-${NEXTCLOUD_VERSION}.tar.bz2"
+          if [ ! -f "$archive" ]; then
+            curl --fail --silent --show-error --location \
+              "https://download.nextcloud.com/server/releases/$archive" \
+              --output "$archive"
+          fi
+          curl --fail --silent --show-error --location \
+            "https://download.nextcloud.com/server/releases/$archive.sha256" \
+            | head -n 1 \
+            | sha256sum --check --strict -
+      - name: Install Nextcloud and enable app
+        run: |
+          mkdir "$NEXTCLOUD_ROOT"
+          tar --extract --bzip2 \
+            --file "${{ runner.temp }}/nextcloud-${NEXTCLOUD_VERSION}.tar.bz2" \
+            --directory "$NEXTCLOUD_ROOT" \
+            --strip-components=1
+          cp --archive "$GITHUB_WORKSPACE" "$NEXTCLOUD_ROOT/apps/kosit_validator"
+          cd "$NEXTCLOUD_ROOT"
+          php occ maintenance:install \
+            --database sqlite \
+            --admin-user admin \
+            --admin-pass integration-test-password
+          php occ app:enable kosit_validator
+          php occ app:list --enabled | grep --fixed-strings --line-regexp '  - kosit_validator: 0.4.1'
+      - name: Run Nextcloud framework integration tests
+        run: |
+          "$NEXTCLOUD_ROOT/apps/kosit_validator/vendor/bin/phpunit" \
+            --configuration "$NEXTCLOUD_ROOT/apps/kosit_validator/tests/Nextcloud/phpunit.xml"

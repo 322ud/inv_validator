@@ -276,7 +276,9 @@ Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den
 HTTP-Vertrag der Validierungs- und Admin-Endpunkte ab.
 
 Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2,
-8.3, 8.4 und 8.5 sowie die JavaScript-Suite mit Node.js 22 aus.
+8.3, 8.4 und 8.5 sowie die JavaScript-Suite mit Node.js 22 aus. Ein zusätzlicher
+Integrationsjob installiert Nextcloud 34, aktiviert die App und prüft Container,
+Routen, Templates sowie die Admin- und CSRF-Attribute gegen das echte Framework.
 
 ---
 
