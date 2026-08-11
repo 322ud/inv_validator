@@ -285,6 +285,9 @@ Java-Prozess und prüft außerdem die Ablehnung einer gezielt beschädigten Vari
 Der Nextcloud-Job führt zusätzlich mit Playwright den vollständigen Browserfluss
 vom Login und Datei-Upload bis zum eingebetteten und herunterladbaren Prüfbericht
 für gültige, fachlich ungültige und nicht wohlgeformte XML-Dateien aus.
+Auch der administrative Browserfluss wird geprüft: Pfade werden CSRF-geschützt
+gespeichert und wiederhergestellt, die Szenariodatei wird geladen und gespeichert,
+und eine ungültige Szenariokonfiguration wird sichtbar abgelehnt.
 
 ---
 
