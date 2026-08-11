@@ -270,6 +270,16 @@ npm run lint
 npm test
 ```
 
+Ein reproduzierbares Produktionsarchiv mit SHA-256-Datei erzeugen:
+
+```bash
+bash scripts/build-release.sh
+```
+
+Das Archiv unter `dist/` enthält ausschließlich die zur Laufzeit benötigten
+App-Dateien. CI installiert genau dieses Archiv zusätzlich in einer frischen
+Nextcloud-34-Instanz, aktiviert die App und führt Framework-Smoke-Tests aus.
+
 Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die
 Pfadkonfiguration, atomare Szenario- und Validator-Updates, externe
 Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den

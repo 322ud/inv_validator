@@ -212,3 +212,105 @@ jobs:
         run: |
           export KOSIT_JAVA_BINARY="$JAVA_HOME/bin/java"
           vendor/bin/phpunit --configuration tests/EndToEnd/phpunit.xml
+
+  release-package:
+    name: Production release package
+    runs-on: ubuntu-latest
+    needs: [php, javascript, nextcloud, kosit]
+    env:
+      NEXTCLOUD_VERSION: 34.0.2
+      NEXTCLOUD_PACKAGE_ROOT: ${{ runner.temp }}/nextcloud-package-test
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: apcu, bz2, curl, dom, fileinfo, gd, intl, libxml, mbstring, pdo_sqlite, posix, session, simplexml, sqlite3, xml, xmlreader, xmlwriter, zip
+          tools: composer:v2
+      - name: Install test dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Build reproducible app package
+        id: package
+        run: |
+          archive="$(bash scripts/build-release.sh)"
+          comparison_archive="$(bash scripts/build-release.sh "${{ runner.temp }}/release-reproducibility-check")"
+          cmp "$archive" "$comparison_archive"
+          filename="$(basename "$archive")"
+          version="${filename#kosit_validator-}"
+          version="${version%.tar.gz}"
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+          echo "checksum=$archive.sha256" >> "$GITHUB_OUTPUT"
+          echo "name=${filename%.tar.gz}" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Verify archive structure
+        run: |
+          archive="${{ steps.package.outputs.archive }}"
+          tar --list --gzip --file "$archive" \
+            | while IFS= read -r entry; do
+                case "$entry" in
+                  kosit_validator|kosit_validator/*) ;;
+                  *) echo "Unexpected archive entry: $entry" >&2; exit 1 ;;
+                esac
+              done
+          tar --list --gzip --file "$archive" \
+            | rg --fixed-strings --line-regexp 'kosit_validator/appinfo/info.xml'
+          if tar --list --gzip --file "$archive" \
+            | rg '(^|/)(\.git|\.github|composer\.(json|lock)|node_modules|package(-lock)?\.json|tests|vendor)(/|$)'; then
+            echo 'Development files found in release archive' >&2
+            exit 1
+          fi
+          cd "$(dirname "$archive")"
+          sha256sum --check --strict "$(basename "$archive").sha256"
+      - name: Cache Nextcloud release
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/nextcloud-${{ env.NEXTCLOUD_VERSION }}.tar.bz2
+          key: nextcloud-${{ env.NEXTCLOUD_VERSION }}-release
+      - name: Download and verify Nextcloud
+        working-directory: ${{ runner.temp }}
+        run: |
+          archive="nextcloud-${NEXTCLOUD_VERSION}.tar.bz2"
+          if [ ! -f "$archive" ]; then
+            curl --fail --silent --show-error --location \
+              "https://download.nextcloud.com/server/releases/$archive" \
+              --output "$archive"
+          fi
+          curl --fail --silent --show-error --location \
+            "https://download.nextcloud.com/server/releases/$archive.sha256" \
+            | head -n 1 \
+            | sha256sum --check --strict -
+      - name: Install package in a fresh Nextcloud
+        run: |
+          mkdir "$NEXTCLOUD_PACKAGE_ROOT"
+          tar --extract --bzip2 \
+            --file "${{ runner.temp }}/nextcloud-${NEXTCLOUD_VERSION}.tar.bz2" \
+            --directory "$NEXTCLOUD_PACKAGE_ROOT" \
+            --strip-components=1
+          tar --extract --gzip \
+            --file "${{ steps.package.outputs.archive }}" \
+            --directory "$NEXTCLOUD_PACKAGE_ROOT/apps"
+          cd "$NEXTCLOUD_PACKAGE_ROOT"
+          php occ maintenance:install \
+            --database sqlite \
+            --admin-user package-admin \
+            --admin-pass package-test-password
+          php occ app:enable kosit_validator
+          php occ app:list --enabled \
+            | rg --fixed-strings --line-regexp \
+              '  - kosit_validator: ${{ steps.package.outputs.version }}'
+      - name: Run installed-package smoke tests
+        env:
+          EXPECTED_APP_VERSION: ${{ steps.package.outputs.version }}
+        run: vendor/bin/phpunit --configuration tests/Release/phpunit.xml
+      - name: Upload tested release package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.package.outputs.name }}
+          path: |
+            ${{ steps.package.outputs.archive }}
+            ${{ steps.package.outputs.checksum }}
+          if-no-files-found: error
+          retention-days: 14
