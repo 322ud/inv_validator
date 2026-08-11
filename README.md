@@ -258,17 +258,22 @@ zurückgegeben. Sie werden nicht als fachlich ungültige Rechnung dargestellt.
 
 ## Entwicklung und Tests
 
-Die PHP-Abhängigkeiten installieren und die Unit-Tests ausführen:
+Die Abhängigkeiten installieren und die PHP- sowie JavaScript-Tests ausführen:
 
 ```bash
 composer install
 composer test
+npm ci
+npm test
 ```
 
 Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die
 Pfadkonfiguration, atomare Szenario- und Validator-Updates, externe
 Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den
 HTTP-Vertrag der Validierungs- und Admin-Endpunkte ab.
+
+Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2,
+8.3, 8.4 und 8.5 sowie die JavaScript-Suite mit Node.js 22 aus.
 
 ---
 

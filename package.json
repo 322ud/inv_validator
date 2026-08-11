@@ -1,0 +1,17 @@
+{
+    "name": "kosit-validator-tests",
+    "version": "0.4.1",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "devDependencies": {
+        "jsdom": "30.0.1",
+        "vitest": "4.1.10"
+    },
+    "engines": {
+        "node": ">=22"
+    }
+}
