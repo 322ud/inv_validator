@@ -1,10 +1,28 @@
 #kosit-scroll-container {
+position: relative;
 flex: 1 1 auto;
 width: 100%;
 height: 100%;
 min-width: 0;
 overflow-x: hidden;
 overflow-y: auto;
+isolation: isolate;
+}
+
+#kosit-scroll-container::before {
+content: "";
+position: absolute;
+top: 50%;
+left: 50%;
+z-index: -1;
+width: 80%;
+height: 80%;
+transform: translate(-50%, -50%);
+background-color: var(--color-main-text);
+opacity: 0.2;
+pointer-events: none;
+-webkit-mask: url("../img/app.svg") center / contain no-repeat;
+mask: url("../img/app.svg") center / contain no-repeat;
 }
 
 #kosit-validator.section {
