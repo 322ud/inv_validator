@@ -154,7 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const resizeReportFrame = (resetHeight = false) => {
         const frameDocument = reportFrame.contentDocument;
 
-        if (!frameDocument || reportFrame.style.display === 'none') {
+        if (
+            !frameDocument
+            || !frameDocument.documentElement
+            || reportFrame.style.display === 'none'
+        ) {
             return;
         }
 

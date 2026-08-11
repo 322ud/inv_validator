@@ -288,6 +288,9 @@ für gültige, fachlich ungültige und nicht wohlgeformte XML-Dateien aus.
 Auch der administrative Browserfluss wird geprüft: Pfade werden CSRF-geschützt
 gespeichert und wiederhergestellt, die Szenariodatei wird geladen und gespeichert,
 und eine ungültige Szenariokonfiguration wird sichtbar abgelehnt.
+Ein Sicherheitslauf bestätigt zusätzlich, dass normale Benutzer zwar validieren,
+aber keine Admin-Endpunkte aufrufen dürfen, und dass fehlende oder ungültige
+Request-Tokens weder Pfade noch die Szenariodatei verändern.
 
 ---
 

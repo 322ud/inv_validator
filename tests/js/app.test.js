@@ -127,6 +127,23 @@ describe('validation UI', () => {
         expect(document.getElementById('kosit-report-frame').style.display).toBe('none');
     });
 
+    test('ignores the transient empty iframe document while replacing a report', async () => {
+        await loadApp();
+
+        const frame = document.getElementById('kosit-report-frame');
+        Object.defineProperty(frame, 'contentDocument', {
+            configurable: true,
+            value: {
+                body: null,
+                documentElement: null,
+                head: null,
+            },
+        });
+        frame.style.display = 'block';
+
+        expect(() => frame.dispatchEvent(new Event('load'))).not.toThrow();
+    });
+
     test('shows server message and restores controls after a failed response', async () => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
             success: false,
