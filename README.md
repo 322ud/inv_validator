@@ -266,8 +266,9 @@ composer test
 ```
 
 Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die
-Pfadkonfiguration, atomare Szenario-Updates, Prozessabbrüche und konkurrierende
-Validierungen sowie den HTTP-Vertrag des Validierungsendpunkts ab.
+Pfadkonfiguration, atomare Szenario- und Validator-Updates, externe
+Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den
+HTTP-Vertrag des Validierungsendpunkts ab.
 
 ---
 

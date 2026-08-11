@@ -14,10 +14,15 @@ class ValidatorAdminService {
     private const MAX_SCENARIO_BYTES = 2 * 1024 * 1024;
     private const SCENARIO_NAMESPACE = 'http://www.xoev.de/de/validator/framework/1/scenarios';
 
+    private int $maxDownloadBytes;
+
     public function __construct(
         private ValidatorConfigService $config,
-        private IClientService $clientService
-    ) {}
+        private IClientService $clientService,
+        ?int $maxDownloadBytes = null
+    ) {
+        $this->maxDownloadBytes = $maxDownloadBytes ?? self::MAX_DOWNLOAD_BYTES;
+    }
 
     /** @return array<string, mixed> */
     public function getStatus(bool $checkUpdates = true): array {
@@ -265,22 +270,41 @@ class ValidatorAdminService {
             );
         }
 
-        $data = json_decode((string)$response->getBody(), true, 32, JSON_THROW_ON_ERROR);
-        $tag = is_array($data) ? (string)($data['tag_name'] ?? '') : '';
+        try {
+            $data = json_decode((string)$response->getBody(), true, 32, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new AdministrationException('GitHub lieferte ungültige Release-Daten.', 0, $e);
+        }
+
+        if (!is_array($data) || !is_string($data['tag_name'] ?? null)) {
+            throw new AdministrationException('GitHub lieferte ungültige Release-Daten.');
+        }
+
+        $tag = $data['tag_name'];
         $version = ltrim($tag, 'vV');
 
         if (!preg_match('/^[0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$/', $version)) {
             throw new AdministrationException('GitHub lieferte keine gültige Release-Version.');
         }
 
+        $assets = $data['assets'] ?? null;
+        if (!is_array($assets)) {
+            throw new AdministrationException('GitHub lieferte ungültige Release-Daten.');
+        }
+
         $expectedName = 'validator-' . $version . '-standalone.jar';
-        foreach (($data['assets'] ?? []) as $asset) {
+        foreach ($assets as $asset) {
             if (!is_array($asset) || ($asset['name'] ?? null) !== $expectedName) {
                 continue;
             }
 
-            $url = (string)($asset['browser_download_url'] ?? '');
-            if (!str_starts_with($url, 'https://github.com/itplr-kosit/validator/releases/download/')) {
+            $url = $asset['browser_download_url'] ?? null;
+            $digest = $asset['digest'] ?? null;
+            if (!is_string($url) || ($digest !== null && !is_string($digest))) {
+                throw new AdministrationException('GitHub lieferte ungültige Release-Daten.');
+            }
+
+            if (!$this->isExpectedDownloadUrl($url, $expectedName)) {
                 throw new AdministrationException('GitHub lieferte eine unerwartete Download-Adresse.');
             }
 
@@ -288,7 +312,7 @@ class ValidatorAdminService {
                 'version' => $version,
                 'asset' => [
                     'url' => $url,
-                    'digest' => isset($asset['digest']) ? (string)$asset['digest'] : null,
+                    'digest' => $digest,
                 ],
             ];
         }
@@ -310,7 +334,7 @@ class ValidatorAdminService {
         }
 
         $body = (string)$response->getBody();
-        if ($body === '' || strlen($body) > self::MAX_DOWNLOAD_BYTES) {
+        if ($body === '' || strlen($body) > $this->maxDownloadBytes) {
             throw new AdministrationException('Validator-Download ist leer oder überschreitet 150 MB.');
         }
 
@@ -322,12 +346,33 @@ class ValidatorAdminService {
             throw new AdministrationException('Der Download ist keine gültige JAR-Datei.');
         }
 
-        if ($digest !== null && str_starts_with($digest, 'sha256:')) {
-            $expected = substr($digest, 7);
+        if ($digest !== null) {
+            if (preg_match('/^sha256:([a-f0-9]{64})$/i', $digest, $matches) !== 1) {
+                throw new AdministrationException('Der Download enthält keine gültige SHA-256-Prüfsumme.');
+            }
+
+            $expected = $matches[1];
             if (!hash_equals(strtolower($expected), hash('sha256', $body))) {
                 throw new AdministrationException('SHA-256-Prüfung des Downloads fehlgeschlagen.');
             }
         }
+    }
+
+    private function isExpectedDownloadUrl(string $url, string $expectedName): bool {
+        $parts = parse_url($url);
+
+        return is_array($parts)
+            && ($parts['scheme'] ?? null) === 'https'
+            && ($parts['host'] ?? null) === 'github.com'
+            && !isset($parts['port'])
+            && !isset($parts['user'])
+            && !isset($parts['pass'])
+            && isset($parts['path'])
+            && str_starts_with(
+                $parts['path'],
+                '/itplr-kosit/validator/releases/download/'
+            )
+            && basename($parts['path']) === $expectedName;
     }
 
     private function readInstalledVersion(string $jar): ?string {
