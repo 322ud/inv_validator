@@ -291,6 +291,9 @@ und eine ungültige Szenariokonfiguration wird sichtbar abgelehnt.
 Ein Sicherheitslauf bestätigt zusätzlich, dass normale Benutzer zwar validieren,
 aber keine Admin-Endpunkte aufrufen dürfen, und dass fehlende oder ungültige
 Request-Tokens weder Pfade noch die Szenariodatei verändern.
+Automatisierte Axe-Prüfungen kontrollieren beide App-Oberflächen gegen WCAG 2.0,
+2.1 und 2.2 auf Stufe A/AA. Playwright prüft außerdem die Tastaturauslösung der
+Dateiauswahl und die Fokusübergabe an den Szenarioeditor.
 
 ---
 
