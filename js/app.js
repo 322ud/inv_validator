@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportFrame = document.getElementById('kosit-report-frame');
 
     const maxXmlSize = 5 * 1024 * 1024;
+    const maxPdfSize = 20 * 1024 * 1024;
+    const pdfSupported = validator.dataset.pdfSupported === 'true';
     let reportResizeObserver = null;
     let reportMutationObserver = null;
     let resizeAnimationFrame = null;
@@ -70,7 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (event.dataTransfer.files.length !== 1) {
-            status.textContent = 'Bitte genau eine XML-Datei ablegen.';
+            status.textContent = pdfSupported
+                ? 'Bitte genau eine XML- oder PDF-Datei ablegen.'
+                : 'Bitte genau eine XML-Datei ablegen.';
             return;
         }
 
@@ -343,8 +347,28 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeValidator();
 
     const validateFile = async (file) => {
-        if (file.size > maxXmlSize) {
-            status.textContent = 'XML-Datei ist zu groß. Maximal erlaubt sind 5 MB.';
+        const lowerName = file.name.toLowerCase();
+        const isPdf = lowerName.endsWith('.pdf') || file.type === 'application/pdf';
+        const isXml = lowerName.endsWith('.xml')
+            || file.type === 'application/xml'
+            || file.type === 'text/xml';
+
+        if (isPdf && !pdfSupported) {
+            status.textContent = 'PDF-Eingabe ist auf diesem Server nicht verfügbar.';
+            return;
+        }
+        if (!isPdf && !isXml) {
+            status.textContent = pdfSupported
+                ? 'Bitte eine XML- oder PDF-Datei auswählen.'
+                : 'Bitte eine XML-Datei auswählen.';
+            return;
+        }
+
+        const maxSize = isPdf ? maxPdfSize : maxXmlSize;
+        if (file.size > maxSize) {
+            status.textContent = isPdf
+                ? 'PDF-Datei ist zu groß. Maximal erlaubt sind 20 MB.'
+                : 'XML-Datei ist zu groß. Maximal erlaubt sind 5 MB.';
             return;
         }
 
@@ -361,10 +385,8 @@ document.addEventListener('DOMContentLoaded', () => {
         reportFrame.srcdoc = '';
 
         try {
-            const xml = await file.text();
-
             const formData = new FormData();
-            formData.append('xml', xml);
+            formData.append('document', file, file.name);
             formData.append('requesttoken', OC.requestToken);
 
             const response = await fetch(OC.generateUrl('/apps/kosit_validator/validate'), {
@@ -383,9 +405,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const subject = result.documentType === 'pdf'
+                ? 'Eingebettetes XML'
+                : 'XML';
             status.textContent = result.valid
-            ? 'XML ist gültig.'
-            : 'XML ist nicht gültig.';
+            ? `${subject} ist gültig.`
+            : `${subject} ist nicht gültig.`;
 
             if (result.reportHtml) {
                 reportHtml = result.reportHtml;

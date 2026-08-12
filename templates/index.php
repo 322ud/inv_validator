@@ -5,17 +5,23 @@
     style('kosit_validator', 'app');
 
     $status = $_['status'];
+    $pdfAvailable = (bool)($status['pdfSupport']['available'] ?? false);
 ?>
 
 <div
     id="kosit-scroll-container"
     style="flex:1 1 auto;width:100%;height:100%;min-width:0;overflow-x:hidden;overflow-y:auto;"
 >
-    <div id="kosit-validator" class="section">
+    <div
+        id="kosit-validator"
+        class="section"
+        data-pdf-supported="<?php p($pdfAvailable ? 'true' : 'false'); ?>"
+    >
         <h2>KoSIT Validator</h2>
 
         <p class="kosit-validator-intro">
-            XML-Datei hochladen und gegen den KoSIT Validator
+            XML-Datei<?php if ($pdfAvailable): ?> oder PDF mit eingebettetem XML<?php endif; ?>
+            hochladen und XML gegen den Validator
             <span id="kosit-validator-version">
                 <?php p($status['installedVersion'] ?? 'unbekannt'); ?>
             </span>
@@ -27,12 +33,12 @@
                 aria-label="KoSIT Validator auf GitHub öffnen (neuer Tab)"
                 title="KoSIT Validator auf GitHub"
             >
-                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                    <path d="M9 2h5v5h-2V5.41l-5.3 5.3-1.4-1.42L10.58 4H9V2Z"/>
-                    <path d="M3 3h4v2H4v7h7V9h2v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/>
+                <svg viewBox="0 0 16 16" width="16" height="16" style="color: black" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M9 2h5v5h-2V5.41l-5.3 5.3-1.4-1.42L10.58 4H9V2Z"/>
+                    <path fill="currentColor" d="M3 3h4v2H4v7h7V9h2v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/>
                 </svg>
             </a>
-            prüfen.
+            der Koordinierungsstelle für IT-Standards (KoSIT) prüfen.
         </p>
 
         <?php if ($status['updateAvailable'] && $status['latestVersion'] !== null): ?>
@@ -45,7 +51,7 @@
             <input
                 type="file"
                 id="kosit-xml-file"
-                accept=".xml,text/xml,application/xml"
+                accept=".xml,text/xml,application/xml<?php if ($pdfAvailable): ?>,.pdf,application/pdf<?php endif; ?>"
                 hidden
             >
             <button id="kosit-select-file-button" type="button" class="primary">
@@ -59,7 +65,7 @@
                 aria-controls="kosit-xml-file"
                 aria-describedby="kosit-selected-file"
             >
-                <span>XML-Datei hier fallenlassen</span>
+                <span><?php p($pdfAvailable ? 'XML- oder PDF-Datei hier fallenlassen' : 'XML-Datei hier fallenlassen'); ?></span>
                 <small id="kosit-selected-file" aria-live="polite">Keine Datei ausgewählt</small>
             </div>
         </div>

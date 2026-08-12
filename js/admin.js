@@ -20,6 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const scenarioContent = document.getElementById('kosit-scenario-content');
     const saveScenarioButton = document.getElementById('kosit-save-scenario');
     const cancelScenarioButton = document.getElementById('kosit-cancel-scenario');
+    const pdfAvailability = document.getElementById('kosit-pdf-availability');
+    const pythonVersion = document.getElementById('kosit-python-version');
+    const pymupdfVersion = document.getElementById('kosit-pymupdf-version');
+    const pdfReason = document.getElementById('kosit-pdf-reason');
+    const checkPdfButton = document.getElementById('kosit-check-pdf');
     let scenarioChecksum = '';
 
     const stateLabels = {
@@ -27,6 +32,20 @@ document.addEventListener('DOMContentLoaded', () => {
         creatable: 'Wird bei Bedarf angelegt',
         'not-executable': 'Nicht ausführbar',
         missing: 'Fehlt',
+    };
+
+    const updatePdfSupport = (pdfSupport) => {
+        if (!pdfSupport || !pdfAvailability) {
+            return;
+        }
+
+        pdfAvailability.textContent = pdfSupport.available
+            ? 'Verfügbar'
+            : 'Nicht verfügbar';
+        pythonVersion.textContent = pdfSupport.pythonVersion || 'Nicht ermittelbar';
+        pymupdfVersion.textContent = pdfSupport.pymupdfVersion || 'Nicht installiert';
+        pdfReason.textContent = pdfSupport.reason
+            || 'PDFs mit eingebettetem XML können verarbeitet werden.';
     };
 
     const updateView = (status) => {
@@ -71,6 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
         installButton.textContent = status.installed
             ? 'Neueste Version installieren'
             : 'Jetzt installieren';
+
+        updatePdfSupport(status.pdfSupport);
 
         if (status.updateError) {
             summary.textContent = `Update-Prüfung fehlgeschlagen: ${status.updateError}`;
@@ -209,6 +230,20 @@ document.addEventListener('DOMContentLoaded', () => {
             message.textContent = error.message;
         } finally {
             checkButton.disabled = false;
+        }
+    });
+
+    checkPdfButton.addEventListener('click', async () => {
+        pdfReason.textContent = 'PDF-Unterstützung wird geprüft …';
+        checkPdfButton.disabled = true;
+
+        try {
+            const result = await request('/apps/kosit_validator/admin/status?pdf=1');
+            updatePdfSupport(result.pdfSupport);
+        } catch (error) {
+            pdfReason.textContent = error.message;
+        } finally {
+            checkPdfButton.disabled = false;
         }
     });
 

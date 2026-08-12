@@ -17,12 +17,16 @@ class ValidatorAdminService
 
     private int $maxDownloadBytes;
 
+    private PdfSupportService $pdfSupportService;
+
     public function __construct(
         private ValidatorConfigService $config,
         private IClientService $clientService,
-        ?int $maxDownloadBytes = null
+        ?int $maxDownloadBytes = null,
+        ?PdfSupportService $pdfSupportService = null
     ) {
         $this->maxDownloadBytes = $maxDownloadBytes ?? self::MAX_DOWNLOAD_BYTES;
+        $this->pdfSupportService = $pdfSupportService ?? new PdfSupportService($config);
     }
 
     /** @return array<string, mixed> */
@@ -48,6 +52,7 @@ class ValidatorAdminService
                 ['label' => 'App-Verzeichnis', 'path' => $this->config->getAppDirectory(), 'state' => 'available'],
                 ['label' => 'PHP', 'path' => $this->config->getPhpBinary(), 'state' => $this->fileState($this->config->getPhpBinary(), true)],
                 ['label' => 'Java', 'key' => 'javaBinary', 'path' => $this->config->getJavaBinary(), 'state' => $this->fileState($this->config->getJavaBinary(), true)],
+                ['label' => 'Python (optional)', 'key' => 'pythonBinary', 'path' => $this->config->getPythonBinary(), 'state' => $this->fileState($this->config->getPythonBinary(), true)],
                 ['label' => 'Validator-JAR', 'key' => 'validatorJar', 'path' => $jar, 'state' => $this->fileState($jar)],
                 ['label' => 'Repository', 'key' => 'repositoryPath', 'path' => $this->config->getRepositoryPath(), 'state' => $this->directoryState($this->config->getRepositoryPath())],
                 ['label' => 'Szenario-Datei', 'key' => 'scenarioFile', 'path' => $this->config->getScenarioFile(), 'state' => $this->fileState($this->config->getScenarioFile())],
@@ -61,7 +66,14 @@ class ValidatorAdminService
                 && version_compare($latestVersion, $installedVersion, '>'),
             'releaseUrl' => self::RELEASE_PAGE,
             'updateError' => $updateError,
+            'pdfSupport' => $this->pdfSupportService->getStatus(),
         ];
+    }
+
+    /** @return array<string, bool|string|null> */
+    public function getPdfSupportStatus(): array
+    {
+        return $this->pdfSupportService->getStatus();
     }
 
     /** @return array<string, mixed> */

@@ -13,6 +13,9 @@ namespace OCP {
 
     interface IRequest {
         public function getParam(string $key, mixed $default = null): mixed;
+
+        /** @return array<string, mixed>|null */
+        public function getUploadedFile(string $key): ?array;
     }
 
     interface IURLGenerator {

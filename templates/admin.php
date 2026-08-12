@@ -71,6 +71,43 @@ $stateLabels = [
         Installationen und Updates verwendet.
     </p>
 
+    <h4 class="kosit-status-heading">Optionale PDF-Unterstützung</h4>
+    <dl class="kosit-versions kosit-pdf-status">
+        <div>
+            <dt>PDF-Eingabe</dt>
+            <dd id="kosit-pdf-availability">
+                <?php p($status['pdfSupport']['available'] ? 'Verfügbar' : 'Nicht verfügbar'); ?>
+            </dd>
+        </div>
+        <div>
+            <dt>Python-Version</dt>
+            <dd id="kosit-python-version"><?php p($status['pdfSupport']['pythonVersion'] ?? 'Nicht ermittelbar'); ?></dd>
+        </div>
+        <div>
+            <dt>PyMuPDF-Version</dt>
+            <dd id="kosit-pymupdf-version"><?php p($status['pdfSupport']['pymupdfVersion'] ?? 'Nicht installiert'); ?></dd>
+        </div>
+    </dl>
+    <p id="kosit-pdf-reason" class="kosit-update-summary">
+        <?php if ($status['pdfSupport']['reason'] !== null): ?>
+            <?php p($status['pdfSupport']['reason']); ?>
+        <?php else: ?>
+            PDFs mit eingebettetem XML können verarbeitet werden.
+        <?php endif; ?>
+    </p>
+    <div class="kosit-pdf-actions">
+        <button id="kosit-check-pdf" type="button">Erneut prüfen</button>
+    </div>
+    <p class="settings-hint">
+	Wenn der Server Python und darin PyMuPDF bereitstellt, kann diese App auch PDF-Dateien mit eingebundener (embedded) XML-Rechnung verarbeiten.
+        Wenn beispielsweise PyMuPDF mit
+        <code class="kosit-install-command">python3 -m venv /opt/pymupdf-venv
+/opt/pymupdf-venv/bin/python -m pip install pymupdf</code>
+	in einer virtuellen Umgebung istalliert ist, muss der Systempfad (oben) für Python entsprechend auf
+        <code class="kosit-install-command">/opt/kosit/pymupdf-venv</code>
+	gesetzt werden.
+    </p>
+
     <section id="kosit-scenario-editor" class="kosit-scenario-editor" hidden>
         <h4>Szenario-Datei bearbeiten</h4>
         <p>
@@ -91,7 +128,7 @@ $stateLabels = [
         </p>
     </section>
 
-    <h4>Installation und Updates</h4>
+    <h4 class="kosit-status-heading">Validator der Koordinierungsstelle für IT-Standards (KoSIT)</h4>
     <dl class="kosit-versions">
         <div>
             <dt>Installierte Version</dt>

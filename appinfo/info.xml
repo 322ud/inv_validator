@@ -4,8 +4,8 @@
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
     <id>kosit_validator</id>
     <name>KoSIT Validator</name>
-    <summary>Validiert XRechnung/ZUGFeRD XML mit dem KoSIT Validator</summary>
-    <description>Separate Nextcloud-App zur zentralen KoSIT-Validierung per Service-Klasse.</description>
+    <summary>Validiert XRechnung/ZUGFeRD XML-Datei, optional als Anhang eingebettet in eine PDF-Datei</summary>
+    <description>Nextcloud-App zur Validierung einer XRechnung/ZUGFeRD XML-Datei, optional als Anhang einer hybriden PDF-Rechnungen mit dem Validator der Koordinierungsstelle für IT-Standards (KoSIT).</description>
     <version>0.4.1</version>
     <licence>agpl</licence>
     <author>Frank Busse</author>

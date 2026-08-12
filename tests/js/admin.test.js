@@ -4,14 +4,20 @@ const adminMarkup = `
     <div id="kosit-admin">
         <table><tbody id="kosit-paths-body">
             <tr><td><input class="kosit-path-input" name="javaBinary" value="/old/java"></td></tr>
+            <tr><td><input class="kosit-path-input" name="pythonBinary" value="/old/python"></td></tr>
             <tr><td><input class="kosit-path-input" name="validatorJar" value="/old/validator.jar"></td></tr>
         </tbody></table>
         <span id="kosit-installed-version"></span>
         <span id="kosit-latest-version"></span>
         <p id="kosit-update-summary"></p>
         <p id="kosit-admin-message"></p>
+        <span id="kosit-pdf-availability"></span>
+        <span id="kosit-python-version"></span>
+        <span id="kosit-pymupdf-version"></span>
+        <p id="kosit-pdf-reason"></p>
         <button id="kosit-save-paths"></button>
         <button id="kosit-check-update"></button>
+        <button id="kosit-check-pdf"></button>
         <button id="kosit-install"></button>
         <button id="kosit-edit-scenario"></button>
         <p id="kosit-scenario-message"></p>
@@ -34,6 +40,12 @@ const status = (overrides = {}) => ({
     latestVersion: '2.0.0',
     updateAvailable: true,
     updateError: null,
+    pdfSupport: {
+        available: false,
+        pythonVersion: '3.12.0',
+        pymupdfVersion: null,
+        reason: 'PyMuPDF fehlt.',
+    },
     ...overrides,
 });
 
@@ -68,6 +80,12 @@ describe('admin UI', () => {
                     path: '/new/java',
                     state: 'available',
                 }],
+                pdfSupport: {
+                    available: true,
+                    pythonVersion: '3.12.1',
+                    pymupdfVersion: '1.26.0',
+                    reason: null,
+                },
             }),
         }));
         vi.stubGlobal('fetch', fetch);
@@ -84,10 +102,14 @@ describe('admin UI', () => {
         expect(options.credentials).toBe('same-origin');
         expect(options.headers.requesttoken).toBe('test-request-token');
         expect(options.body.get('javaBinary')).toBe('/old/java');
+        expect(options.body.get('pythonBinary')).toBe('/old/python');
         expect(options.body.get('validatorJar')).toBe('/old/validator.jar');
         expect(document.querySelector('#kosit-paths-body img')).toBeNull();
         expect(document.getElementById('kosit-paths-body').textContent)
             .toContain('<img src=x onerror=alert(1)>');
+        expect(document.getElementById('kosit-pdf-availability').textContent).toBe('Verfügbar');
+        expect(document.getElementById('kosit-python-version').textContent).toBe('3.12.1');
+        expect(document.getElementById('kosit-pymupdf-version').textContent).toBe('1.26.0');
         expect(document.getElementById('kosit-save-paths').disabled).toBe(false);
     });
 
@@ -243,5 +265,31 @@ describe('admin UI', () => {
         expect(document.getElementById('kosit-update-summary').textContent)
             .toBe('Update-Prüfung fehlgeschlagen: GitHub nicht erreichbar');
         expect(document.getElementById('kosit-check-update').disabled).toBe(false);
+    });
+
+    test('checks optional PDF support again', async () => {
+        const fetch = vi.fn().mockResolvedValue(response({
+            success: true,
+            pdfSupport: {
+                available: true,
+                pythonVersion: '3.13.5',
+                pymupdfVersion: '1.26.4',
+                reason: null,
+            },
+        }));
+        vi.stubGlobal('fetch', fetch);
+        await loadAdmin();
+
+        document.getElementById('kosit-check-pdf').click();
+        expect(document.getElementById('kosit-check-pdf').disabled).toBe(true);
+
+        await vi.waitFor(() => {
+            expect(document.getElementById('kosit-pdf-availability').textContent)
+                .toBe('Verfügbar');
+        });
+        expect(fetch.mock.calls[0][0]).toBe('/nextcloud/apps/kosit_validator/admin/status?pdf=1');
+        expect(document.getElementById('kosit-python-version').textContent).toBe('3.13.5');
+        expect(document.getElementById('kosit-pymupdf-version').textContent).toBe('1.26.4');
+        expect(document.getElementById('kosit-check-pdf').disabled).toBe(false);
     });
 });

@@ -25,6 +25,13 @@ class AdminController extends Controller
 
     public function status(): DataResponse
     {
+        if ($this->request->getParam('pdf') === '1') {
+            return new DataResponse([
+                'success' => true,
+                'pdfSupport' => $this->adminService->getPdfSupportStatus(),
+            ]);
+        }
+
         if ($this->request->getParam('scenario') === '1') {
             try {
                 return new DataResponse([
@@ -80,6 +87,7 @@ class AdminController extends Controller
         try {
             $this->configService->savePaths([
                 'javaBinary' => $this->request->getParam('javaBinary'),
+                'pythonBinary' => $this->request->getParam('pythonBinary'),
                 'validatorJar' => $this->request->getParam('validatorJar'),
                 'repositoryPath' => $this->request->getParam('repositoryPath'),
                 'scenarioFile' => $this->request->getParam('scenarioFile'),

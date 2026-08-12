@@ -13,6 +13,7 @@ class ValidatorConfigService
 
     private const PATH_KEYS = [
         'javaBinary' => 'java_binary',
+        'pythonBinary' => 'python_binary',
         'validatorJar' => 'validator_jar',
         'repositoryPath' => 'repository_path',
         'scenarioFile' => 'scenario_file',
@@ -63,6 +64,26 @@ class ValidatorConfigService
         return $jars[0] ?? self::DEFAULT_VALIDATOR_JAR;
     }
 
+    public function getPythonBinary(): string
+    {
+        $configured = $this->getConfiguredPath(
+            self::PATH_KEYS['pythonBinary'],
+            'kosit_validator_python_binary',
+            ''
+        );
+
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        return $this->findExecutable('python3') ?? '/usr/bin/python3';
+    }
+
+    public function getPdfExtractorScript(): string
+    {
+        return $this->getAppDirectory() . '/scripts/extract_embedded_xml.py';
+    }
+
     public function getRepositoryPath(): string
     {
         return $this->getConfiguredPath(
@@ -105,6 +126,7 @@ class ValidatorConfigService
     {
         $labels = [
             'javaBinary' => 'Java',
+            'pythonBinary' => 'Python',
             'validatorJar' => 'Validator-JAR',
             'repositoryPath' => 'Repository',
             'scenarioFile' => 'Szenario-Datei',

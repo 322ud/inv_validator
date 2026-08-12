@@ -39,7 +39,7 @@ final class ValidatorConfigServiceTest extends TestCase {
     public function testSavePathsNormalizesAndPersistsEveryPath(): void {
         $stored = [];
         $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->expects(self::exactly(5))->method('setAppValueString')
+        $appConfig->expects(self::exactly(6))->method('setAppValueString')
             ->willReturnCallback(static function (string $key, string $value) use (&$stored): void {
                 $stored[$key] = $value;
             });
@@ -47,6 +47,7 @@ final class ValidatorConfigServiceTest extends TestCase {
 
         $service->savePaths([
             'javaBinary' => ' /usr/bin/java/ ',
+            'pythonBinary' => ' /usr/bin/python3/ ',
             'validatorJar' => '/opt/kosit/validator.jar/',
             'repositoryPath' => '/opt/kosit/',
             'scenarioFile' => '/opt/kosit/scenario.xml/',
@@ -55,6 +56,7 @@ final class ValidatorConfigServiceTest extends TestCase {
 
         self::assertSame([
             'java_binary' => '/usr/bin/java',
+            'python_binary' => '/usr/bin/python3',
             'validator_jar' => '/opt/kosit/validator.jar',
             'repository_path' => '/opt/kosit',
             'scenario_file' => '/opt/kosit/scenario.xml',
@@ -71,6 +73,7 @@ final class ValidatorConfigServiceTest extends TestCase {
         $this->expectException(\InvalidArgumentException::class);
         $service->savePaths([
             'javaBinary' => $path,
+            'pythonBinary' => '/usr/bin/python3',
             'validatorJar' => '/validator.jar',
             'repositoryPath' => '/repository',
             'scenarioFile' => '/scenario.xml',
@@ -95,6 +98,7 @@ final class ValidatorConfigServiceTest extends TestCase {
         try {
             $service->savePaths([
                 'javaBinary' => '/usr/bin/java',
+                'pythonBinary' => '/usr/bin/python3',
                 'validatorJar' => '/validator.jar',
                 'repositoryPath' => '/repository',
                 'scenarioFile' => 'relative.xml',

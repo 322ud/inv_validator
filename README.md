@@ -1,14 +1,15 @@
 # KoSIT Validator für Nextcloud
 
-Validierung von XML-Dokumenten mit dem KoSIT Validator innerhalb einer Nextcloud-App.
+Validierung von XML-Dokumenten, optional eingebettet in eine PDF-Datei mit dem KoSIT Validator innerhalb einer Nextcloud-App.
 
-Die App ermöglicht das Hochladen bzw. Einfügen von XML-Dokumenten, führt eine Validierung mit dem KoSIT Validator durch und zeigt den erzeugten HTML-Bericht direkt in der Oberfläche an.
+Die App ermöglicht das Hochladen von XML-Dokumenten oder hybriden PDF-Rechnungen, führt eine Validierung des XML-Inhalts mit dem Validator der Koordinierungsstelle für IT-Standards (KoSIT, www.xoev.de) durch und zeigt den erzeugten HTML-Bericht direkt in der Oberfläche an. Das PDF selbst wird nicht validiert.
 
 ---
 
 ## Funktionen
 
 - XML-Validierung über den KoSIT Validator
+- Optionale Extraktion eingebetteter Rechnungs-XML aus PDF über PyMuPDF
 - Anzeige des HTML-Validierungsberichts
 - A4-optimierter Ausdruck und HTML-Download des Prüfberichts
 - Prüfung der XML-Struktur vor dem Validator-Aufruf
@@ -28,6 +29,7 @@ Die Anwendung verwendet folgende Standardpfade:
 | Komponente | Pfad |
 |------------|-------|
 | Java | `/usr/bin/java` |
+| Python (optional) | `/usr/bin/python3` |
 | Validator JAR | `/opt/kosit/validator-1.6.2-standalone.jar` |
 | Repository | `/opt/kosit` |
 | Szenario-Datei | `config/EN16931_(CII)-szenario.xml` innerhalb der App |
@@ -35,6 +37,9 @@ Die Anwendung verwendet folgende Standardpfade:
 Die Admin-Seite unter **Administrationseinstellungen → Weitere Einstellungen**
 zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern
 nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht.
+Dasselbe gilt für das optionale Python. Die Admin-Seite prüft mit dem
+konfigurierten Interpreter, ob PyMuPDF importiert werden kann. Nur dann wird
+PDF als Eingabe angeboten.
 
 Die Pfade können direkt auf der Admin-Seite bearbeitet und gespeichert werden.
 Gespeicherte Werte werden von Validierung, Installation und Update-Prüfung
@@ -46,6 +51,7 @@ Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende
 
 ```php
 'kosit_validator_java_binary' => '/usr/bin/java',
+'kosit_validator_python_binary' => '/opt/kosit/pymupdf-venv/bin/python',
 'kosit_validator_jar' => '/opt/kosit/validator-1.6.2-standalone.jar',
 'kosit_validator_repository' => '/opt/kosit',
 'kosit_validator_scenarios' => '/pfad/zu/eigener/EN16931_(CII)-szenario.xml',
@@ -94,11 +100,25 @@ Beispielstruktur:
 
 Die Pfade müssen mit den im Code hinterlegten Pfaden übereinstimmen.
 
+### Optionale PDF-Unterstützung
+
+PyMuPDF wird nicht durch die Nextcloud-App installiert. Empfohlen wird eine
+eigene virtuelle Python-Umgebung:
+
+```bash
+python3 -m venv /opt/kosit/pymupdf-venv
+/opt/kosit/pymupdf-venv/bin/python -m pip install pymupdf
+```
+
+Anschließend wird `/opt/kosit/pymupdf-venv/bin/python` als Python-Pfad in den
+Administrationseinstellungen gespeichert. Fehlt Python oder PyMuPDF, bleibt
+der XML-Upload ohne Einschränkung verfügbar und PDF wird nicht angeboten.
+
 ---
 
 ## Verwendung
 
-1. XML-Datei auswählen oder XML-Inhalt bereitstellen.
+1. XML-Datei oder – falls serverseitig verfügbar – PDF mit eingebettetem XML auswählen.
 2. Validierung starten.
 3. KoSIT Validator wird ausgeführt.
 4. Die fachliche Bewertung wird aus `rep:accept` beziehungsweise `rep:reject`
@@ -111,10 +131,11 @@ Die Pfade müssen mit den im Code hinterlegten Pfaden übereinstimmen.
 
 Vor dem Aufruf des KoSIT Validators werden folgende Prüfungen durchgeführt:
 
-1. XML-Inhalt vorhanden
-2. Maximale Größe von 5 MB
-3. XML ist wohlgeformt
-4. DOCTYPE-Deklarationen werden abgelehnt
+1. XML- oder PDF-Inhalt vorhanden
+2. Maximale Größe von 5 MB für XML beziehungsweise 20 MB für PDF
+3. Bei PDF: genau eine passende eingebettete Rechnungs-XML extrahieren
+4. Extrahiertes XML ist maximal 5 MB groß und wohlgeformt
+5. DOCTYPE-Deklarationen werden abgelehnt
 
 Erst danach wird der Validator gestartet.
 
@@ -130,11 +151,16 @@ POST /apps/kosit_validator/validate
 
 ### Request
 
-```json
-{
-    "xml": "<Invoice>...</Invoice>"
-}
+```http
+Content-Type: multipart/form-data
+
+document=@invoice.xml
+# oder, wenn PDF-Unterstützung verfügbar ist:
+document=@invoice.pdf
 ```
+
+Das bisherige Formularfeld `xml` mit dem XML-Inhalt wird für bestehende
+API-Clients weiterhin akzeptiert.
 
 ### Erfolgreiche Antwort
 
@@ -142,6 +168,7 @@ POST /apps/kosit_validator/validate
 {
     "success": true,
     "valid": true,
+    "documentType": "xml",
     "exitCode": 0,
     "reportHtml": "<html>...</html>"
 }
@@ -313,6 +340,10 @@ Dateiauswahl und die Fokusübergabe an den Szenarioeditor.
   App-Werte haben Vorrang vor `config.php` und den eingebauten Standardwerten.
 - Keine rollenbasierte Zugriffskontrolle.
 - XML-Dateien größer als 5 MB werden abgelehnt.
+- PDF-Dateien größer als 20 MB sowie eingebettete XML-Dateien größer als 5 MB
+  werden abgelehnt.
+- Bei PDF-Eingaben wird ausschließlich das eingebettete XML validiert, nicht
+  die PDF/A-Konformität oder die Übereinstimmung mit der sichtbaren Rechnung.
 - Zur Begrenzung der Serverlast wird jeweils nur ein Dokument verarbeitet.
 - HTML-Berichte größer als 10 MB werden abgelehnt.
 

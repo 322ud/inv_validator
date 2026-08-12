@@ -36,6 +36,9 @@ for entry in "${release_entries[@]}"; do
     cp --archive "$project_root/$entry" "$package_root/"
 done
 
+mkdir --parents "$package_root/scripts"
+cp --archive "$project_root/scripts/extract_embedded_xml.py" "$package_root/scripts/"
+
 find "$package_root" -type d -exec chmod 0755 {} +
 find "$package_root" -type f -exec chmod 0644 {} +
 

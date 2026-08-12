@@ -20,11 +20,16 @@ const jsonResponse = (result, ok = true) => ({
     json: vi.fn().mockResolvedValue(result),
 });
 
-const droppedFile = (name, content, size = content.length) => ({
-    name,
-    size,
-    text: vi.fn().mockResolvedValue(content),
-});
+const droppedFile = (name, content, size = content.length) => {
+    const type = name.endsWith('.pdf') ? 'application/pdf' : 'application/xml';
+    const file = new File([content], name, { type });
+
+    if (size !== file.size) {
+        Object.defineProperty(file, 'size', { value: size });
+    }
+
+    return file;
+};
 
 const drop = (files) => {
     const event = new Event('drop', { bubbles: true, cancelable: true });
@@ -96,7 +101,7 @@ describe('validation UI', () => {
         expect(options.method).toBe('POST');
         expect(options.credentials).toBe('same-origin');
         expect(options.headers.requesttoken).toBe('test-request-token');
-        expect(options.body.get('xml')).toBe('<Invoice/>');
+        expect(options.body.get('document').name).toBe('invoice.xml');
         expect(options.body.get('requesttoken')).toBe('test-request-token');
 
         const frame = document.getElementById('kosit-report-frame');
@@ -108,6 +113,36 @@ describe('validation UI', () => {
         expect(document.getElementById('kosit-download-button').disabled).toBe(false);
         expect(document.getElementById('kosit-select-file-button').disabled).toBe(false);
         expect(document.getElementById('kosit-drop-zone').hasAttribute('aria-disabled')).toBe(false);
+    });
+
+    test('rejects PDF when the server capability is disabled', async () => {
+        const fetch = vi.fn();
+        vi.stubGlobal('fetch', fetch);
+        await loadApp();
+
+        drop([droppedFile('invoice.pdf', '%PDF-fake')]);
+        expect(document.getElementById('kosit-status').textContent)
+            .toBe('PDF-Eingabe ist auf diesem Server nicht verfügbar.');
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    test('submits PDF when the server capability is enabled', async () => {
+        const fetch = vi.fn().mockResolvedValue(jsonResponse({
+            success: true,
+            valid: true,
+            documentType: 'pdf',
+            reportHtml: null,
+        }));
+        vi.stubGlobal('fetch', fetch);
+        document.getElementById('kosit-validator').dataset.pdfSupported = 'true';
+        await loadApp();
+        drop([droppedFile('invoice.pdf', '%PDF-fake')]);
+
+        await vi.waitFor(() => {
+            expect(document.getElementById('kosit-status').textContent)
+                .toBe('Eingebettetes XML ist gültig. Kein HTML-Prüfbericht gefunden.');
+        });
+        expect(fetch.mock.calls[0][1].body.get('document').name).toBe('invoice.pdf');
     });
 
     test('shows business rejection and missing report separately', async () => {

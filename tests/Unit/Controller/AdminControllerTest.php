@@ -44,6 +44,30 @@ final class AdminControllerTest extends TestCase {
         self::assertSame(['success' => true, 'scenario' => $scenario], $response->getData());
     }
 
+    public function testStatusChecksOnlyOptionalPdfSupportWhenRequested(): void {
+        $pdfSupport = [
+            'available' => true,
+            'pythonAvailable' => true,
+            'pythonVersion' => '3.13.5',
+            'pymupdfAvailable' => true,
+            'pymupdfVersion' => '1.26.4',
+            'reason' => null,
+        ];
+        $adminService = $this->createMock(ValidatorAdminService::class);
+        $adminService->expects(self::once())
+            ->method('getPdfSupportStatus')
+            ->willReturn($pdfSupport);
+        $adminService->expects(self::never())->method('getStatus');
+
+        $response = $this->controller(['pdf' => '1'], $adminService)->status();
+
+        self::assertSame(200, $response->getStatus());
+        self::assertSame([
+            'success' => true,
+            'pdfSupport' => $pdfSupport,
+        ], $response->getData());
+    }
+
     public function testScenarioReadFailureIsLoggedAndReturned(): void {
         $exception = new AdministrationException('Szenario nicht lesbar');
         $adminService = $this->createMock(ValidatorAdminService::class);
@@ -98,6 +122,7 @@ final class AdminControllerTest extends TestCase {
     public function testSavePathsPassesAllValuesAndReturnsFreshStatus(): void {
         $paths = [
             'javaBinary' => '/usr/bin/java',
+            'pythonBinary' => '/usr/bin/python3',
             'validatorJar' => '/opt/kosit/validator.jar',
             'repositoryPath' => '/opt/kosit/repository',
             'scenarioFile' => '/opt/kosit/scenario.xml',

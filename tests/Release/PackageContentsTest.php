@@ -31,6 +31,7 @@ final class PackageContentsTest extends TestCase {
         self::assertFileExists($this->appDirectory . '/config/EN16931_(CII)-szenario.xml');
         self::assertFileExists($this->appDirectory . '/js/app.js');
         self::assertFileExists($this->appDirectory . '/lib/AppInfo/Application.php');
+        self::assertFileExists($this->appDirectory . '/scripts/extract_embedded_xml.py');
         self::assertFileExists($this->appDirectory . '/templates/index.php');
 
         $metadata = Server::get(IAppManager::class)->getAppInfo('kosit_validator');
