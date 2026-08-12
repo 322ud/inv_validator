@@ -150,6 +150,39 @@ gap: 10px;
 margin-top: 14px;
 }
 
+.kosit-readme-embed {
+margin-top: 36px;
+padding-top: 20px;
+border-top: 1px solid var(--color-border);
+}
+
+.kosit-readme-viewer {
+display: block;
+max-height: 70vh;
+margin: 12px 0 0;
+overflow: auto;
+border: 1px solid var(--color-border);
+border-radius: var(--border-radius-large);
+background: var(--color-background-dark);
+color: var(--color-main-text);
+}
+
+.kosit-readme-fallback {
+display: block;
+margin: 0;
+padding: 16px;
+font-family: var(--font-face, sans-serif);
+font-size: 14px;
+line-height: 1.5;
+white-space: pre-wrap;
+overflow-wrap: anywhere;
+}
+
+.kosit-readme-rich[hidden],
+.kosit-readme-fallback[hidden] {
+display: none !important;
+}
+
 @media (max-width: 700px) {
 .kosit-paths,
 .kosit-paths tbody,

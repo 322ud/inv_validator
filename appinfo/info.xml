@@ -3,9 +3,9 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
     <id>kosit_validator</id>
-    <name>KoSIT Validator</name>
-    <summary>Validiert XRechnung/ZUGFeRD XML-Datei, optional als Anhang eingebettet in eine PDF-Datei</summary>
-    <description>Nextcloud-App zur Validierung einer XRechnung/ZUGFeRD XML-Datei, optional als Anhang einer hybriden PDF-Rechnungen mit dem Validator der Koordinierungsstelle für IT-Standards (KoSIT).</description>
+    <name>Nextcloud-Frontend für den KoSIT-Validator</name>
+    <summary>Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der XRechnung-Spezifikation</summary>
+    <description>Dieses Nextcloud-Frontend übergibt XML-Rechnungsdokumente an den separat ausgeführten Validator der Koordinierungsstelle für IT-Standards (KoSIT). Der KoSIT-Validator prüft sie anhand des konfigurierten Validierungsszenarios auf Konformität mit der XRechnung-Spezifikation. Bei hybriden PDF-Rechnungen extrahiert die App zuvor das eingebettete XML-Rechnungsdokument und zeigt anschließend den vom Validator erzeugten Prüfbericht an. Die PDF-Datei selbst wird nicht validiert.</description>
     <version>0.4.1</version>
     <licence>agpl</licence>
     <author>Frank Busse</author>
@@ -18,7 +18,7 @@
 
     <navigations>
       <navigation>
-        <name>KoSIT Validator</name>
+        <name>XRechnung prüfen</name>
         <route>kosit_validator.page.index</route>
         <icon>app.svg</icon>
       </navigation>

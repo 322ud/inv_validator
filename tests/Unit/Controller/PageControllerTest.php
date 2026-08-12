@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace OCA\KoSITValidator\Tests\Unit\Controller;
 
 use OCA\KoSITValidator\Controller\PageController;
+use OCA\KoSITValidator\Service\TextEditorLoader;
 use OCA\KoSITValidator\Service\ValidatorAdminService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
@@ -24,11 +26,15 @@ final class PageControllerTest extends TestCase
             ->method('getStatus')
             ->with(true)
             ->willReturn($status);
+        $textEditorLoader = new TextEditorLoader(
+            $this->createMock(IEventDispatcher::class)
+        );
 
         $controller = new PageController(
             'kosit_validator',
             $this->createMock(IRequest::class),
-            $adminService
+            $adminService,
+            $textEditorLoader
         );
 
         $response = $controller->index();

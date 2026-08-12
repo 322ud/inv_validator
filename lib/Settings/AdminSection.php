@@ -23,7 +23,7 @@ class AdminSection implements IIconSection
 
     public function getName(): string
     {
-        return $this->l10n->t('KoSIT Validator');
+        return $this->l10n->t('Anbindung des KoSIT-Validators');
     }
 
     public function getPriority(): int

@@ -25,7 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const pymupdfVersion = document.getElementById('kosit-pymupdf-version');
     const pdfReason = document.getElementById('kosit-pdf-reason');
     const checkPdfButton = document.getElementById('kosit-check-pdf');
+    const readmeViewer = root.querySelector('[data-kosit-readme]');
     let scenarioChecksum = '';
+
+    window.OCA?.KoSITValidator?.initializeReadme(readmeViewer);
 
     const stateLabels = {
         available: 'Vorhanden',
@@ -96,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (status.updateError) {
             summary.textContent = `Update-Prüfung fehlgeschlagen: ${status.updateError}`;
         } else if (!status.installed) {
-            summary.textContent = 'KoSIT Validator ist nicht installiert.';
+            summary.textContent = 'Der KoSIT-Validator ist nicht installiert.';
         } else if (!status.installedVersion) {
             summary.textContent = 'Die installierte Version konnte nicht ermittelt werden.';
         } else if (status.updateAvailable) {

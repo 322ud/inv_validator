@@ -49,7 +49,7 @@ final class FrameworkIntegrationTest extends TestCase
 
         $section = $container->get(AdminSection::class);
         self::assertSame('kosit_validator', $section->getID());
-        self::assertSame('KoSIT Validator', $section->getName());
+        self::assertSame('Anbindung des KoSIT-Validators', $section->getName());
         self::assertSame(80, $section->getPriority());
         self::assertStringContainsString('/apps/kosit_validator/img/app.svg', $section->getIcon());
     }

@@ -1,16 +1,18 @@
-# KoSIT Validator für Nextcloud
+# Nextcloud-Frontend für den KoSIT-Validator
 
-Validierung von XML-Dokumenten, optional eingebettet in eine PDF-Datei mit dem KoSIT Validator innerhalb einer Nextcloud-App.
+Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der[XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung).
 
-Die App ermöglicht das Hochladen von XML-Dokumenten oder hybriden PDF-Rechnungen, führt eine Validierung des XML-Inhalts mit dem Validator der Koordinierungsstelle für IT-Standards (KoSIT, www.xoev.de) durch und zeigt den erzeugten HTML-Bericht direkt in der Oberfläche an. Das PDF selbst wird nicht validiert.
+Diese App ist ein Nextcloud-Frontend für den separat installierten[KoSIT-Validator](https://github.com/itplr-kosit/validator). Sie übergibt XML-Rechnungsdokumente an den Validator, der sie anhand des konfigurierten Validierungsszenarios auf Konformität mit der[XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung) prüft. Anschließend zeigt die App den erzeugten HTML-Prüfbericht an.
+
+Der Validator stammt von der[Koordinierungsstelle für IT-Standards (KoSIT)](https://www.xoev.de/). Bei hybriden PDF-Rechnungen extrahiert die App zunächst das eingebettete XML-Rechnungsdokument. Geprüft wird ausschließlich das extrahierte XML, nicht die PDF-Datei.
 
 ---
 
 ## Funktionen
 
-- XML-Validierung über den KoSIT Validator
+- Prüfung von XML-Rechnungsdokumenten durch den separat installierten KoSIT-Validator
 - Optionale Extraktion eingebetteter Rechnungs-XML aus PDF über PyMuPDF
-- Anzeige des HTML-Validierungsberichts
+- Anzeige des vom Validator erzeugten HTML-Prüfberichts
 - A4-optimierter Ausdruck und HTML-Download des Prüfberichts
 - Prüfung der XML-Struktur vor dem Validator-Aufruf
 - Größenbegrenzung für XML-Dateien
@@ -34,20 +36,9 @@ Die Anwendung verwendet folgende Standardpfade:
 | Repository | `/opt/kosit` |
 | Szenario-Datei | `config/EN16931_(CII)-szenario.xml` innerhalb der App |
 
-Die Admin-Seite unter **Administrationseinstellungen → Weitere Einstellungen**
-zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern
-nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht.
-Dasselbe gilt für das optionale Python. Die Admin-Seite prüft mit dem
-konfigurierten Interpreter, ob PyMuPDF importiert werden kann. Nur dann wird
-PDF als Eingabe angeboten.
+Die Admin-Seite unter **Administrationseinstellungen → Weitere Einstellungen** zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht. Dasselbe gilt für das optionale Python. Die Admin-Seite prüft mit dem konfigurierten Interpreter, ob PyMuPDF importiert werden kann. Nur dann wird PDF als Eingabe angeboten.
 
-Die Pfade können direkt auf der Admin-Seite bearbeitet und gespeichert werden.
-Gespeicherte Werte werden von Validierung, Installation und Update-Prüfung
-sofort verwendet und haben Vorrang vor Einträgen in der Nextcloud-`config.php`.
-Über **Szenario-Datei bearbeiten** kann außerdem der Inhalt der aktuell
-konfigurierten Datei geladen, als XML geprüft und atomar gespeichert werden.
-Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende
-`config.php`-Optionen als Fallback verfügbar:
+Die Pfade können direkt auf der Admin-Seite bearbeitet und gespeichert werden. Gespeicherte Werte werden von Validierung, Installation und Update-Prüfung sofort verwendet und haben Vorrang vor Einträgen in der Nextcloud-`config.php`. Über **Szenario-Datei bearbeiten** kann außerdem der Inhalt der aktuell konfigurierten Datei geladen, als XML geprüft und atomar gespeichert werden. Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende `config.php`-Optionen als Fallback verfügbar:
 
 ```php
 'kosit_validator_java_binary' => '/usr/bin/java',
@@ -58,14 +49,9 @@ Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende
 'kosit_validator_temp_directory' => '/tmp/nextcloud-kosit-validator',
 ```
 
-Validator-JAR und Szenario-Konfiguration müssen zueinander kompatibel sein.
-Eine bloß vorhandene Szenario-Datei reicht nicht aus; der Validator prüft sie
-beim Start gegen sein Szenario-Schema.
+Validator-JAR und Szenario-Konfiguration müssen zueinander kompatibel sein. Eine bloß vorhandene Szenario-Datei reicht nicht aus; der Validator prüft sie beim Start gegen sein Szenario-Schema.
 
-Die mitgelieferte Szenariodatei stammt aus der offiziellen KoSIT-Konfiguration
-für XRechnung 3.0.2 vom 31. Januar 2026. Die zugehörigen Schema- und
-Schematron-Ressourcen müssen weiterhin vollständig im konfigurierten Repository
-vorliegen.
+Die mitgelieferte Szenariodatei stammt aus der offiziellen KoSIT-Konfigurationfür XRechnung 3.0.2 vom 31. Januar 2026. Die zugehörigen Schema- undSchematron-Ressourcen müssen weiterhin vollständig im konfigurierten Repository vorliegen.
 
 ---
 
@@ -79,13 +65,9 @@ Beispiel für Debian/Ubuntu:
 sudo apt install openjdk-17-jre
 ```
 
-### KoSIT Validator installieren
+### KoSIT-Validator installieren
 
-Die empfohlene Installation erfolgt in der Admin-Seite über **Jetzt
-installieren**. Die App ermittelt das neueste offizielle GitHub-Release, lädt
-das zugehörige `validator-<version>-standalone.jar` und aktiviert es atomar am
-konfigurierten JAR-Pfad. Der Webserver-Benutzer muss für dessen Verzeichnis
-Schreibrechte besitzen.
+Die empfohlene Installation erfolgt in der Admin-Seite über **Jetzt installieren**. Die App ermittelt das neueste offizielle GitHub-Release, lädt das zugehörige `validator-<version>-standalone.jar` und aktiviert es atomar am konfigurierten JAR-Pfad. Der Webserver-Benutzer muss für dessen Verzeichnis Schreibrechte besitzen.
 
 Alternativ kann das JAR weiterhin manuell installiert werden.
 
@@ -102,25 +84,22 @@ Die Pfade müssen mit den im Code hinterlegten Pfaden übereinstimmen.
 
 ### Optionale PDF-Unterstützung
 
-PyMuPDF wird nicht durch die Nextcloud-App installiert. Empfohlen wird eine
-eigene virtuelle Python-Umgebung:
+PyMuPDF wird nicht durch die Nextcloud-App installiert. Empfohlen wird eine eigene virtuelle Python-Umgebung:
 
 ```bash
 python3 -m venv /opt/kosit/pymupdf-venv
 /opt/kosit/pymupdf-venv/bin/python -m pip install pymupdf
 ```
 
-Anschließend wird `/opt/kosit/pymupdf-venv/bin/python` als Python-Pfad in den
-Administrationseinstellungen gespeichert. Fehlt Python oder PyMuPDF, bleibt
-der XML-Upload ohne Einschränkung verfügbar und PDF wird nicht angeboten.
+Anschließend wird `/opt/kosit/pymupdf-venv/bin/python` als Python-Pfad in den Administrationseinstellungen gespeichert. Fehlt Python oder PyMuPDF, bleibt der XML-Upload ohne Einschränkung verfügbar und PDF wird nicht angeboten.
 
 ---
 
 ## Verwendung
 
-1. XML-Datei oder – falls serverseitig verfügbar – PDF mit eingebettetem XML auswählen.
+1. XML-Rechnungsdokument oder – falls serverseitig verfügbar – PDF mit eingebettetem XML auswählen.
 2. Validierung starten.
-3. KoSIT Validator wird ausgeführt.
+3. Der separat installierte KoSIT-Validator wird ausgeführt.
 4. Die fachliche Bewertung wird aus `rep:accept` beziehungsweise `rep:reject`
    im XML-Bericht gelesen.
 5. HTML-Bericht wird im Browser dargestellt.
@@ -129,7 +108,7 @@ der XML-Upload ohne Einschränkung verfügbar und PDF wird nicht angeboten.
 
 ## Validierungsablauf
 
-Vor dem Aufruf des KoSIT Validators werden folgende Prüfungen durchgeführt:
+Vor dem Aufruf des KoSIT-Validators führt das Nextcloud-Frontend folgende technische Prüfungen durch:
 
 1. XML- oder PDF-Inhalt vorhanden
 2. Maximale Größe von 5 MB für XML beziehungsweise 20 MB für PDF
@@ -159,8 +138,7 @@ document=@invoice.xml
 document=@invoice.pdf
 ```
 
-Das bisherige Formularfeld `xml` mit dem XML-Inhalt wird für bestehende
-API-Clients weiterhin akzeptiert.
+Das bisherige Formularfeld `xml` mit dem XML-Inhalt wird für bestehende API-Clients weiterhin akzeptiert.
 
 ### Erfolgreiche Antwort
 
@@ -204,12 +182,10 @@ Aktueller Implementierungsstand:
 - Die Oberfläche ist für alle angemeldeten Nextcloud-Benutzer verfügbar.
 - Der Validierungsendpunkt kann von jedem angemeldeten Benutzer aufgerufen werden.
 - Der Endpunkt ist durch den Nextcloud-CSRF-Token geschützt.
-- Status, Installation und Updates sind ausschließlich für Administratoren
-  erreichbar und ebenfalls CSRF-geschützt.
+- Status, Installation und Updates sind ausschließlich für Administratoren erreichbar und ebenfalls CSRF-geschützt.
 - Es wird höchstens ein Validator-Prozess gleichzeitig ausgeführt.
 - Prozessausgaben und Berichte besitzen serverseitige Größenlimits.
-- XML-Berichte müssen wohlgeformt sein, den KoSIT-Namensraum verwenden und
-  genau eine eindeutige Bewertung enthalten; `DOCTYPE` ist nicht erlaubt.
+- XML-Berichte müssen wohlgeformt sein, den KoSIT-Namensraum verwenden und genau eine eindeutige Bewertung enthalten; `DOCTYPE` ist nicht erlaubt.
 - Es existiert derzeit keine Gruppen- oder Rollenprüfung.
 
 Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administratoren oder definierte Benutzergruppen beschränkt werden soll.
@@ -226,7 +202,7 @@ Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administra
 - `ValidationController`
   - Nimmt XML entgegen.
   - Führt Vorvalidierung durch.
-  - Startet den KoSIT Validator.
+  - Startet den KoSIT-Validator.
   - Liefert JSON-Antworten zurück.
 
 - `KoSITValidatorService`
@@ -249,8 +225,7 @@ Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administra
   - Prüft Version und Download und installiert das Standalone-JAR atomar.
 
 - `AdminController` / `Settings\\Admin`
-  - Stellen die nur für Administratoren erreichbare Status-, Installations-
-    und Update-Oberfläche bereit.
+  - Stellen die nur für Administratoren erreichbare Status-, Installations-  und Update-Oberfläche bereit.
 
 ### Frontend
 
@@ -278,8 +253,7 @@ Mögliche Fehler:
 - Validator ist bereits durch eine andere Prüfung belegt
 - Interner Fehler während der Validierung
 
-Technische Validator-Fehler werden serverseitig protokolliert und als HTTP 503
-zurückgegeben. Sie werden nicht als fachlich ungültige Rechnung dargestellt.
+Technische Validator-Fehler werden serverseitig protokolliert und als HTTP 503 zurückgegeben. Sie werden nicht als fachlich ungültige Rechnung dargestellt.
 
 ---
 
@@ -303,47 +277,32 @@ Ein reproduzierbares Produktionsarchiv mit SHA-256-Datei erzeugen:
 bash scripts/build-release.sh
 ```
 
-Das Archiv unter `dist/` enthält ausschließlich die zur Laufzeit benötigten
-App-Dateien. CI installiert genau dieses Archiv zusätzlich in einer frischen
-Nextcloud-34-Instanz, aktiviert die App und führt Framework-Smoke-Tests aus.
+Das Archiv unter `dist/` enthält ausschließlich die zur Laufzeit benötigten App-Dateien. CI installiert genau dieses Archiv zusätzlich in einer frischen Nextcloud-34-Instanz, aktiviert die App und führt Framework-Smoke-Tests aus.
 
-Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die
-Pfadkonfiguration, atomare Szenario- und Validator-Updates, externe
-Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den
-HTTP-Vertrag der Validierungs- und Admin-Endpunkte ab.
+Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die Pfadkonfiguration, atomare Szenario- und Validator-Updates, externe Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den HTTP-Vertrag der Validierungs- und Admin-Endpunkte ab.
 
-Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2,
-8.3, 8.4 und 8.5 sowie die JavaScript-Suite mit Node.js 22 aus. Ein zusätzlicher
-Integrationsjob installiert Nextcloud 34, aktiviert die App und prüft Container,
-Routen, Templates sowie die Admin- und CSRF-Attribute gegen das echte Framework.
-Ein weiterer Smoke-Test lädt fest versionierte und per SHA-256 geprüfte KoSIT-
-und XRechnung-Artefakte, validiert eine offizielle Testrechnung mit dem echten
-Java-Prozess und prüft außerdem die Ablehnung einer gezielt beschädigten Variante.
-Der Nextcloud-Job führt zusätzlich mit Playwright den vollständigen Browserfluss
-vom Login und Datei-Upload bis zum eingebetteten und herunterladbaren Prüfbericht
-für gültige, fachlich ungültige und nicht wohlgeformte XML-Dateien aus.
-Auch der administrative Browserfluss wird geprüft: Pfade werden CSRF-geschützt
-gespeichert und wiederhergestellt, die Szenariodatei wird geladen und gespeichert,
-und eine ungültige Szenariokonfiguration wird sichtbar abgelehnt.
-Ein Sicherheitslauf bestätigt zusätzlich, dass normale Benutzer zwar validieren,
-aber keine Admin-Endpunkte aufrufen dürfen, und dass fehlende oder ungültige
-Request-Tokens weder Pfade noch die Szenariodatei verändern.
-Automatisierte Axe-Prüfungen kontrollieren beide App-Oberflächen gegen WCAG 2.0,
-2.1 und 2.2 auf Stufe A/AA. Playwright prüft außerdem die Tastaturauslösung der
-Dateiauswahl und die Fokusübergabe an den Szenarioeditor.
+Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2, 8.3, 8.4 und 8.5 sowie die JavaScript-Suite mit Node.js 22 aus. Ein zusätzlicher Integrationsjob installiert Nextcloud 34, aktiviert die App und prüft Container, Routen, Templates sowie die Admin- und CSRF-Attribute gegen das echte Framework. Ein weiterer Smoke-Test lädt fest versionierte und per SHA-256 geprüfte KoSIT- und XRechnung-Artefakte, validiert eine offizielle Testrechnung mit dem echten Java-Prozess und prüft außerdem die Ablehnung einer gezielt beschädigten Variante. Der Nextcloud-Job führt zusätzlich mit Playwright den vollständigen Browserfluss vom Login und Datei-Upload bis zum eingebetteten und herunterladbaren Prüfbericht für gültige, fachlich ungültige und nicht wohlgeformte XML-Dateien aus. Auch der administrative Browserfluss wird geprüft: Pfade werden CSRF-geschützt gespeichert und wiederhergestellt, die Szenariodatei wird geladen und gespeichert, und eine ungültige Szenariokonfiguration wird sichtbar abgelehnt. Ein Sicherheitslauf bestätigt zusätzlich, dass normale Benutzer zwar validieren, aber keine Admin-Endpunkte aufrufen dürfen, und dass fehlende oder ungültige Request-Tokens weder Pfade noch die Szenariodatei verändern. Automatisierte Axe-Prüfungen kontrollieren beide App-Oberflächen gegen WCAG 2.0, 2.1 und 2.2 auf Stufe A/AA. Playwright prüft außerdem die Tastaturauslösung der Dateiauswahl und die Fokusübergabe an den Szenarioeditor.
+
+---
+
+## Offene Aufgaben
+
+- [ ] Internationalisierung (i18n) einführen, zunächst mindestens mit deutschen, englischen und französischen Übersetzungen
+- [ ] Nutzerspezifische Validierungsszenarien über eine eigene Konfigurationsseite ermöglichen
+- [ ] Zugriff auf die Validierung nach Nextcloud-Gruppen oder Rollen beschränkbar machen
+- [ ] Warteschlange für parallele Validierungsanfragen einführen
+- [ ] Mehrere XML-Rechnungsdokumente in einem Vorgang prüfen
+- [ ] Validator-Version und Szenario automatisch auf Kompatibilität prüfen
 
 ---
 
 ## Bekannte Einschränkungen
 
-- Pfade können von Administratoren bearbeitet werden. Bereits gespeicherte
-  App-Werte haben Vorrang vor `config.php` und den eingebauten Standardwerten.
+- Pfade können von Administratoren bearbeitet werden. Bereits gespeicherte App-Werte haben Vorrang vor `config.php` und den eingebauten Standardwerten.
 - Keine rollenbasierte Zugriffskontrolle.
 - XML-Dateien größer als 5 MB werden abgelehnt.
-- PDF-Dateien größer als 20 MB sowie eingebettete XML-Dateien größer als 5 MB
-  werden abgelehnt.
-- Bei PDF-Eingaben wird ausschließlich das eingebettete XML validiert, nicht
-  die PDF/A-Konformität oder die Übereinstimmung mit der sichtbaren Rechnung.
+- PDF-Dateien größer als 20 MB sowie eingebettete XML-Dateien größer als 5 MB werden abgelehnt.
+- Bei PDF-Eingaben wird ausschließlich das eingebettete XML validiert, nicht die PDF/A-Konformität oder die Übereinstimmung mit der sichtbaren Rechnung.
 - Zur Begrenzung der Serverlast wird jeweils nur ein Dokument verarbeitet.
 - HTML-Berichte größer als 10 MB werden abgelehnt.
 

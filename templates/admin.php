@@ -2,10 +2,12 @@
 
 /** @var array<string, mixed> $_ */
 
+script('kosit_validator', 'readme');
 script('kosit_validator', 'admin');
 style('kosit_validator', 'admin');
 
 $status = $_['status'];
+$readme = file_get_contents(dirname(__DIR__) . '/README.md') ?: 'README konnte nicht geladen werden.';
 
 $stateLabels = [
     'available' => 'Vorhanden',
@@ -16,10 +18,12 @@ $stateLabels = [
 ?>
 
 <div id="kosit-admin">
-    <h2>KoSIT Validator</h2>
+    <h2>Anbindung des KoSIT-Validators</h2>
     <p>
-        Systempfade, Installation und verfügbare Updates des offiziellen
-        KoSIT Validators verwalten.
+        Konfiguration der Anbindung an den externen
+        <a href="https://github.com/itplr-kosit/validator" target="_blank" rel="noopener noreferrer">KoSIT-Validator</a>.
+        Hier können Systempfade und Validierungsszenario verwaltet sowie das
+        offizielle Standalone-JAR installiert oder aktualisiert werden.
     </p>
 
     <h4>Systempfade</h4>
@@ -128,7 +132,10 @@ $stateLabels = [
         </p>
     </section>
 
-    <h4 class="kosit-status-heading">Validator der Koordinierungsstelle für IT-Standards (KoSIT)</h4>
+    <h4 class="kosit-status-heading">
+        Validator der
+        <a href="https://www.xoev.de/" target="_blank" rel="noopener noreferrer">Koordinierungsstelle für IT-Standards (KoSIT)</a>
+    </h4>
     <dl class="kosit-versions">
         <div>
             <dt>Installierte Version</dt>
@@ -146,7 +153,7 @@ $stateLabels = [
         <?php if ($status['updateError'] !== null): ?>
             <?php p('Update-Prüfung fehlgeschlagen: ' . $status['updateError']); ?>
         <?php elseif (!$status['installed']): ?>
-            KoSIT Validator ist nicht installiert.
+            Der KoSIT-Validator ist nicht installiert.
         <?php elseif ($status['installedVersion'] === null): ?>
             Die installierte Version konnte nicht ermittelt werden.
         <?php elseif ($status['updateAvailable']): ?>
@@ -172,4 +179,12 @@ $stateLabels = [
         angezeigten Validator-Pfad. Der Webserver-Benutzer benötigt dort
         Schreibrechte. Ab Validator 1.6 ist Java 11 oder neuer erforderlich.
     </p>
+
+    <section class="kosit-readme-embed" aria-labelledby="kosit-admin-readme-title">
+        <h3 id="kosit-admin-readme-title">README</h3>
+        <div class="kosit-readme-viewer" data-kosit-readme>
+            <div class="kosit-readme-rich" aria-label="Formatierter Inhalt der README" hidden></div>
+            <pre class="kosit-readme-fallback" tabindex="0" aria-label="Inhalt der README"><?php p($readme); ?></pre>
+        </div>
+    </section>
 </div>

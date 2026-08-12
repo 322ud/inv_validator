@@ -96,7 +96,7 @@ final class AdminControllerTest extends TestCase {
         self::assertSame(200, $response->getStatus());
         self::assertSame([
             'success' => true,
-            'message' => 'KoSIT Validator wurde erfolgreich installiert.',
+            'message' => 'Der KoSIT-Validator wurde erfolgreich installiert.',
             'status' => $status,
         ], $response->getData());
     }

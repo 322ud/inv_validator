@@ -62,7 +62,7 @@ class AdminController extends Controller
         try {
             return new DataResponse([
                 'success' => true,
-                'message' => 'KoSIT Validator wurde erfolgreich installiert.',
+                'message' => 'Der KoSIT-Validator wurde erfolgreich installiert.',
                 'status' => $this->adminService->installLatest(),
             ]);
         } catch (\Throwable $e) {

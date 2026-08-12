@@ -7,6 +7,10 @@ const appMarkup = `
         <div id="kosit-drop-zone"><span></span></div>
         <small id="kosit-selected-file">Keine Datei ausgewählt</small>
         <div id="kosit-status"></div>
+        <a id="kosit-readme-open" href="#kosit-readme-dialog">README</a>
+        <div id="kosit-readme-dialog" hidden>
+            <button id="kosit-readme-close" type="button">Schließen</button>
+        </div>
         <div id="kosit-report-actions" hidden>
             <button id="kosit-print-button" disabled></button>
             <button id="kosit-download-button" disabled></button>
@@ -64,6 +68,22 @@ describe('validation UI', () => {
         );
 
         expect(click).toHaveBeenCalledTimes(2);
+    });
+
+    test('opens and closes the README dialog', async () => {
+        const dialog = document.getElementById('kosit-readme-dialog');
+        await loadApp();
+
+        expect(dialog.hidden).toBe(true);
+        document.getElementById('kosit-readme-open').click();
+        expect(dialog.hidden).toBe(false);
+
+        document.getElementById('kosit-readme-close').click();
+        expect(dialog.hidden).toBe(true);
+
+        document.getElementById('kosit-readme-open').click();
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        expect(dialog.hidden).toBe(true);
     });
 
     test('rejects multiple and oversized dropped files without a request', async () => {

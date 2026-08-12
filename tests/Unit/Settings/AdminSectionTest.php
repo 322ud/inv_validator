@@ -16,8 +16,8 @@ final class AdminSectionTest extends TestCase
         $l10n = $this->createMock(IL10N::class);
         $l10n->expects(self::once())
             ->method('t')
-            ->with('KoSIT Validator')
-            ->willReturn('KoSIT Validator');
+            ->with('Anbindung des KoSIT-Validators')
+            ->willReturn('Anbindung des KoSIT-Validators');
 
         $urlGenerator = $this->createMock(IURLGenerator::class);
         $urlGenerator->expects(self::once())
@@ -28,7 +28,7 @@ final class AdminSectionTest extends TestCase
         $section = new AdminSection($l10n, $urlGenerator);
 
         self::assertSame('kosit_validator', $section->getID());
-        self::assertSame('KoSIT Validator', $section->getName());
+        self::assertSame('Anbindung des KoSIT-Validators', $section->getName());
         self::assertSame(80, $section->getPriority());
         self::assertSame('/apps/kosit_validator/img/app.svg', $section->getIcon());
     }

@@ -43,7 +43,7 @@ test('enforces admin authorization and CSRF without changing configuration', asy
 
     await login(userPage, 'integration-user', 'integration-user-password');
     await userPage.goto('/index.php/apps/kosit_validator/');
-    await expect(userPage.getByRole('heading', { name: 'KoSIT Validator' })).toBeVisible();
+    await expect(userPage.getByRole('heading', { name: 'Nextcloud-Frontend für den KoSIT-Validator' })).toBeVisible();
     await userPage.locator('#kosit-xml-file').setInputFiles(validInvoicePath);
     await expect(userPage.locator('#kosit-status')).toHaveText('XML ist gültig.');
 

@@ -31,6 +31,14 @@ namespace OCP\AppFramework\Services {
     }
 }
 
+namespace OCP\EventDispatcher {
+    class Event {}
+
+    interface IEventDispatcher {
+        public function dispatchTyped(Event $event): void;
+    }
+}
+
 namespace OCP\Http\Client {
     interface IResponse {
         public function getStatusCode(): int;

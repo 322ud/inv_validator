@@ -18,7 +18,7 @@ test('validates invoices through the complete Nextcloud UI flow', async ({ page 
     await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
 
     await page.goto('/index.php/apps/kosit_validator/');
-    await expect(page.getByRole('heading', { name: 'KoSIT Validator' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Nextcloud-Frontend für den KoSIT-Validator' })).toBeVisible();
 
     const fileInput = page.locator('#kosit-xml-file');
     const status = page.locator('#kosit-status');

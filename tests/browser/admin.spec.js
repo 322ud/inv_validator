@@ -35,7 +35,7 @@ test('configures paths and edits the scenario through Nextcloud administration',
     await loginAsAdmin(page);
     await page.goto('/index.php/settings/admin/kosit_validator');
     await expect(page.locator('#kosit-admin')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'KoSIT Validator' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Anbindung des KoSIT-Validators' })).toBeVisible();
 
     const temporaryDirectory = page.locator('input[name="tempDirectory"]');
     const originalTemporaryDirectory = await temporaryDirectory.inputValue();

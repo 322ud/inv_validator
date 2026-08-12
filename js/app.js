@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const printButton = document.getElementById('kosit-print-button');
     const downloadButton = document.getElementById('kosit-download-button');
     const reportFrame = document.getElementById('kosit-report-frame');
+    const readmeOpen = document.getElementById('kosit-readme-open');
+    const readmeDialog = document.getElementById('kosit-readme-dialog');
+    const readmeClose = document.getElementById('kosit-readme-close');
+    const readmeViewer = readmeDialog?.querySelector('[data-kosit-readme]');
 
     const maxXmlSize = 5 * 1024 * 1024;
     const maxPdfSize = 20 * 1024 * 1024;
@@ -19,6 +23,33 @@ document.addEventListener('DOMContentLoaded', () => {
     let resetHeightBeforeResize = false;
     let reportContentWidth = 0;
     let reportHtml = '';
+
+    const closeReadme = () => {
+        readmeDialog.hidden = true;
+        readmeOpen.focus();
+    };
+
+    readmeOpen?.addEventListener('click', (event) => {
+        event.preventDefault();
+        readmeDialog.hidden = false;
+        readmeClose.focus();
+        window.OCA?.KoSITValidator?.initializeReadme(readmeViewer);
+    });
+
+    readmeClose?.addEventListener('click', closeReadme);
+
+    readmeDialog?.addEventListener('click', (event) => {
+        if (event.target === readmeDialog) {
+            closeReadme();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && readmeDialog && !readmeDialog.hidden) {
+            event.preventDefault();
+            closeReadme();
+        }
+    });
 
     const selectFile = (file) => {
         selectedFileName.textContent = file
