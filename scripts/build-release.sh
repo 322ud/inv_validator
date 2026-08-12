@@ -28,7 +28,10 @@ release_entries=(
     img
     js
     lib
+    LICENSE
+    LICENSES
     templates
+    THIRD_PARTY_NOTICES.md
     README.md
 )
 

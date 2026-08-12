@@ -1,10 +1,10 @@
 # Nextcloud-Frontend für den KoSIT-Validator
 
-Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der[XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung).
+Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der [XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung).
 
-Diese App ist ein Nextcloud-Frontend für den separat installierten[KoSIT-Validator](https://github.com/itplr-kosit/validator). Sie übergibt XML-Rechnungsdokumente an den Validator, der sie anhand des konfigurierten Validierungsszenarios auf Konformität mit der[XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung) prüft. Anschließend zeigt die App den erzeugten HTML-Prüfbericht an.
+Diese App ist ein Nextcloud-Frontend für den separat installierten [KoSIT-Validator](https://github.com/itplr-kosit/validator). Sie übergibt XML-Rechnungsdokumente an den Validator, der sie anhand des konfigurierten Validierungsszenarios auf Konformität mit der [XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung) prüft. Anschließend zeigt die App den erzeugten HTML-Prüfbericht an.
 
-Der Validator stammt von der[Koordinierungsstelle für IT-Standards (KoSIT)](https://www.xoev.de/). Bei hybriden PDF-Rechnungen extrahiert die App zunächst das eingebettete XML-Rechnungsdokument. Geprüft wird ausschließlich das extrahierte XML, nicht die PDF-Datei.
+Der Validator stammt von der [Koordinierungsstelle für IT-Standards (KoSIT)](https://www.xoev.de/). Bei hybriden PDF-Rechnungen extrahiert die App zunächst das eingebettete XML-Rechnungsdokument. Geprüft wird ausschließlich das extrahierte XML, nicht die PDF-Datei.
 
 ---
 
@@ -51,7 +51,7 @@ Die Pfade können direkt auf der Admin-Seite bearbeitet und gespeichert werden. 
 
 Validator-JAR und Szenario-Konfiguration müssen zueinander kompatibel sein. Eine bloß vorhandene Szenario-Datei reicht nicht aus; der Validator prüft sie beim Start gegen sein Szenario-Schema.
 
-Die mitgelieferte Szenariodatei stammt aus der offiziellen KoSIT-Konfigurationfür XRechnung 3.0.2 vom 31. Januar 2026. Die zugehörigen Schema- undSchematron-Ressourcen müssen weiterhin vollständig im konfigurierten Repository vorliegen.
+Die mitgelieferte Szenariodatei stammt aus der offiziellen KoSIT-Konfiguration für XRechnung 3.0.2 vom 31. Januar 2026. Die zugehörigen Schema- und Schematron-Ressourcen müssen weiterhin vollständig im konfigurierten Repository vorliegen.
 
 ---
 
@@ -80,7 +80,7 @@ Beispielstruktur:
 └── repository/
 ```
 
-Die Pfade müssen mit den im Code hinterlegten Pfaden übereinstimmen.
+Die Pfade müssen mit den in den Administrationseinstellungen hinterlegten Pfaden übereinstimmen.
 
 ### Optionale PDF-Unterstützung
 
@@ -225,7 +225,7 @@ Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administra
   - Prüft Version und Download und installiert das Standalone-JAR atomar.
 
 - `AdminController` / `Settings\\Admin`
-  - Stellen die nur für Administratoren erreichbare Status-, Installations-  und Update-Oberfläche bereit.
+  - Stellen die nur für Administratoren erreichbare Status-, Installations- und Update-Oberfläche bereit.
 
 ### Frontend
 
@@ -310,4 +310,6 @@ Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2, 8.
 
 ## Lizenz
 
-Siehe Lizenzdatei des Projekts.
+Der Quellcode dieses Projekts steht unter der [GNU Affero General Public License, Version 3 oder später](LICENSE).
+
+Die mitgelieferte KoSIT-Szenariokonfiguration steht unter der [Apache License 2.0](LICENSES/Apache-2.0.txt). Herkunft und Prüfsumme sind in den [Drittanbieterhinweisen](THIRD_PARTY_NOTICES.md) dokumentiert.
