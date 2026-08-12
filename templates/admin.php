@@ -104,7 +104,7 @@ $stateLabels = [
         <code class="kosit-install-command">python3 -m venv /opt/pymupdf-venv
 /opt/pymupdf-venv/bin/python -m pip install pymupdf</code>
 	in einer virtuellen Umgebung istalliert ist, muss der Systempfad (oben) für Python entsprechend auf
-        <code class="kosit-install-command">/opt/kosit/pymupdf-venv</code>
+        <code class="kosit-install-command">/opt/pymupdf-venv/bin/python</code>
 	gesetzt werden.
     </p>
 
