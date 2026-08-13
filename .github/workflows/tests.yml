@@ -57,14 +57,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXTCLOUD_VERSION: 34.0.3
-      NEXTCLOUD_ROOT: ${{ runner.temp }}/nextcloud-integration
-      KOSIT_ASSET_DIRECTORY: ${{ runner.temp }}/kosit-smoke-assets
-      KOSIT_REPOSITORY: ${{ runner.temp }}/kosit-xrechnung-configuration
       KOSIT_VALIDATOR_VERSION: 1.6.2
       KOSIT_CONFIGURATION_VERSION: 2026-01-31
 
     steps:
       - uses: actions/checkout@v7
+      - name: Define temporary paths
+        run: |
+          echo "NEXTCLOUD_ROOT=$RUNNER_TEMP/nextcloud-integration" >> "$GITHUB_ENV"
+          echo "KOSIT_ASSET_DIRECTORY=$RUNNER_TEMP/kosit-smoke-assets" >> "$GITHUB_ENV"
+          echo "KOSIT_REPOSITORY=$RUNNER_TEMP/kosit-xrechnung-configuration" >> "$GITHUB_ENV"
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -170,13 +172,15 @@ jobs:
     name: KoSIT end-to-end smoke test
     runs-on: ubuntu-latest
     env:
-      KOSIT_ASSET_DIRECTORY: ${{ runner.temp }}/kosit-smoke-assets
-      KOSIT_REPOSITORY: ${{ runner.temp }}/kosit-xrechnung-configuration
       KOSIT_VALIDATOR_VERSION: 1.6.2
       KOSIT_CONFIGURATION_VERSION: 2026-01-31
 
     steps:
       - uses: actions/checkout@v7
+      - name: Define temporary paths
+        run: |
+          echo "KOSIT_ASSET_DIRECTORY=$RUNNER_TEMP/kosit-smoke-assets" >> "$GITHUB_ENV"
+          echo "KOSIT_REPOSITORY=$RUNNER_TEMP/kosit-xrechnung-configuration" >> "$GITHUB_ENV"
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -219,10 +223,11 @@ jobs:
     needs: [php, javascript, nextcloud, kosit]
     env:
       NEXTCLOUD_VERSION: 34.0.3
-      NEXTCLOUD_PACKAGE_ROOT: ${{ runner.temp }}/nextcloud-package-test
 
     steps:
       - uses: actions/checkout@v7
+      - name: Define temporary paths
+        run: echo "NEXTCLOUD_PACKAGE_ROOT=$RUNNER_TEMP/nextcloud-package-test" >> "$GITHUB_ENV"
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
