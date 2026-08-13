@@ -56,7 +56,7 @@ jobs:
     name: Nextcloud 34 integration
     runs-on: ubuntu-latest
     env:
-      NEXTCLOUD_VERSION: 34.0.2
+      NEXTCLOUD_VERSION: 34.0.3
       NEXTCLOUD_ROOT: ${{ runner.temp }}/nextcloud-integration
       KOSIT_ASSET_DIRECTORY: ${{ runner.temp }}/kosit-smoke-assets
       KOSIT_REPOSITORY: ${{ runner.temp }}/kosit-xrechnung-configuration
@@ -218,7 +218,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [php, javascript, nextcloud, kosit]
     env:
-      NEXTCLOUD_VERSION: 34.0.2
+      NEXTCLOUD_VERSION: 34.0.3
       NEXTCLOUD_PACKAGE_ROOT: ${{ runner.temp }}/nextcloud-package-test
 
     steps:
