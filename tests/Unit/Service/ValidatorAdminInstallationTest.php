@@ -9,32 +9,36 @@ use OCA\KoSITValidator\Service\ValidatorAdminService;
 use OCA\KoSITValidator\Service\ValidatorConfigService;
 use OCA\KoSITValidator\Tests\Support\FakeHttpResponse;
 use OCA\KoSITValidator\Tests\Support\QueuedHttpClientService;
-use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 
 final class ValidatorAdminInstallationTest extends TestCase {
-    private const RELEASE_API = 'https://api.github.com/repos/itplr-kosit/validator/releases/latest';
-    private const DOWNLOAD_URL = 'https://github.com/itplr-kosit/validator/releases/download/v2.0.0/validator-2.0.0-standalone.jar';
+    private const VALIDATOR_API = 'https://api.github.com/repos/itplr-kosit/validator/releases/latest';
+    private const CONFIGURATION_API = 'https://api.github.com/repos/itplr-kosit/validator-configuration-xrechnung/releases/latest';
+    private const VALIDATOR_URL = 'https://github.com/itplr-kosit/validator/releases/download/v1.6.2/validator-1.6.2-standalone.jar';
+    private const CONFIGURATION_URL = 'https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/v2026-01-31/xrechnung-3.0.2-validator-configuration-2026-01-31.zip';
 
     private string $temporaryDirectory;
     private string $jarPath;
+    private string $repositoryPath;
     private ValidatorConfigService $config;
 
     protected function setUp(): void {
         $this->temporaryDirectory = sys_get_temp_dir() . '/kosit-install-test-' . bin2hex(random_bytes(8));
         mkdir($this->temporaryDirectory, 0700, true);
-        mkdir($this->temporaryDirectory . '/repository');
-        $this->jarPath = $this->temporaryDirectory . '/validator.jar';
+        $this->jarPath = $this->temporaryDirectory . '/validator-1.6.1-standalone.jar';
+        $this->repositoryPath = $this->temporaryDirectory . '/xrechnung/current';
         file_put_contents($this->jarPath, 'old validator');
-        file_put_contents($this->temporaryDirectory . '/scenario.xml', '<scenarios/>');
+        $this->writeValidatorMarker('1.6.1');
 
         $this->config = $this->createStub(ValidatorConfigService::class);
         $this->config->method('getValidatorJar')->willReturn($this->jarPath);
         $this->config->method('getAppDirectory')->willReturn($this->temporaryDirectory);
         $this->config->method('getPhpBinary')->willReturn(PHP_BINARY);
         $this->config->method('getJavaBinary')->willReturn(PHP_BINARY);
-        $this->config->method('getRepositoryPath')->willReturn($this->temporaryDirectory . '/repository');
-        $this->config->method('getScenarioFile')->willReturn($this->temporaryDirectory . '/scenario.xml');
+        $this->config->method('getPythonBinary')->willReturn(PHP_BINARY);
+        $this->config->method('getRepositoryPath')->willReturn($this->repositoryPath);
+        $this->config->method('getScenarioFile')->willReturn($this->repositoryPath . '/scenarios.xml');
         $this->config->method('getTempDirectory')->willReturn($this->temporaryDirectory);
     }
 
@@ -42,290 +46,170 @@ final class ValidatorAdminInstallationTest extends TestCase {
         $this->removeDirectory($this->temporaryDirectory);
     }
 
-    public function testStatusReportsAvailableUpdateAndUsesExpectedRequestOptions(): void {
-        $this->writeVersionMarker('1.5.0');
+    public function testStatusReportsBothAvailableUpdates(): void {
+        $this->createInstalledConfiguration('2025-07-10', '3.0.2');
         [$service, $client] = $this->serviceWith([
-            new FakeHttpResponse(200, $this->releaseJson()),
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
         ]);
 
         $status = $service->getStatus(true);
 
-        self::assertSame('1.5.0', $status['installedVersion']);
-        self::assertSame('2.0.0', $status['latestVersion']);
-        self::assertTrue($status['updateAvailable']);
-        self::assertNull($status['updateError']);
-        self::assertSame(self::RELEASE_API, $client->requests[0]['url']);
-        self::assertSame(10, $client->requests[0]['options']['connect_timeout']);
-        self::assertSame(20, $client->requests[0]['options']['timeout']);
-        self::assertSame('application/vnd.github+json', $client->requests[0]['options']['headers']['Accept']);
+        self::assertSame('1.6.1', $status['validator']['installedVersion']);
+        self::assertSame('1.6.2', $status['validator']['latestVersion']);
+        self::assertTrue($status['validator']['updateAvailable']);
+        self::assertSame('2025-07-10', $status['configuration']['installedVersion']);
+        self::assertSame('2026-01-31', $status['configuration']['latestVersion']);
+        self::assertSame('3.0.2', $status['configuration']['latestXRechnungVersion']);
+        self::assertTrue($status['configuration']['updateAvailable']);
+        self::assertSame(self::VALIDATOR_API, $client->requests[0]['url']);
+        self::assertSame(self::CONFIGURATION_API, $client->requests[1]['url']);
     }
 
-    public function testStatusTurnsNetworkFailureIntoUpdateError(): void {
-        [$service] = $this->serviceWith([new \RuntimeException('network unavailable')]);
+    public function testStatusKeepsReleaseErrorsSeparate(): void {
+        [$service] = $this->serviceWith([
+            new \RuntimeException('validator offline'),
+            new \RuntimeException('configuration offline'),
+        ]);
 
         $status = $service->getStatus(true);
 
-        self::assertNull($status['latestVersion']);
-        self::assertFalse($status['updateAvailable']);
-        self::assertSame('network unavailable', $status['updateError']);
+        self::assertSame('validator offline', $status['validator']['updateError']);
+        self::assertSame('configuration offline', $status['configuration']['updateError']);
     }
 
-    #[DataProvider('invalidReleaseProvider')]
-    public function testRejectsInvalidReleaseResponses(int $statusCode, string $body, string $message): void {
-        [$service] = $this->serviceWith([new FakeHttpResponse($statusCode, $body)]);
+    public function testRejectsUnexpectedConfigurationAssetUrl(): void {
+        [$service] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationReleaseJson(
+                'https://example.test/xrechnung-3.0.2-validator-configuration-2026-01-31.zip'
+            )),
+        ]);
 
         $status = $service->getStatus(true);
 
-        self::assertNull($status['latestVersion']);
-        self::assertStringContainsString($message, $status['updateError']);
+        self::assertStringContainsString('unerwartete Download-Adresse', $status['configuration']['updateError']);
     }
 
-    public static function invalidReleaseProvider(): iterable {
-        yield 'http error' => [503, '{}', 'HTTP 503'];
-        yield 'malformed json' => [200, '{', 'ungültige Release-Daten'];
-        yield 'invalid version' => [200, json_encode([
-            'tag_name' => 'nightly',
-            'assets' => [],
-        ], JSON_THROW_ON_ERROR), 'keine gültige Release-Version'];
-        yield 'invalid tag type' => [200, json_encode([
-            'tag_name' => ['v2.0.0'],
-            'assets' => [],
-        ], JSON_THROW_ON_ERROR), 'ungültige Release-Daten'];
-        yield 'invalid assets type' => [200, json_encode([
-            'tag_name' => 'v2.0.0',
-            'assets' => 'not-an-array',
-        ], JSON_THROW_ON_ERROR), 'ungültige Release-Daten'];
-        yield 'missing asset' => [200, json_encode([
-            'tag_name' => 'v2.0.0',
-            'assets' => [],
-        ], JSON_THROW_ON_ERROR), 'Standalone-JAR'];
-        yield 'foreign host' => [200, self::releaseJsonStatic(
-            'https://github.com.evil.example/itplr-kosit/validator/releases/download/v2.0.0/validator-2.0.0-standalone.jar'
-        ), 'unerwartete Download-Adresse'];
-        yield 'userinfo' => [200, self::releaseJsonStatic(
-            'https://attacker@github.com/itplr-kosit/validator/releases/download/v2.0.0/validator-2.0.0-standalone.jar'
-        ), 'unerwartete Download-Adresse'];
-        yield 'non-standard port' => [200, self::releaseJsonStatic(
-            'https://github.com:444/itplr-kosit/validator/releases/download/v2.0.0/validator-2.0.0-standalone.jar'
-        ), 'unerwartete Download-Adresse'];
-        yield 'wrong filename' => [200, self::releaseJsonStatic(
-            'https://github.com/itplr-kosit/validator/releases/download/v2.0.0/other.jar'
-        ), 'unerwartete Download-Adresse'];
-        yield 'invalid url type' => [200, json_encode([
-            'tag_name' => 'v2.0.0',
-            'assets' => [[
-                'name' => 'validator-2.0.0-standalone.jar',
-                'browser_download_url' => ['unexpected'],
-            ]],
-        ], JSON_THROW_ON_ERROR), 'ungültige Release-Daten'];
-        yield 'invalid digest type' => [200, json_encode([
-            'tag_name' => 'v2.0.0',
-            'assets' => [[
-                'name' => 'validator-2.0.0-standalone.jar',
-                'browser_download_url' => self::DOWNLOAD_URL,
-                'digest' => ['unexpected'],
-            ]],
-        ], JSON_THROW_ON_ERROR), 'ungültige Release-Daten'];
+    public function testManualConfigurationIsReportedWithoutInventingVersion(): void {
+        mkdir($this->repositoryPath . '/resources', 0700, true);
+        file_put_contents($this->repositoryPath . '/scenarios.xml', '<scenarios/>');
+        [$service] = $this->serviceWith([]);
+
+        $status = $service->getStatus(false);
+
+        self::assertTrue($status['configuration']['installed']);
+        self::assertNull($status['configuration']['installedVersion']);
     }
 
-    public function testInstallAtomicallyReplacesJarAndWritesVersionMarker(): void {
-        $jar = "PK\x03\x04new validator jar";
-        $digest = 'sha256:' . hash('sha256', $jar);
-        [$service, $client] = $this->serviceWith([
-            new FakeHttpResponse(200, $this->releaseJson(digest: $digest)),
+    public function testInstallRequiresZipArchive(): void {
+        if (class_exists(\ZipArchive::class)) {
+            self::markTestSkipped('This assertion applies only when ext-zip is unavailable.');
+        }
+        [$service, $client] = $this->serviceWith([]);
+
+        $this->expectException(AdministrationException::class);
+        $this->expectExceptionMessage('ZipArchive');
+        try {
+            $service->installLatest();
+        } finally {
+            self::assertSame([], $client->requests);
+        }
+    }
+
+    #[RequiresPhpExtension('zip')]
+    public function testInstallsValidatorAndConfigurationTogether(): void {
+        $jar = "PK\x03\x04new validator";
+        $configuration = $this->configurationArchive();
+        [$service] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
             new FakeHttpResponse(200, $jar),
+            new FakeHttpResponse(200, $configuration),
         ]);
 
         $status = $service->installLatest();
 
         self::assertSame($jar, file_get_contents($this->jarPath));
-        self::assertSame(0640, fileperms($this->jarPath) & 0777);
-        self::assertSame('2.0.0', $status['installedVersion']);
-        self::assertSame('2.0.0', $status['latestVersion']);
-        self::assertFalse($status['updateAvailable']);
-        self::assertFileExists($this->jarPath . '.version');
-        self::assertSame([], glob($this->temporaryDirectory . '/.validator-*') ?: []);
-        self::assertSame(self::DOWNLOAD_URL, $client->requests[1]['url']);
-        self::assertSame(15, $client->requests[1]['options']['connect_timeout']);
-        self::assertSame(120, $client->requests[1]['options']['timeout']);
+        self::assertTrue(is_link($this->repositoryPath));
+        self::assertFileExists($this->repositoryPath . '/scenarios.xml');
+        self::assertDirectoryExists($this->repositoryPath . '/resources');
+        self::assertSame('1.6.2', $status['validator']['installedVersion']);
+        self::assertSame('2026-01-31', $status['configuration']['installedVersion']);
+        self::assertSame('3.0.2', $status['configuration']['installedXRechnungVersion']);
     }
 
-    #[DataProvider('invalidDownloadProvider')]
-    public function testDownloadFailuresLeaveExistingInstallationUntouched(
-        string $body,
-        ?string $digest,
-        string $message,
-        ?int $maxDownloadBytes = null
-    ): void {
-        $original = file_get_contents($this->jarPath);
+    #[RequiresPhpExtension('zip')]
+    public function testAcceptsReleaseStyleScenarioDocument(): void {
+        $scenario = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This is the source file for creating scenarios.xml -->
+<scenarios xmlns="http://www.xoev.de/de/validator/framework/1/scenarios"
+  frameworkVersion="1.0.0">
+  <name>Validator Configuration XRechnung 3.0.2</name>
+  <scenario>
+    <name>EN16931 XRechnung (UBL Invoice)</name>
+  </scenario>
+</scenarios>
+XML;
         [$service] = $this->serviceWith([
-            new FakeHttpResponse(200, $this->releaseJson(digest: $digest)),
-            new FakeHttpResponse(200, $body),
-        ], $maxDownloadBytes);
-
-        try {
-            $service->installLatest();
-            self::fail('Expected the download to be rejected');
-        } catch (AdministrationException $exception) {
-            self::assertStringContainsString($message, $exception->getMessage());
-        }
-
-        self::assertSame($original, file_get_contents($this->jarPath));
-        self::assertFileDoesNotExist($this->jarPath . '.version');
-        self::assertSame([], glob($this->temporaryDirectory . '/.validator-*') ?: []);
-        $this->assertInstallLockIsAvailable();
-    }
-
-    public static function invalidDownloadProvider(): iterable {
-        yield 'empty body' => ['', null, 'leer oder überschreitet'];
-        yield 'over size limit' => ["PK\x03\x04" . str_repeat('x', 20), null, 'überschreitet', 16];
-        yield 'not a jar' => ['plain text', null, 'keine gültige JAR-Datei'];
-        yield 'checksum mismatch' => ["PK\x03\x04jar", 'sha256:' . str_repeat('0', 64), 'SHA-256-Prüfung'];
-        yield 'unsupported digest' => ["PK\x03\x04jar", 'sha512:' . str_repeat('0', 128), 'keine gültige SHA-256-Prüfsumme'];
-        yield 'malformed digest' => ["PK\x03\x04jar", 'sha256:abcd', 'keine gültige SHA-256-Prüfsumme'];
-    }
-
-    public function testDownloadHttpErrorLeavesExistingInstallationUntouched(): void {
-        $original = file_get_contents($this->jarPath);
-        [$service] = $this->serviceWith([
-            new FakeHttpResponse(200, $this->releaseJson()),
-            new FakeHttpResponse(502, 'gateway error'),
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
+            new FakeHttpResponse(200, "PK\x03\x04new validator"),
+            new FakeHttpResponse(200, $this->configurationArchive($scenario)),
         ]);
 
-        try {
-            $service->installLatest();
-            self::fail('Expected the download to fail');
-        } catch (AdministrationException $exception) {
-            self::assertStringContainsString('HTTP 502', $exception->getMessage());
-        }
+        $status = $service->installLatest();
 
-        self::assertSame($original, file_get_contents($this->jarPath));
-        $this->assertInstallLockIsAvailable();
+        self::assertSame('2026-01-31', $status['configuration']['installedVersion']);
+        self::assertSame($scenario, file_get_contents($this->repositoryPath . '/scenarios.xml'));
     }
 
-    public function testReleaseNetworkErrorLeavesExistingInstallationUntouched(): void {
-        $original = file_get_contents($this->jarPath);
-        [$service] = $this->serviceWith([new \RuntimeException('offline')]);
-
-        try {
-            $service->installLatest();
-            self::fail('Expected the release request to fail');
-        } catch (\RuntimeException $exception) {
-            self::assertSame('offline', $exception->getMessage());
-        }
-
-        self::assertSame($original, file_get_contents($this->jarPath));
-    }
-
-    public function testDownloadNetworkErrorLeavesExistingInstallationUntouchedAndReleasesLock(): void {
-        $original = file_get_contents($this->jarPath);
-        [$service] = $this->serviceWith([
-            new FakeHttpResponse(200, $this->releaseJson()),
-            new \RuntimeException('download interrupted'),
-        ]);
-
-        try {
-            $service->installLatest();
-            self::fail('Expected the download request to fail');
-        } catch (\RuntimeException $exception) {
-            self::assertSame('download interrupted', $exception->getMessage());
-        }
-
-        self::assertSame($original, file_get_contents($this->jarPath));
-        $this->assertInstallLockIsAvailable();
-    }
-
-    public function testEqualInstalledAndLatestVersionDoesNotOfferUpdate(): void {
-        $this->writeVersionMarker('2.0.0');
-        [$service] = $this->serviceWith([
-            new FakeHttpResponse(200, $this->releaseJson()),
-        ]);
-
-        $status = $service->getStatus(true);
-
-        self::assertSame('2.0.0', $status['installedVersion']);
-        self::assertSame('2.0.0', $status['latestVersion']);
-        self::assertFalse($status['updateAvailable']);
-    }
-
-    public function testConcurrentInstallationIsRejectedBeforeDownload(): void {
-        $original = file_get_contents($this->jarPath);
-        [$service, $client] = $this->serviceWith([
-            new FakeHttpResponse(200, $this->releaseJson()),
-        ]);
-        $process = proc_open(
-            [
-                PHP_BINARY,
-                dirname(__DIR__, 2) . '/fixtures/hold-lock.php',
-                $this->temporaryDirectory . '/.kosit-validator-install.lock',
-            ],
-            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
-            $pipes
-        );
-        self::assertIsResource($process);
-
-        try {
-            self::assertSame("locked\n", fgets($pipes[1]));
-            $this->expectException(AdministrationException::class);
-            $this->expectExceptionMessage('Installation läuft bereits');
-            $service->installLatest();
-        } finally {
-            proc_terminate($process);
-            fclose($pipes[1]);
-            fclose($pipes[2]);
-            proc_close($process);
-            self::assertSame($original, file_get_contents($this->jarPath));
-            self::assertCount(1, $client->requests);
-        }
-    }
-
-    public function testVersionMarkerIsIgnoredAfterJarWasModified(): void {
-        $jar = "PK\x03\x04new validator jar";
-        [$service] = $this->serviceWith([
-            new FakeHttpResponse(200, $this->releaseJson()),
-            new FakeHttpResponse(200, $jar),
-        ]);
-        $service->installLatest();
-
-        file_put_contents($this->jarPath, $jar . 'tampered');
-        clearstatcache(true, $this->jarPath);
-
-        self::assertNull($service->getStatus(false)['installedVersion']);
-    }
-
-    /**
-     * @param list<FakeHttpResponse|\Throwable> $responses
-     * @return array{ValidatorAdminService, QueuedHttpClientService}
+    /** @param list<FakeHttpResponse|\Throwable> $responses
+     *  @return array{ValidatorAdminService, QueuedHttpClientService}
      */
-    private function serviceWith(array $responses, ?int $maxDownloadBytes = null): array {
+    private function serviceWith(array $responses): array {
         $client = new QueuedHttpClientService($responses);
-
-        return [
-            new ValidatorAdminService($this->config, $client, $maxDownloadBytes),
-            $client,
-        ];
+        return [new ValidatorAdminService($this->config, $client), $client];
     }
 
-    private function releaseJson(?string $digest = null): string {
-        return self::releaseJsonStatic(self::DOWNLOAD_URL, $digest);
-    }
-
-    private static function releaseJsonStatic(string $url, ?string $digest = null): string {
-        $asset = [
-            'name' => 'validator-2.0.0-standalone.jar',
-            'browser_download_url' => $url,
-        ];
-        if ($digest !== null) {
-            $asset['digest'] = $digest;
-        }
-
+    private function validatorReleaseJson(): string {
         return json_encode([
-            'tag_name' => 'v2.0.0',
-            'assets' => [$asset],
+            'tag_name' => 'v1.6.2',
+            'assets' => [[
+                'name' => 'validator-1.6.2-standalone.jar',
+                'browser_download_url' => self::VALIDATOR_URL,
+            ]],
         ], JSON_THROW_ON_ERROR);
     }
 
-    private function writeVersionMarker(string $version): void {
+    private function configurationReleaseJson(?string $url = null): string {
+        return json_encode([
+            'tag_name' => 'v2026-01-31',
+            'assets' => [[
+                'name' => 'xrechnung-3.0.2-validator-configuration-2026-01-31.zip',
+                'browser_download_url' => $url ?? self::CONFIGURATION_URL,
+            ]],
+        ], JSON_THROW_ON_ERROR);
+    }
+
+    private function configurationArchive(?string $scenario = null): string {
+        $path = $this->temporaryDirectory . '/configuration.zip';
+        $zip = new \ZipArchive();
+        self::assertTrue($zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE));
+        $zip->addFromString(
+            'scenarios.xml',
+            $scenario ?? '<scenarios xmlns="http://www.xoev.de/de/validator/framework/1/scenarios"/>'
+        );
+        $zip->addFromString('resources/report.xsl', '<xsl/>');
+        $zip->close();
+        $body = file_get_contents($path);
+        self::assertIsString($body);
+        unlink($path);
+        return $body;
+    }
+
+    private function writeValidatorMarker(string $version): void {
         file_put_contents($this->jarPath . '.version', json_encode([
             'version' => $version,
             'size' => filesize($this->jarPath),
@@ -333,28 +217,30 @@ final class ValidatorAdminInstallationTest extends TestCase {
         ], JSON_THROW_ON_ERROR));
     }
 
-    private function assertInstallLockIsAvailable(): void {
-        $lock = fopen($this->temporaryDirectory . '/.kosit-validator-install.lock', 'c');
-        self::assertIsResource($lock);
-        self::assertTrue(flock($lock, LOCK_EX | LOCK_NB));
-        flock($lock, LOCK_UN);
-        fclose($lock);
+    private function createInstalledConfiguration(string $release, string $xrechnung): void {
+        $directory = $this->temporaryDirectory . '/xrechnung/releases/' . $release;
+        mkdir($directory . '/resources', 0700, true);
+        $scenario = '<scenarios xmlns="http://www.xoev.de/de/validator/framework/1/scenarios"/>';
+        file_put_contents($directory . '/scenarios.xml', $scenario);
+        file_put_contents($directory . '/.kosit-xrechnung-version', json_encode([
+            'release' => $release,
+            'xrechnung' => $xrechnung,
+            'scenarioSha256' => hash('sha256', $scenario),
+        ], JSON_THROW_ON_ERROR));
+        symlink($directory, $this->repositoryPath);
     }
 
     private function removeDirectory(string $directory): void {
         if (!is_dir($directory)) {
             return;
         }
-
-        foreach (scandir($directory) ?: [] as $item) {
-            if ($item === '.' || $item === '..') {
-                continue;
+        foreach (new \FilesystemIterator($directory, \FilesystemIterator::SKIP_DOTS) as $item) {
+            if ($item->isLink() || $item->isFile()) {
+                unlink($item->getPathname());
+            } else {
+                $this->removeDirectory($item->getPathname());
             }
-
-            $path = $directory . DIRECTORY_SEPARATOR . $item;
-            is_dir($path) ? $this->removeDirectory($path) : unlink($path);
         }
-
         rmdir($directory);
     }
 }

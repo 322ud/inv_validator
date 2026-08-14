@@ -6,28 +6,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const pathsBody = document.getElementById('kosit-paths-body');
-    const installedVersion = document.getElementById('kosit-installed-version');
-    const latestVersion = document.getElementById('kosit-latest-version');
+    const validatorInstalledVersion = document.getElementById('kosit-validator-installed-version');
+    const validatorLatestVersion = document.getElementById('kosit-validator-latest-version');
+    const configurationInstalledVersion = document.getElementById('kosit-configuration-installed-version');
+    const configurationLatestVersion = document.getElementById('kosit-configuration-latest-version');
     const summary = document.getElementById('kosit-update-summary');
     const message = document.getElementById('kosit-admin-message');
     const saveButton = document.getElementById('kosit-save-paths');
     const checkButton = document.getElementById('kosit-check-update');
     const installButton = document.getElementById('kosit-install');
-    const editScenarioButton = document.getElementById('kosit-edit-scenario');
-    const scenarioMessage = document.getElementById('kosit-scenario-message');
-    const scenarioEditor = document.getElementById('kosit-scenario-editor');
-    const scenarioPath = document.getElementById('kosit-scenario-path');
-    const scenarioContent = document.getElementById('kosit-scenario-content');
-    const saveScenarioButton = document.getElementById('kosit-save-scenario');
-    const cancelScenarioButton = document.getElementById('kosit-cancel-scenario');
     const pdfAvailability = document.getElementById('kosit-pdf-availability');
     const pythonVersion = document.getElementById('kosit-python-version');
     const pymupdfVersion = document.getElementById('kosit-pymupdf-version');
     const pdfReason = document.getElementById('kosit-pdf-reason');
     const checkPdfButton = document.getElementById('kosit-check-pdf');
     const readmeViewer = root.querySelector('[data-kosit-readme]');
-    let scenarioChecksum = '';
-
     window.OCA?.KoSITValidator?.initializeReadme(readmeViewer);
 
     const stateLabels = {
@@ -87,22 +80,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return row;
         }));
 
-        installedVersion.textContent = status.installedVersion
-            || (status.installed ? 'Unbekannt' : 'Nicht installiert');
-        latestVersion.textContent = status.latestVersion || 'Nicht ermittelbar';
-        installButton.textContent = status.installed
-            ? 'Neueste Version installieren'
-            : 'Jetzt installieren';
+        validatorInstalledVersion.textContent = status.validator.installedVersion
+            || (status.validator.installed ? 'Unbekannt' : 'Nicht installiert');
+        validatorLatestVersion.textContent = status.validator.latestVersion || 'Nicht ermittelbar';
+        configurationInstalledVersion.textContent = status.configuration.installedVersion
+            ? `XRechnung ${status.configuration.installedXRechnungVersion} / ${status.configuration.installedVersion}`
+            : (status.configuration.installed ? 'Manuell installiert / Version unbekannt' : 'Nicht installiert');
+        configurationLatestVersion.textContent = status.configuration.latestVersion
+            ? `XRechnung ${status.configuration.latestXRechnungVersion} / ${status.configuration.latestVersion}`
+            : 'Nicht ermittelbar';
+        installButton.textContent = status.validator.installed && status.configuration.installed
+            ? 'Komponenten aktualisieren'
+            : 'Komponenten installieren';
 
         updatePdfSupport(status.pdfSupport);
 
-        if (status.updateError) {
-            summary.textContent = `Update-Prüfung fehlgeschlagen: ${status.updateError}`;
-        } else if (!status.installed) {
-            summary.textContent = 'Der KoSIT-Validator ist nicht installiert.';
-        } else if (!status.installedVersion) {
-            summary.textContent = 'Die installierte Version konnte nicht ermittelt werden.';
-        } else if (status.updateAvailable) {
+        const errors = [status.validator.updateError, status.configuration.updateError].filter(Boolean);
+        if (errors.length > 0) {
+            summary.textContent = `Update-Prüfung fehlgeschlagen: ${errors.join(' / ')}`;
+        } else if (!status.validator.installed || !status.configuration.installed) {
+            summary.textContent = 'Mindestens eine benötigte Komponente ist nicht installiert.';
+        } else if (!status.validator.installedVersion || !status.configuration.installedVersion) {
+            summary.textContent = 'Mindestens ein installierter Versionsstand konnte nicht ermittelt werden.';
+        } else if (status.validator.updateAvailable || status.configuration.updateAvailable) {
             summary.textContent = 'Ein Update ist verfügbar.';
         } else {
             summary.textContent = 'Die Installation ist aktuell.';
@@ -158,67 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    editScenarioButton.addEventListener('click', async () => {
-        scenarioEditor.hidden = true;
-        scenarioPath.textContent = '';
-        scenarioContent.value = '';
-        scenarioChecksum = '';
-        scenarioMessage.textContent = 'Szenario-Datei wird geladen …';
-        editScenarioButton.disabled = true;
-
-        try {
-            const result = await request('/apps/kosit_validator/admin/status?scenario=1');
-            scenarioPath.textContent = result.scenario.path;
-            scenarioContent.value = result.scenario.content;
-            scenarioChecksum = result.scenario.checksum;
-            scenarioEditor.hidden = false;
-            scenarioContent.readOnly = !result.scenario.writable;
-            saveScenarioButton.disabled = !result.scenario.writable;
-            scenarioMessage.textContent = result.scenario.writable
-                ? 'Szenario-Datei wurde geladen.'
-                : 'Szenario-Datei wurde geladen, ist aber nicht beschreibbar.';
-            scenarioContent.focus();
-        } catch (error) {
-            scenarioMessage.textContent = error.message;
-        } finally {
-            editScenarioButton.disabled = false;
-        }
-    });
-
-    cancelScenarioButton.addEventListener('click', () => {
-        scenarioEditor.hidden = true;
-        scenarioContent.value = '';
-        scenarioChecksum = '';
-        scenarioMessage.textContent = '';
-        editScenarioButton.focus();
-    });
-
-    saveScenarioButton.addEventListener('click', async () => {
-        const formData = new FormData();
-        formData.append('action', 'saveScenario');
-        formData.append('content', scenarioContent.value);
-        formData.append('checksum', scenarioChecksum);
-
-        scenarioMessage.textContent = 'Szenario-Datei wird geprüft und gespeichert …';
-        saveScenarioButton.disabled = true;
-        cancelScenarioButton.disabled = true;
-
-        try {
-            const result = await request('/apps/kosit_validator/admin/paths', {
-                method: 'POST',
-                body: formData,
-            });
-            scenarioChecksum = result.scenario.checksum;
-            scenarioContent.value = result.scenario.content;
-            scenarioMessage.textContent = result.message;
-        } catch (error) {
-            scenarioMessage.textContent = error.message;
-        } finally {
-            saveScenarioButton.disabled = false;
-            cancelScenarioButton.disabled = false;
-        }
-    });
-
     checkButton.addEventListener('click', async () => {
         message.textContent = 'GitHub wird auf Updates geprüft …';
         checkButton.disabled = true;
@@ -226,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const result = await request('/apps/kosit_validator/admin/status');
             updateView(result.status);
-            message.textContent = result.status.updateError
+            message.textContent = result.status.validator.updateError || result.status.configuration.updateError
                 ? 'Die Update-Prüfung konnte nicht abgeschlossen werden.'
                 : 'Update-Prüfung abgeschlossen.';
         } catch (error) {
@@ -251,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     installButton.addEventListener('click', async () => {
-        message.textContent = 'Neueste Validator-Version wird heruntergeladen und installiert …';
+        message.textContent = 'Validator und XRechnung-Konfiguration werden installiert …';
         installButton.disabled = true;
         checkButton.disabled = true;
 

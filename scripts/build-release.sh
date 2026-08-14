@@ -23,7 +23,6 @@ mkdir --parents "$package_root" "$output_directory"
 
 release_entries=(
     appinfo
-    config
     css
     img
     js

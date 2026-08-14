@@ -109,7 +109,7 @@ final class FrameworkIntegrationTest extends TestCase
     {
         yield 'status' => ['status'];
         yield 'install' => ['install'];
-        yield 'save paths and scenario' => ['savePaths'];
+        yield 'save paths' => ['savePaths'];
     }
 
     /** @param class-string $attribute */

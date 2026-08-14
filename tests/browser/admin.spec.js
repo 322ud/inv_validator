@@ -28,7 +28,7 @@ const savePaths = async (page) => {
     await expect(page.locator('#kosit-admin-message')).toHaveText('Pfade wurden gespeichert.');
 };
 
-test('configures paths and edits the scenario through Nextcloud administration', async ({ page }) => {
+test('configures paths through Nextcloud administration', async ({ page }) => {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
 
@@ -52,31 +52,5 @@ test('configures paths and edits the scenario through Nextcloud administration',
     await expect(page.locator('input[name="tempDirectory"]'))
         .toHaveValue(originalTemporaryDirectory);
 
-    await page.locator('#kosit-edit-scenario').click();
-    await expect(page.locator('#kosit-scenario-message'))
-        .toHaveText('Szenario-Datei wurde geladen.');
-    await expect(page.locator('#kosit-scenario-editor')).toBeVisible();
-
-    const scenarioContent = page.locator('#kosit-scenario-content');
-    const originalScenario = await scenarioContent.inputValue();
-
-    await scenarioContent.fill('<scenarios/>');
-    await page.locator('#kosit-save-scenario').click();
-    await expect(page.locator('#kosit-scenario-message')).toHaveText(
-        'Das Wurzelelement muss „scenarios“ im KoSIT-Szenario-Namensraum sein.',
-    );
-    await expect(scenarioContent).toHaveValue('<scenarios/>');
-
-    const saveScenarioResponse = page.waitForResponse((response) => (
-        response.request().method() === 'POST'
-        && response.url().endsWith('/apps/kosit_validator/admin/paths')
-        && response.status() === 200
-    ));
-    await scenarioContent.fill(originalScenario);
-    await page.locator('#kosit-save-scenario').click();
-    await saveScenarioResponse;
-    await expect(page.locator('#kosit-scenario-message'))
-        .toHaveText('Szenario-Datei wurde gespeichert.');
-    await expect(scenarioContent).toHaveValue(originalScenario);
     await expect(pageErrors).toEqual([]);
 });

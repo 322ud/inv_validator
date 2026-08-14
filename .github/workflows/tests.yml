@@ -123,7 +123,7 @@ jobs:
             integration-user
           php occ app:disable firstrunwizard
           php occ app:enable kosit_validator
-          php occ app:list --enabled | grep --fixed-strings --line-regexp '  - kosit_validator: 0.4.1'
+          php occ app:list --enabled | grep --fixed-strings --line-regexp '  - kosit_validator: 0.5.0'
       - name: Run Nextcloud framework integration tests
         run: |
           "$NEXTCLOUD_ROOT/apps/kosit_validator/vendor/bin/phpunit" \
@@ -151,8 +151,6 @@ jobs:
           php occ config:app:set kosit_validator validator_jar \
             --value="$KOSIT_ASSET_DIRECTORY/validator-${KOSIT_VALIDATOR_VERSION}-standalone.jar"
           php occ config:app:set kosit_validator repository_path --value="$KOSIT_REPOSITORY"
-          php occ config:app:set kosit_validator scenario_file \
-            --value="$NEXTCLOUD_ROOT/apps/kosit_validator/config/EN16931_(CII)-szenario.xml"
           php occ config:app:set kosit_validator temp_directory \
             --value="$NEXTCLOUD_ROOT/data/kosit-validator-temp"
       - name: Run browser end-to-end test
@@ -211,7 +209,7 @@ jobs:
       - name: Run real KoSIT validation
         env:
           KOSIT_VALIDATOR_JAR: ${{ env.KOSIT_ASSET_DIRECTORY }}/validator-1.6.2-standalone.jar
-          KOSIT_SCENARIO_FILE: ${{ github.workspace }}/config/EN16931_(CII)-szenario.xml
+          KOSIT_SCENARIO_FILE: ${{ env.KOSIT_REPOSITORY }}/scenarios.xml
           KOSIT_VALID_INVOICE: ${{ env.KOSIT_ASSET_DIRECTORY }}/01.01a-INVOICE_ubl.xml
         run: |
           export KOSIT_JAVA_BINARY="$JAVA_HOME/bin/java"

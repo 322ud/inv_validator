@@ -168,6 +168,9 @@ class KoSITValidatorService
     /** @return list<string> */
     private function buildCommand(string $xmlFile, string $tempDir): array
     {
+        $configuredRepository = $this->config->getRepositoryPath();
+        $repository = realpath($configuredRepository) ?: $configuredRepository;
+
         return [
             $this->config->getJavaBinary(),
             '-Xmx512m',
@@ -175,9 +178,9 @@ class KoSITValidatorService
             '-jar',
             $this->config->getValidatorJar(),
             '-s',
-            $this->config->getScenarioFile(),
+            $repository . '/scenarios.xml',
             '-r',
-            $this->config->getRepositoryPath(),
+            $repository,
             '-o',
             $tempDir,
             '-h',

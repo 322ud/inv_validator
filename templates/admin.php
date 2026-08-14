@@ -22,8 +22,8 @@ $stateLabels = [
     <p>
         Konfiguration der Anbindung an den externen
         <a href="https://github.com/itplr-kosit/validator" target="_blank" rel="noopener noreferrer">KoSIT-Validator</a>.
-        Hier können Systempfade und Validierungsszenario verwaltet sowie das
-        offizielle Standalone-JAR installiert oder aktualisiert werden.
+        Hier können Systempfade sowie der KoSIT-Validator und die offizielle
+        XRechnung-Konfiguration verwaltet werden.
     </p>
 
     <h4>Systempfade</h4>
@@ -36,11 +36,11 @@ $stateLabels = [
             </tr>
         </thead>
         <tbody id="kosit-paths-body">
-            <?php foreach ($status['paths'] as $path): ?>
+            <?php foreach ($status['paths'] as $path) : ?>
                 <tr>
                     <th scope="row"><?php p($path['label']); ?></th>
                     <td>
-                        <?php if (isset($path['key'])): ?>
+                        <?php if (isset($path['key'])) : ?>
                             <input
                                 class="kosit-path-input"
                                 type="text"
@@ -50,7 +50,7 @@ $stateLabels = [
                                 autocomplete="off"
                                 spellcheck="false"
                             >
-                        <?php else: ?>
+                        <?php else : ?>
                             <code><?php p($path['path']); ?></code>
                         <?php endif; ?>
                     </td>
@@ -66,9 +66,7 @@ $stateLabels = [
 
     <div class="kosit-path-actions">
         <button id="kosit-save-paths" type="button" class="primary">Pfade speichern</button>
-        <button id="kosit-edit-scenario" type="button">Szenario-Datei bearbeiten</button>
     </div>
-    <p id="kosit-scenario-message" role="status" aria-live="polite"></p>
     <p class="settings-hint">
         Gespeicherte Werte haben Vorrang vor den entsprechenden Einträgen in
         der Nextcloud-<code>config.php</code> und werden sofort für Validierungen,
@@ -93,9 +91,9 @@ $stateLabels = [
         </div>
     </dl>
     <p id="kosit-pdf-reason" class="kosit-update-summary">
-        <?php if ($status['pdfSupport']['reason'] !== null): ?>
+        <?php if ($status['pdfSupport']['reason'] !== null) : ?>
             <?php p($status['pdfSupport']['reason']); ?>
-        <?php else: ?>
+        <?php else : ?>
             PDFs mit eingebettetem XML können verarbeitet werden.
         <?php endif; ?>
     </p>
@@ -103,62 +101,60 @@ $stateLabels = [
         <button id="kosit-check-pdf" type="button">Erneut prüfen</button>
     </div>
     <p class="settings-hint">
-	Wenn der Server Python und darin PyMuPDF bereitstellt, kann diese App auch PDF-Dateien mit eingebundener (embedded) XML-Rechnung verarbeiten.
+    Wenn der Server Python und darin PyMuPDF bereitstellt, kann diese App auch PDF-Dateien mit eingebundener (embedded) XML-Rechnung verarbeiten.
         Wenn beispielsweise PyMuPDF mit
         <code class="kosit-install-command">python3 -m venv /opt/pymupdf-venv
 /opt/pymupdf-venv/bin/python -m pip install pymupdf</code>
-	in einer virtuellen Umgebung istalliert ist, muss der Systempfad (oben) für Python entsprechend auf
+    in einer virtuellen Umgebung istalliert ist, muss der Systempfad (oben) für Python entsprechend auf
         <code class="kosit-install-command">/opt/pymupdf-venv/bin/python</code>
-	gesetzt werden.
+    gesetzt werden.
     </p>
 
-    <section id="kosit-scenario-editor" class="kosit-scenario-editor" hidden>
-        <h4>Szenario-Datei bearbeiten</h4>
-        <p>
-            Bearbeitete Datei: <code id="kosit-scenario-path"></code>
-        </p>
-        <textarea
-            id="kosit-scenario-content"
-            aria-label="Inhalt der Szenario-Datei"
-            autocomplete="off"
-            spellcheck="false"
-        ></textarea>
-        <div class="kosit-scenario-actions">
-            <button id="kosit-save-scenario" type="button" class="primary">Szenario-Datei speichern</button>
-            <button id="kosit-cancel-scenario" type="button">Abbrechen</button>
-        </div>
-        <p class="settings-hint">
-            Beim Speichern wird geprüft, ob der Inhalt wohlgeformtes KoSIT-Szenario-XML ist.
-        </p>
-    </section>
-
     <h4 class="kosit-status-heading">
-        Validator der
+        Installierte Komponenten der
         <a href="https://www.xoev.de/" target="_blank" rel="noopener noreferrer">Koordinierungsstelle für IT-Standards (KoSIT)</a>
     </h4>
     <dl class="kosit-versions">
         <div>
-            <dt>Installierte Version</dt>
-            <dd id="kosit-installed-version">
-                <?php p($status['installedVersion'] ?? ($status['installed'] ? 'Unbekannt' : 'Nicht installiert')); ?>
+            <dt>Validator installiert</dt>
+            <dd id="kosit-validator-installed-version">
+                <?php p($status['validator']['installedVersion'] ?? ($status['validator']['installed'] ? 'Unbekannt' : 'Nicht installiert')); ?>
             </dd>
         </div>
         <div>
-            <dt>Neueste Version auf GitHub</dt>
-            <dd id="kosit-latest-version"><?php p($status['latestVersion'] ?? 'Nicht ermittelbar'); ?></dd>
+            <dt>Validator neueste Version</dt>
+            <dd id="kosit-validator-latest-version"><?php p($status['validator']['latestVersion'] ?? 'Nicht ermittelbar'); ?></dd>
+        </div>
+        <div>
+            <dt>XRechnung-Konfiguration installiert</dt>
+            <dd id="kosit-configuration-installed-version">
+                <?php if ($status['configuration']['installedVersion'] !== null) : ?>
+                    <?php p('XRechnung ' . $status['configuration']['installedXRechnungVersion'] . ' / ' . $status['configuration']['installedVersion']); ?>
+                <?php else : ?>
+                    <?php p($status['configuration']['installed'] ? 'Manuell installiert / Version unbekannt' : 'Nicht installiert'); ?>
+                <?php endif; ?>
+            </dd>
+        </div>
+        <div>
+            <dt>XRechnung-Konfiguration neueste Version</dt>
+            <dd id="kosit-configuration-latest-version">
+                <?php p($status['configuration']['latestVersion'] === null
+                    ? 'Nicht ermittelbar'
+                    : 'XRechnung ' . $status['configuration']['latestXRechnungVersion'] . ' / ' . $status['configuration']['latestVersion']); ?>
+            </dd>
         </div>
     </dl>
 
     <p id="kosit-update-summary" class="kosit-update-summary">
-        <?php if ($status['updateError'] !== null): ?>
-            <?php p('Update-Prüfung fehlgeschlagen: ' . $status['updateError']); ?>
-        <?php elseif (!$status['installed']): ?>
-            Der KoSIT-Validator ist nicht installiert.
-        <?php elseif ($status['installedVersion'] === null): ?>
-            Die installierte Version konnte nicht ermittelt werden.
-        <?php elseif ($status['updateAvailable']): ?>
+        <?php if ($status['validator']['updateError'] !== null || $status['configuration']['updateError'] !== null) : ?>
+            Die Update-Prüfung konnte nicht vollständig abgeschlossen werden.
+        <?php elseif (!$status['validator']['installed'] || !$status['configuration']['installed']) : ?>
+            Mindestens eine benötigte Komponente ist nicht installiert.
+        <?php elseif ($status['validator']['installedVersion'] === null || $status['configuration']['installedVersion'] === null) : ?>
+            Mindestens ein installierter Versionsstand konnte nicht ermittelt werden.
+        <?php elseif ($status['validator']['updateAvailable'] || $status['configuration']['updateAvailable']) : ?>
             Ein Update ist verfügbar.
-        <?php else: ?>
+        <?php else : ?>
             Die Installation ist aktuell.
         <?php endif; ?>
     </p>
@@ -166,18 +162,23 @@ $stateLabels = [
     <div class="kosit-admin-actions">
         <button id="kosit-check-update" type="button">Erneut prüfen</button>
         <button id="kosit-install" type="button" class="primary">
-            <?php p($status['installed'] ? 'Neueste Version installieren' : 'Jetzt installieren'); ?>
+            <?php p($status['validator']['installed'] && $status['configuration']['installed']
+                ? 'Komponenten aktualisieren'
+                : 'Komponenten installieren'); ?>
         </button>
-        <a href="<?php p($status['releaseUrl']); ?>" target="_blank" rel="noopener noreferrer">
-            Releases auf GitHub
+        <a href="<?php p($status['validator']['releaseUrl']); ?>" target="_blank" rel="noopener noreferrer">
+            Validator-Releases
+        </a>
+        <a href="<?php p($status['configuration']['releaseUrl']); ?>" target="_blank" rel="noopener noreferrer">
+            XRechnung-Releases
         </a>
     </div>
 
     <p id="kosit-admin-message" role="status" aria-live="polite"></p>
     <p class="settings-hint">
-        Die Installation schreibt das offizielle Standalone-JAR atomar an den
-        angezeigten Validator-Pfad. Der Webserver-Benutzer benötigt dort
-        Schreibrechte. Ab Validator 1.6 ist Java 11 oder neuer erforderlich.
+        Die Installation lädt das offizielle Standalone-JAR und das vollständige
+        XRechnung-Konfigurationspaket. Der Webserver-Benutzer benötigt an den
+        angezeigten Zielpfaden Schreibrechte. Validator 1.6 benötigt Java 11 oder neuer.
     </p>
 
     <section class="kosit-readme-embed" aria-labelledby="kosit-admin-readme-title">

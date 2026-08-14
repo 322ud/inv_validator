@@ -18,9 +18,9 @@ Der Validator stammt von der [Koordinierungsstelle für IT-Standards (KoSIT)](ht
 - Größenbegrenzung für XML-Dateien
 - Aufbereitung der Validator-Ergebnisse als JSON-API
 - Admin-Seite mit automatisch ermittelten Systempfaden
-- Bearbeitung der Szenario-Datei direkt in der Admin-Seite
-- Installation des offiziellen Standalone-JAR aus den GitHub-Releases
-- Prüfung auf neue KoSIT-Validator-Versionen und direkte Aktualisierung
+- Gemeinsame Installation des offiziellen Standalone-JAR und der vollständigen XRechnung-Konfiguration
+- Getrennte Anzeige der installierten und neuesten Versionen beider Komponenten
+- Sichere, versionierte Aktivierung der XRechnung-Konfiguration
 
 ---
 
@@ -33,25 +33,22 @@ Die Anwendung verwendet folgende Standardpfade:
 | Java | `/usr/bin/java` |
 | Python (optional) | `/usr/bin/python3` |
 | Validator JAR | `/opt/kosit/validator-1.6.2-standalone.jar` |
-| Repository | `/opt/kosit` |
-| Szenario-Datei | `config/EN16931_(CII)-szenario.xml` innerhalb der App |
+| XRechnung-Repository | `/opt/kosit/xrechnung/current` |
+| Szenario-Datei | `/opt/kosit/xrechnung/current/scenarios.xml` (automatisch abgeleitet) |
 
 Die Admin-Seite unter **Administrationseinstellungen → Weitere Einstellungen** zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht. Dasselbe gilt für das optionale Python. Die Admin-Seite prüft mit dem konfigurierten Interpreter, ob PyMuPDF importiert werden kann. Nur dann wird PDF als Eingabe angeboten.
 
-Die Pfade können direkt auf der Admin-Seite bearbeitet und gespeichert werden. Gespeicherte Werte werden von Validierung, Installation und Update-Prüfung sofort verwendet und haben Vorrang vor Einträgen in der Nextcloud-`config.php`. Über **Szenario-Datei bearbeiten** kann außerdem der Inhalt der aktuell konfigurierten Datei geladen, als XML geprüft und atomar gespeichert werden. Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende `config.php`-Optionen als Fallback verfügbar:
+Die Pfade können direkt auf der Admin-Seite bearbeitet und gespeichert werden. Gespeicherte Werte werden von Validierung, Installation und Update-Prüfung sofort verwendet und haben Vorrang vor Einträgen in der Nextcloud-`config.php`. Die Szenariodatei ist immer `scenarios.xml` innerhalb des konfigurierten XRechnung-Repositorys. Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende `config.php`-Optionen als Fallback verfügbar:
 
 ```php
 'kosit_validator_java_binary' => '/usr/bin/java',
 'kosit_validator_python_binary' => '/opt/kosit/pymupdf-venv/bin/python',
 'kosit_validator_jar' => '/opt/kosit/validator-1.6.2-standalone.jar',
-'kosit_validator_repository' => '/opt/kosit',
-'kosit_validator_scenarios' => '/pfad/zu/eigener/EN16931_(CII)-szenario.xml',
+'kosit_validator_repository' => '/opt/kosit/xrechnung/current',
 'kosit_validator_temp_directory' => '/tmp/nextcloud-kosit-validator',
 ```
 
-Validator-JAR und Szenario-Konfiguration müssen zueinander kompatibel sein. Eine bloß vorhandene Szenario-Datei reicht nicht aus; der Validator prüft sie beim Start gegen sein Szenario-Schema.
-
-Die mitgelieferte Szenariodatei stammt aus der offiziellen KoSIT-Konfiguration für XRechnung 3.0.2 vom 31. Januar 2026. Die zugehörigen Schema- und Schematron-Ressourcen müssen weiterhin vollständig im konfigurierten Repository vorliegen.
+Validator-JAR und XRechnung-Konfiguration müssen zueinander kompatibel sein. Die App unterstützt derzeit die Validator-Reihe 1.6.x. Die XRechnung-Konfiguration wird nicht mit der App ausgeliefert, sondern vollständig aus den offiziellen KoSIT-Releases installiert.
 
 ---
 
@@ -65,9 +62,13 @@ Beispiel für Debian/Ubuntu:
 sudo apt install openjdk-17-jre
 ```
 
-### KoSIT-Validator installieren
+### KoSIT-Validator und XRechnung-Konfiguration installieren
 
-Die empfohlene Installation erfolgt in der Admin-Seite über **Jetzt installieren**. Die App ermittelt das neueste offizielle GitHub-Release, lädt das zugehörige `validator-<version>-standalone.jar` und aktiviert es atomar am konfigurierten JAR-Pfad. Der Webserver-Benutzer muss für dessen Verzeichnis Schreibrechte besitzen.
+Die empfohlene Installation erfolgt in der Admin-Seite über **Komponenten installieren**. Die App ermittelt die neuesten offiziellen GitHub-Releases, lädt das zugehörige `validator-<version>-standalone.jar` und das vollständige XRechnung-Konfigurationspaket. Das Paket wird geprüft, in einem versionierten Verzeichnis bereitgestellt und anschließend über den konfigurierten Repositorypfad aktiviert. PHP benötigt dafür die Erweiterung `ZipArchive`. Der Webserver-Benutzer muss für beide Zielverzeichnisse Schreibrechte besitzen.
+
+Ein bereits vorhandenes echtes Verzeichnis am Repositorypfad wird aus Sicherheitsgründen nicht überschrieben. Für eine von der App verwaltete Installation muss der Pfad fehlen oder ein zuvor von der App angelegter symbolischer Link sein.
+
+Beim Update von einer App-Version vor 0.5 muss der Repositorypfad einmalig auf ein neues, noch nicht vorhandenes Ziel wie `/opt/kosit/xrechnung/current` gesetzt werden. Der frühere separate Szenariopfad wird nicht mehr ausgewertet. Anschließend installiert **Komponenten installieren** Szenario und Ressourcen gemeinsam. Eine vorhandene manuelle Konfiguration bleibt unangetastet und kann weiterhin verwendet werden, wenn ihr Verzeichnis unmittelbar `scenarios.xml` und `resources/` enthält; ihre Release-Version wird ohne App-Marker als unbekannt angezeigt.
 
 Alternativ kann das JAR weiterhin manuell installiert werden.
 
@@ -76,8 +77,12 @@ Beispielstruktur:
 ```text
 /opt/kosit/
 ├── validator-1.6.2-standalone.jar
-├── EN16931_(CII)-szenario.xml
-└── repository/
+└── xrechnung/
+    ├── current -> releases/2026-01-31
+    └── releases/
+        └── 2026-01-31/
+            ├── scenarios.xml
+            └── resources/
 ```
 
 Die Pfade müssen mit den in den Administrationseinstellungen hinterlegten Pfaden übereinstimmen.
@@ -221,8 +226,9 @@ Für produktive Umgebungen sollte geprüft werden, ob der Zugriff auf Administra
     konfigurierten Systempfade.
 
 - `ValidatorAdminService`
-  - Fragt das neueste offizielle GitHub-Release ab.
-  - Prüft Version und Download und installiert das Standalone-JAR atomar.
+  - Fragt die neuesten offiziellen Releases von Validator und XRechnung-Konfiguration ab.
+  - Prüft Downloads und ZIP-Inhalte und aktiviert beide Komponenten aus temporären Zielen.
+  - Verwaltet XRechnung-Konfigurationen in versionierten Verzeichnissen.
 
 - `AdminController` / `Settings\\Admin`
   - Stellen die nur für Administratoren erreichbare Status-, Installations- und Update-Oberfläche bereit.
@@ -279,9 +285,9 @@ bash scripts/build-release.sh
 
 Das Archiv unter `dist/` enthält ausschließlich die zur Laufzeit benötigten App-Dateien. CI installiert genau dieses Archiv zusätzlich in einer frischen Nextcloud-34-Instanz, aktiviert die App und führt Framework-Smoke-Tests aus.
 
-Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die Pfadkonfiguration, atomare Szenario- und Validator-Updates, externe Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den HTTP-Vertrag der Validierungs- und Admin-Endpunkte ab.
+Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die Pfadkonfiguration, Validator- und XRechnung-Updates, externe Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den HTTP-Vertrag der Validierungs- und Admin-Endpunkte ab.
 
-Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2, 8.3, 8.4 und 8.5 sowie die JavaScript-Suite mit Node.js 22 aus. Ein zusätzlicher Integrationsjob installiert Nextcloud 34, aktiviert die App und prüft Container, Routen, Templates sowie die Admin- und CSRF-Attribute gegen das echte Framework. Ein weiterer Smoke-Test lädt fest versionierte und per SHA-256 geprüfte KoSIT- und XRechnung-Artefakte, validiert eine offizielle Testrechnung mit dem echten Java-Prozess und prüft außerdem die Ablehnung einer gezielt beschädigten Variante. Der Nextcloud-Job führt zusätzlich mit Playwright den vollständigen Browserfluss vom Login und Datei-Upload bis zum eingebetteten und herunterladbaren Prüfbericht für gültige, fachlich ungültige und nicht wohlgeformte XML-Dateien aus. Auch der administrative Browserfluss wird geprüft: Pfade werden CSRF-geschützt gespeichert und wiederhergestellt, die Szenariodatei wird geladen und gespeichert, und eine ungültige Szenariokonfiguration wird sichtbar abgelehnt. Ein Sicherheitslauf bestätigt zusätzlich, dass normale Benutzer zwar validieren, aber keine Admin-Endpunkte aufrufen dürfen, und dass fehlende oder ungültige Request-Tokens weder Pfade noch die Szenariodatei verändern. Automatisierte Axe-Prüfungen kontrollieren beide App-Oberflächen gegen WCAG 2.0, 2.1 und 2.2 auf Stufe A/AA. Playwright prüft außerdem die Tastaturauslösung der Dateiauswahl und die Fokusübergabe an den Szenarioeditor.
+Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2, 8.3, 8.4 und 8.5 sowie die JavaScript-Suite mit Node.js 22 aus. Ein zusätzlicher Integrationsjob installiert Nextcloud 34, aktiviert die App und prüft Container, Routen, Templates sowie die Admin- und CSRF-Attribute gegen das echte Framework. Ein weiterer Smoke-Test lädt fest versionierte und per SHA-256 geprüfte KoSIT- und XRechnung-Artefakte, validiert eine offizielle Testrechnung mit dem echten Java-Prozess und prüft außerdem die Ablehnung einer gezielt beschädigten Variante. Der Nextcloud-Job führt zusätzlich mit Playwright den vollständigen Browserfluss vom Login und Datei-Upload bis zum eingebetteten und herunterladbaren Prüfbericht für gültige, fachlich ungültige und nicht wohlgeformte XML-Dateien aus. Der administrative Browserfluss prüft das CSRF-geschützte Speichern und Wiederherstellen der Pfade. Ein Sicherheitslauf bestätigt zusätzlich, dass normale Benutzer zwar validieren, aber keine Admin-Endpunkte aufrufen dürfen und fehlende oder ungültige Request-Tokens die Konfiguration nicht verändern. Automatisierte Axe-Prüfungen kontrollieren beide App-Oberflächen gegen WCAG 2.0, 2.1 und 2.2 auf Stufe A/AA. Playwright prüft außerdem die Tastaturauslösung der Dateiauswahl.
 
 ---
 
@@ -292,7 +298,7 @@ Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2, 8.
 - [ ] Zugriff auf die Validierung nach Nextcloud-Gruppen oder Rollen beschränkbar machen
 - [ ] Warteschlange für parallele Validierungsanfragen einführen
 - [ ] Mehrere XML-Rechnungsdokumente in einem Vorgang prüfen
-- [ ] Validator-Version und Szenario automatisch auf Kompatibilität prüfen
+- [ ] Kompatibilitätsmatrix für zukünftige Validator-Hauptversionen erweitern
 
 ---
 
@@ -312,4 +318,4 @@ Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2, 8.
 
 Der Quellcode dieses Projekts steht unter der [GNU Affero General Public License, Version 3 oder später](LICENSE).
 
-Die mitgelieferte KoSIT-Szenariokonfiguration steht unter der [Apache License 2.0](LICENSES/Apache-2.0.txt). Herkunft und Prüfsumme sind in den [Drittanbieterhinweisen](THIRD_PARTY_NOTICES.md) dokumentiert.
+Die zur Laufzeit installierbare KoSIT-XRechnung-Konfiguration steht unter der [Apache License 2.0](LICENSES/Apache-2.0.txt). Details stehen in den [Drittanbieterhinweisen](THIRD_PARTY_NOTICES.md).

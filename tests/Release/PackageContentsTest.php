@@ -28,7 +28,7 @@ final class PackageContentsTest extends TestCase {
     public function testContainsRuntimeFilesAndMetadata(): void {
         self::assertFileExists($this->appDirectory . '/appinfo/info.xml');
         self::assertFileExists($this->appDirectory . '/appinfo/routes.php');
-        self::assertFileExists($this->appDirectory . '/config/EN16931_(CII)-szenario.xml');
+        self::assertFileDoesNotExist($this->appDirectory . '/config/EN16931_(CII)-szenario.xml');
         self::assertFileExists($this->appDirectory . '/js/app.js');
         self::assertFileExists($this->appDirectory . '/js/readme.js');
         self::assertFileExists($this->appDirectory . '/LICENSE');

@@ -28,7 +28,7 @@ final class ValidatorConfigServiceTest extends TestCase {
         $systemConfig = $this->createMock(IConfig::class);
         $systemConfig->expects(self::once())
             ->method('getSystemValueString')
-            ->with('kosit_validator_repository', '/opt/kosit')
+            ->with('kosit_validator_repository', '/opt/kosit/xrechnung/current')
             ->willReturn('/from-system');
 
         $service = new ValidatorConfigService($systemConfig, $appConfig);
@@ -39,7 +39,7 @@ final class ValidatorConfigServiceTest extends TestCase {
     public function testSavePathsNormalizesAndPersistsEveryPath(): void {
         $stored = [];
         $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->expects(self::exactly(6))->method('setAppValueString')
+        $appConfig->expects(self::exactly(5))->method('setAppValueString')
             ->willReturnCallback(static function (string $key, string $value) use (&$stored): void {
                 $stored[$key] = $value;
             });
@@ -50,7 +50,6 @@ final class ValidatorConfigServiceTest extends TestCase {
             'pythonBinary' => ' /usr/bin/python3/ ',
             'validatorJar' => '/opt/kosit/validator.jar/',
             'repositoryPath' => '/opt/kosit/',
-            'scenarioFile' => '/opt/kosit/scenario.xml/',
             'tempDirectory' => '/',
         ]);
 
@@ -59,9 +58,16 @@ final class ValidatorConfigServiceTest extends TestCase {
             'python_binary' => '/usr/bin/python3',
             'validator_jar' => '/opt/kosit/validator.jar',
             'repository_path' => '/opt/kosit',
-            'scenario_file' => '/opt/kosit/scenario.xml',
             'temp_directory' => '/',
         ], $stored);
+    }
+
+    public function testScenarioFileIsDerivedFromRepository(): void {
+        $appConfig = $this->createStub(IAppConfig::class);
+        $appConfig->method('getAppValueString')->with('repository_path', '')->willReturn('/opt/kosit/xrechnung/current');
+        $service = new ValidatorConfigService($this->createStub(IConfig::class), $appConfig);
+
+        self::assertSame('/opt/kosit/xrechnung/current/scenarios.xml', $service->getScenarioFile());
     }
 
     #[DataProvider('invalidPathProvider')]
@@ -76,7 +82,6 @@ final class ValidatorConfigServiceTest extends TestCase {
             'pythonBinary' => '/usr/bin/python3',
             'validatorJar' => '/validator.jar',
             'repositoryPath' => '/repository',
-            'scenarioFile' => '/scenario.xml',
             'tempDirectory' => '/tmp/kosit',
         ]);
     }
@@ -101,8 +106,7 @@ final class ValidatorConfigServiceTest extends TestCase {
                 'pythonBinary' => '/usr/bin/python3',
                 'validatorJar' => '/validator.jar',
                 'repositoryPath' => '/repository',
-                'scenarioFile' => 'relative.xml',
-                'tempDirectory' => '/tmp/kosit',
+                'tempDirectory' => 'relative',
             ]);
             self::fail('Expected an invalid path exception');
         } catch (\InvalidArgumentException) {

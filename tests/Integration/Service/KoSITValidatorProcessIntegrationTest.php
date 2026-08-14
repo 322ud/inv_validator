@@ -23,13 +23,13 @@ final class KoSITValidatorProcessIntegrationTest extends TestCase {
         mkdir($this->temporaryDirectory, 0700, true);
         mkdir($this->temporaryDirectory . '/repository');
         file_put_contents($this->temporaryDirectory . '/validator.jar', 'fixture');
-        file_put_contents($this->temporaryDirectory . '/scenario.xml', '<scenarios/>');
+        file_put_contents($this->temporaryDirectory . '/repository/scenarios.xml', '<scenarios/>');
 
         $config = $this->createStub(ValidatorConfigService::class);
         $config->method('getJavaBinary')->willReturn(self::VALIDATOR_FIXTURE);
         $config->method('getValidatorJar')->willReturn($this->temporaryDirectory . '/validator.jar');
         $config->method('getRepositoryPath')->willReturn($this->temporaryDirectory . '/repository');
-        $config->method('getScenarioFile')->willReturn($this->temporaryDirectory . '/scenario.xml');
+        $config->method('getScenarioFile')->willReturn($this->temporaryDirectory . '/repository/scenarios.xml');
         $config->method('getTempDirectory')->willReturn($this->temporaryDirectory);
 
         $this->service = new KoSITValidatorService(

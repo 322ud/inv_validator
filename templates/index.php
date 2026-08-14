@@ -24,7 +24,7 @@
         <p class="kosit-validator-intro">
             Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator Version
             <span id="kosit-validator-version">
-                <?php p($status['installedVersion'] ?? 'unbekannt'); ?>
+                <?php p($status['validator']['installedVersion'] ?? 'unbekannt'); ?>
             </span>
             auf Konformität mit der XRechnung-Spezifikation
             <a
@@ -74,9 +74,10 @@
             </div>
         </div>
 
-        <?php if ($status['updateAvailable'] && $status['latestVersion'] !== null): ?>
+        <?php if (($status['validator']['updateAvailable'] || $status['configuration']['updateAvailable'])
+            && ($status['validator']['latestVersion'] !== null || $status['configuration']['latestVersion'] !== null)): ?>
             <p id="kosit-update-notice" role="status">
-                Aktuelle Version <?php p($status['latestVersion']); ?> verfügbar - Administrator informieren!
+                Eine neue Validator- oder XRechnung-Konfiguration ist verfügbar – Administrator informieren!
             </p>
         <?php endif; ?>
 

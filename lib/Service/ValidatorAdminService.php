@@ -9,14 +9,16 @@ use OCP\Http\Client\IClientService;
 
 class ValidatorAdminService
 {
-    private const RELEASE_API = 'https://api.github.com/repos/itplr-kosit/validator/releases/latest';
-    private const RELEASE_PAGE = 'https://github.com/itplr-kosit/validator/releases';
+    private const VALIDATOR_RELEASE_API = 'https://api.github.com/repos/itplr-kosit/validator/releases/latest';
+    private const VALIDATOR_RELEASE_PAGE = 'https://github.com/itplr-kosit/validator/releases';
+    private const CONFIGURATION_RELEASE_API = 'https://api.github.com/repos/itplr-kosit/validator-configuration-xrechnung/releases/latest';
+    private const CONFIGURATION_RELEASE_PAGE = 'https://github.com/itplr-kosit/validator-configuration-xrechnung/releases';
     private const MAX_DOWNLOAD_BYTES = 150 * 1024 * 1024;
-    private const MAX_SCENARIO_BYTES = 2 * 1024 * 1024;
+    private const MAX_EXTRACTED_BYTES = 300 * 1024 * 1024;
+    private const MAX_ARCHIVE_ENTRIES = 20000;
     private const SCENARIO_NAMESPACE = 'http://www.xoev.de/de/validator/framework/1/scenarios';
 
     private int $maxDownloadBytes;
-
     private PdfSupportService $pdfSupportService;
 
     public function __construct(
@@ -33,19 +35,31 @@ class ValidatorAdminService
     public function getStatus(bool $checkUpdates = true): array
     {
         $jar = $this->config->getValidatorJar();
-        $installedVersion = $this->readInstalledVersion($jar);
-        $release = null;
-        $updateError = null;
+        $repository = $this->config->getRepositoryPath();
+        $installedValidatorVersion = $this->readInstalledValidatorVersion($jar);
+        $installedConfiguration = $this->readInstalledConfiguration($repository);
+        $validatorRelease = null;
+        $configurationRelease = null;
+        $validatorError = null;
+        $configurationError = null;
 
         if ($checkUpdates) {
             try {
-                $release = $this->fetchLatestRelease();
+                $validatorRelease = $this->fetchLatestValidatorRelease();
             } catch (\Throwable $e) {
-                $updateError = $e->getMessage();
+                $validatorError = $e->getMessage();
+            }
+
+            try {
+                $configurationRelease = $this->fetchLatestConfigurationRelease();
+            } catch (\Throwable $e) {
+                $configurationError = $e->getMessage();
             }
         }
 
-        $latestVersion = $release['version'] ?? null;
+        $latestValidatorVersion = $validatorRelease['version'] ?? null;
+        $latestConfigurationVersion = $configurationRelease['release'] ?? null;
+        $installedConfigurationVersion = $installedConfiguration['release'] ?? null;
 
         return [
             'paths' => [
@@ -54,18 +68,34 @@ class ValidatorAdminService
                 ['label' => 'Java', 'key' => 'javaBinary', 'path' => $this->config->getJavaBinary(), 'state' => $this->fileState($this->config->getJavaBinary(), true)],
                 ['label' => 'Python (optional)', 'key' => 'pythonBinary', 'path' => $this->config->getPythonBinary(), 'state' => $this->fileState($this->config->getPythonBinary(), true)],
                 ['label' => 'Validator-JAR', 'key' => 'validatorJar', 'path' => $jar, 'state' => $this->fileState($jar)],
-                ['label' => 'Repository', 'key' => 'repositoryPath', 'path' => $this->config->getRepositoryPath(), 'state' => $this->directoryState($this->config->getRepositoryPath())],
-                ['label' => 'Szenario-Datei', 'key' => 'scenarioFile', 'path' => $this->config->getScenarioFile(), 'state' => $this->fileState($this->config->getScenarioFile())],
+                ['label' => 'XRechnung-Repository', 'key' => 'repositoryPath', 'path' => $repository, 'state' => $this->directoryState($repository)],
+                ['label' => 'Szenario-Datei', 'path' => $this->config->getScenarioFile(), 'state' => $this->fileState($this->config->getScenarioFile())],
                 ['label' => 'Temporäres Verzeichnis', 'key' => 'tempDirectory', 'path' => $this->config->getTempDirectory(), 'state' => $this->directoryState($this->config->getTempDirectory(), true)],
             ],
-            'installed' => is_file($jar),
-            'installedVersion' => $installedVersion,
-            'latestVersion' => $latestVersion,
-            'updateAvailable' => $installedVersion !== null
-                && $latestVersion !== null
-                && version_compare($latestVersion, $installedVersion, '>'),
-            'releaseUrl' => self::RELEASE_PAGE,
-            'updateError' => $updateError,
+            'validator' => [
+                'installed' => is_file($jar),
+                'installedVersion' => $installedValidatorVersion,
+                'latestVersion' => $latestValidatorVersion,
+                'updateAvailable' => $installedValidatorVersion !== null
+                    && $latestValidatorVersion !== null
+                    && version_compare($latestValidatorVersion, $installedValidatorVersion, '>'),
+                'releaseUrl' => self::VALIDATOR_RELEASE_PAGE,
+                'updateError' => $validatorError,
+            ],
+            'configuration' => [
+                'installed' => is_dir($repository)
+                    && is_file($repository . '/scenarios.xml')
+                    && is_dir($repository . '/resources'),
+                'installedVersion' => $installedConfigurationVersion,
+                'installedXRechnungVersion' => $installedConfiguration['xrechnung'] ?? null,
+                'latestVersion' => $latestConfigurationVersion,
+                'latestXRechnungVersion' => $configurationRelease['xrechnung'] ?? null,
+                'updateAvailable' => $installedConfigurationVersion !== null
+                    && $latestConfigurationVersion !== null
+                    && strcmp($latestConfigurationVersion, $installedConfigurationVersion) > 0,
+                'releaseUrl' => self::CONFIGURATION_RELEASE_PAGE,
+                'updateError' => $configurationError,
+            ],
             'pdfSupport' => $this->pdfSupportService->getStatus(),
         ];
     }
@@ -79,30 +109,32 @@ class ValidatorAdminService
     /** @return array<string, mixed> */
     public function installLatest(): array
     {
-        $release = $this->fetchLatestRelease();
-        $asset = $release['asset'];
-        $target = $this->config->getValidatorJar();
-        $targetDirectory = dirname($target);
+        if (!class_exists(\ZipArchive::class)) {
+            throw new AdministrationException('Die PHP-Erweiterung ZipArchive wird für die Installation benötigt.');
+        }
 
-        if (
-            !is_dir($targetDirectory)
-            && !mkdir($targetDirectory, 0750, true)
-            && !is_dir($targetDirectory)
-        ) {
+        $validatorRelease = $this->fetchLatestValidatorRelease();
+        $configurationRelease = $this->fetchLatestConfigurationRelease();
+        $this->assertCompatibleValidator($validatorRelease['version']);
+
+        $jar = $this->config->getValidatorJar();
+        $repository = $this->config->getRepositoryPath();
+        $jarDirectory = dirname($jar);
+        $repositoryParent = dirname($repository);
+        $releaseDirectory = $repositoryParent . '/releases/' . $configurationRelease['release'];
+
+        $this->ensureDirectory($jarDirectory);
+        $this->ensureDirectory($repositoryParent);
+        $this->ensureDirectory(dirname($releaseDirectory));
+
+        if (file_exists($repository) && !is_link($repository)) {
             throw new AdministrationException(
-                'Installationsverzeichnis konnte nicht angelegt werden: ' . $targetDirectory
+                'Das konfigurierte XRechnung-Repository existiert und wird nicht von der App verwaltet: ' . $repository
             );
         }
 
-        if (!is_writable($targetDirectory)) {
-            throw new AdministrationException(
-                'Keine Schreibberechtigung für das Installationsverzeichnis: ' . $targetDirectory
-            );
-        }
-
-        $lockPath = $targetDirectory . '/.kosit-validator-install.lock';
+        $lockPath = $jarDirectory . '/.kosit-install.lock';
         $lock = fopen($lockPath, 'c');
-
         if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
             if (is_resource($lock)) {
                 fclose($lock);
@@ -110,176 +142,158 @@ class ValidatorAdminService
             throw new AdministrationException('Eine Installation läuft bereits.');
         }
 
-        $temporary = null;
+        $temporaryJar = null;
+        $temporaryJarMarker = null;
+        $temporaryArchive = null;
+        $stagingDirectory = null;
+        $temporaryLink = null;
 
         try {
-            $body = $this->download($asset['url']);
-            $this->verifyDownload($body, $asset['digest'] ?? null);
+            $installedValidatorVersion = $this->readInstalledValidatorVersion($jar);
+            $installValidator = $installedValidatorVersion === null
+                || version_compare($validatorRelease['version'], $installedValidatorVersion, '>');
+            $installedConfiguration = $this->readInstalledConfiguration($repository);
+            $installConfiguration = ($installedConfiguration['release'] ?? null) === null
+                || strcmp($configurationRelease['release'], (string)$installedConfiguration['release']) > 0;
 
-            $candidate = tempnam($targetDirectory, '.validator-');
-            if ($candidate === false) {
-                throw new AdministrationException('Temporäre Installationsdatei konnte nicht angelegt werden.');
+            if ($installValidator) {
+                $jarBody = $this->download($validatorRelease['asset']['url'], 'Validator');
+                $this->verifyZipContainer($jarBody, $validatorRelease['asset']['digest'], 'JAR');
+                $temporaryJar = $this->writeTemporaryFile($jarDirectory, '.validator-', $jarBody, 0640);
+                $temporaryJarMarker = $this->writeTemporaryValidatorMarker(
+                    $jarDirectory,
+                    $temporaryJar,
+                    $validatorRelease['version']
+                );
             }
-            $temporary = $candidate;
 
-            if (file_put_contents($temporary, $body, LOCK_EX) !== strlen($body)) {
-                throw new AdministrationException('Validator-JAR konnte nicht vollständig geschrieben werden.');
+            if ($installConfiguration) {
+                if (is_dir($releaseDirectory)) {
+                    $existing = $this->readInstalledConfiguration($releaseDirectory);
+                    if (($existing['release'] ?? null) !== $configurationRelease['release']) {
+                        throw new AdministrationException(
+                            'Das Zielverzeichnis des XRechnung-Releases ist bereits belegt: ' . $releaseDirectory
+                        );
+                    }
+                } else {
+                    $archiveBody = $this->download($configurationRelease['asset']['url'], 'XRechnung-Konfiguration');
+                    $this->verifyZipContainer($archiveBody, $configurationRelease['asset']['digest'], 'ZIP');
+                    $temporaryArchive = $this->writeTemporaryFile(
+                        dirname($releaseDirectory),
+                        '.xrechnung-',
+                        $archiveBody,
+                        0640
+                    );
+                    $stagingDirectory = dirname($releaseDirectory) . '/.xrechnung-' . bin2hex(random_bytes(12));
+                    $this->extractConfigurationArchive($temporaryArchive, $stagingDirectory);
+                    $this->validateConfigurationDirectory($stagingDirectory);
+                    $this->writeConfigurationMarker($stagingDirectory, $configurationRelease);
+                    if (!rename($stagingDirectory, $releaseDirectory)) {
+                        throw new AdministrationException('Das XRechnung-Release konnte nicht bereitgestellt werden.');
+                    }
+                    $stagingDirectory = null;
+                }
+
+                $temporaryLink = $repositoryParent . '/.current-' . bin2hex(random_bytes(8));
+                if (!symlink($releaseDirectory, $temporaryLink)) {
+                    throw new AdministrationException('Das XRechnung-Release konnte nicht aktiviert werden.');
+                }
             }
 
-            chmod($temporary, 0640);
-
-            if (!rename($temporary, $target)) {
-                throw new AdministrationException('Validator-JAR konnte nicht aktiviert werden.');
+            if ($installValidator) {
+                if (!rename($temporaryJar, $jar)) {
+                    throw new AdministrationException('Validator-JAR konnte nicht aktiviert werden.');
+                }
+                $temporaryJar = null;
+                if (!rename($temporaryJarMarker, $jar . '.version')) {
+                    throw new AdministrationException('Versionsinformation des Validators konnte nicht aktiviert werden.');
+                }
+                $temporaryJarMarker = null;
             }
-            $temporary = null;
-            $this->writeVersionMarker($target, $release['version']);
+
+            if ($installConfiguration) {
+                if (!rename($temporaryLink, $repository)) {
+                    throw new AdministrationException('Das XRechnung-Release konnte nicht aktiviert werden.');
+                }
+                $temporaryLink = null;
+            }
         } finally {
-            if ($temporary !== null && is_file($temporary)) {
-                unlink($temporary);
+            foreach ([$temporaryJar, $temporaryJarMarker, $temporaryArchive, $temporaryLink] as $temporary) {
+                if (is_string($temporary) && (is_file($temporary) || is_link($temporary))) {
+                    unlink($temporary);
+                }
+            }
+            if ($stagingDirectory !== null && is_dir($stagingDirectory)) {
+                $this->removeDirectory($stagingDirectory);
             }
             flock($lock, LOCK_UN);
             fclose($lock);
         }
 
         $status = $this->getStatus(false);
-        $status['latestVersion'] = $release['version'];
-        $status['updateAvailable'] = $status['installedVersion'] !== null
-            && version_compare($release['version'], $status['installedVersion'], '>');
-
+        $status['validator']['latestVersion'] = $validatorRelease['version'];
+        $status['validator']['updateAvailable'] = false;
+        $status['configuration']['latestVersion'] = $configurationRelease['release'];
+        $status['configuration']['latestXRechnungVersion'] = $configurationRelease['xrechnung'];
+        $status['configuration']['updateAvailable'] = false;
         return $status;
     }
 
-    /** @return array{path: string, content: string, checksum: string, writable: bool} */
-    public function readScenario(): array
+    /** @return array{version: string, asset: array{url: string, digest: ?string}} */
+    private function fetchLatestValidatorRelease(): array
     {
-        $path = $this->config->getScenarioFile();
-
-        if (!is_file($path) || !is_readable($path)) {
-            throw new AdministrationException('Szenario-Datei kann nicht gelesen werden: ' . $path);
+        $data = $this->fetchReleaseData(self::VALIDATOR_RELEASE_API);
+        $version = ltrim($data['tag_name'], 'vV');
+        if (!preg_match('/^[0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$/', $version)) {
+            throw new AdministrationException('GitHub lieferte keine gültige Validator-Version.');
         }
 
-        $size = filesize($path);
-        if ($size === false || $size > self::MAX_SCENARIO_BYTES) {
-            throw new AdministrationException('Szenario-Datei ist größer als 2 MB.');
-        }
-
-        $content = file_get_contents($path);
-        if ($content === false) {
-            throw new AdministrationException('Szenario-Datei konnte nicht geladen werden.');
-        }
-
+        $expectedName = 'validator-' . $version . '-standalone.jar';
         return [
-            'path' => $path,
-            'content' => $content,
-            'checksum' => hash('sha256', $content),
-            'writable' => is_writable($path) && is_writable(dirname($path)),
+            'version' => $version,
+            'asset' => $this->findReleaseAsset($data, $expectedName, 'validator'),
         ];
     }
 
-    public function saveScenario(mixed $content, mixed $checksum): void
+    /** @return array{release: string, xrechnung: string, asset: array{url: string, digest: ?string}} */
+    private function fetchLatestConfigurationRelease(): array
     {
-        if (!is_string($content) || $content === '') {
-            throw new \InvalidArgumentException('Der Inhalt der Szenario-Datei darf nicht leer sein.');
+        $data = $this->fetchReleaseData(self::CONFIGURATION_RELEASE_API);
+        if (preg_match('/^(?:v|release-)?([0-9]{4}-[0-9]{2}-[0-9]{2})$/', $data['tag_name'], $tagMatches) !== 1) {
+            throw new AdministrationException('GitHub lieferte keine gültige XRechnung-Konfigurationsversion.');
         }
-        if (strlen($content) > self::MAX_SCENARIO_BYTES) {
-            throw new \InvalidArgumentException('Szenario-Datei ist größer als 2 MB.');
+        $release = $tagMatches[1];
+        $xrechnungVersion = null;
+        $candidate = null;
+        foreach ($data['assets'] as $asset) {
+            if (!is_array($asset) || !is_string($asset['name'] ?? null)) {
+                continue;
+            }
+            if (
+                preg_match(
+                    '/^xrechnung-([0-9]+\.[0-9]+\.[0-9]+)-validator-configuration-([0-9]{4}-[0-9]{2}-[0-9]{2})\.zip$/',
+                    $asset['name'],
+                    $assetMatches
+                ) !== 1 || $assetMatches[2] !== $release
+            ) {
+                continue;
+            }
+            if ($candidate !== null) {
+                throw new AdministrationException('GitHub lieferte mehrere passende XRechnung-Konfigurationspakete.');
+            }
+            $candidate = $this->releaseAsset($asset, $asset['name'], 'validator-configuration-xrechnung');
+            $xrechnungVersion = $assetMatches[1];
         }
-        if (!is_string($checksum) || preg_match('/^[a-f0-9]{64}$/', $checksum) !== 1) {
-            throw new \InvalidArgumentException('Ungültiger Änderungsstand der Szenario-Datei.');
+        if ($candidate === null || $xrechnungVersion === null) {
+            throw new AdministrationException('XRechnung-Konfigurationspaket im neuesten GitHub-Release nicht gefunden.');
         }
-
-        $this->validateScenarioXml($content);
-
-        $path = $this->config->getScenarioFile();
-        if (!is_file($path) || !is_readable($path)) {
-            throw new AdministrationException('Szenario-Datei kann nicht gelesen werden: ' . $path);
-        }
-        if (!is_writable($path) || !is_writable(dirname($path))) {
-            throw new AdministrationException('Keine Schreibberechtigung für die Szenario-Datei: ' . $path);
-        }
-
-        $lock = fopen($path, 'r');
-        if ($lock === false || !flock($lock, LOCK_EX)) {
-            if (is_resource($lock)) {
-                fclose($lock);
-            }
-            throw new AdministrationException('Szenario-Datei konnte nicht gesperrt werden.');
-        }
-
-        $temporary = null;
-        try {
-            $current = file_get_contents($path);
-            if ($current === false) {
-                throw new AdministrationException('Szenario-Datei konnte nicht erneut gelesen werden.');
-            }
-            if (!hash_equals($checksum, hash('sha256', $current))) {
-                throw new AdministrationException(
-                    'Die Szenario-Datei wurde zwischenzeitlich geändert. Bitte neu laden.'
-                );
-            }
-
-            $candidate = tempnam(dirname($path), '.scenario-');
-            if ($candidate === false) {
-                throw new AdministrationException('Temporäre Szenario-Datei konnte nicht angelegt werden.');
-            }
-            $temporary = $candidate;
-            if (file_put_contents($temporary, $content, LOCK_EX) !== strlen($content)) {
-                throw new AdministrationException('Szenario-Datei konnte nicht vollständig geschrieben werden.');
-            }
-
-            $mode = fileperms($path);
-            chmod($temporary, $mode === false ? 0640 : ($mode & 0777));
-            if (!rename($temporary, $path)) {
-                throw new AdministrationException('Szenario-Datei konnte nicht aktiviert werden.');
-            }
-            $temporary = null;
-        } finally {
-            if ($temporary !== null && is_file($temporary)) {
-                unlink($temporary);
-            }
-            flock($lock, LOCK_UN);
-            fclose($lock);
-        }
+        return ['release' => $release, 'xrechnung' => $xrechnungVersion, 'asset' => $candidate];
     }
 
-    private function validateScenarioXml(string $content): void
+    /** @return array{tag_name: string, assets: list<mixed>} */
+    private function fetchReleaseData(string $url): array
     {
-        if (preg_match('/<!DOCTYPE\s/i', $content) === 1) {
-            throw new \InvalidArgumentException('DOCTYPE-Deklarationen sind nicht erlaubt.');
-        }
-
-        $previous = libxml_use_internal_errors(true);
-        libxml_clear_errors();
-        try {
-            $document = new \DOMDocument();
-            $loaded = $document->loadXML($content, LIBXML_NONET | LIBXML_NOBLANKS);
-            $error = libxml_get_last_error();
-        } finally {
-            libxml_clear_errors();
-            libxml_use_internal_errors($previous);
-        }
-
-        if (!$loaded) {
-            $detail = $error instanceof \LibXMLError ? trim($error->message) : 'unbekannter XML-Fehler';
-            throw new \InvalidArgumentException('Ungültiges XML: ' . $detail);
-        }
-
-        $root = $document->documentElement;
-        if (
-            $root === null
-            || $root->localName !== 'scenarios'
-            || $root->namespaceURI !== self::SCENARIO_NAMESPACE
-        ) {
-            throw new \InvalidArgumentException(
-                'Das Wurzelelement muss „scenarios“ im KoSIT-Szenario-Namensraum sein.'
-            );
-        }
-    }
-
-    /** @return array{version: string, asset: array{url: string, digest: ?string}} */
-    private function fetchLatestRelease(): array
-    {
-        $response = $this->clientService->newClient()->get(self::RELEASE_API, [
+        $response = $this->clientService->newClient()->get($url, [
             'connect_timeout' => 10,
             'timeout' => 20,
             'headers' => [
@@ -288,132 +302,274 @@ class ValidatorAdminService
                 'X-GitHub-Api-Version' => '2022-11-28',
             ],
         ]);
-
         if ($response->getStatusCode() !== 200) {
-            throw new AdministrationException(
-                'GitHub-Release-Prüfung fehlgeschlagen (HTTP ' . $response->getStatusCode() . ').'
-            );
+            throw new AdministrationException('GitHub-Release-Prüfung fehlgeschlagen (HTTP ' . $response->getStatusCode() . ').');
         }
-
         try {
             $data = json_decode((string)$response->getBody(), true, 32, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
             throw new AdministrationException('GitHub lieferte ungültige Release-Daten.', 0, $e);
         }
-
-        if (!is_array($data) || !is_string($data['tag_name'] ?? null)) {
+        if (!is_array($data) || !is_string($data['tag_name'] ?? null) || !is_array($data['assets'] ?? null)) {
             throw new AdministrationException('GitHub lieferte ungültige Release-Daten.');
         }
+        return ['tag_name' => $data['tag_name'], 'assets' => array_values($data['assets'])];
+    }
 
-        $tag = $data['tag_name'];
-        $version = ltrim($tag, 'vV');
-
-        if (!preg_match('/^[0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$/', $version)) {
-            throw new AdministrationException('GitHub lieferte keine gültige Release-Version.');
-        }
-
-        $assets = $data['assets'] ?? null;
-        if (!is_array($assets)) {
-            throw new AdministrationException('GitHub lieferte ungültige Release-Daten.');
-        }
-
-        $expectedName = 'validator-' . $version . '-standalone.jar';
-        foreach ($assets as $asset) {
-            if (!is_array($asset) || ($asset['name'] ?? null) !== $expectedName) {
-                continue;
+    /** @param array{tag_name: string, assets: list<mixed>} $data
+     *  @return array{url: string, digest: ?string}
+     */
+    private function findReleaseAsset(array $data, string $expectedName, string $repository): array
+    {
+        foreach ($data['assets'] as $asset) {
+            if (is_array($asset) && ($asset['name'] ?? null) === $expectedName) {
+                return $this->releaseAsset($asset, $expectedName, $repository);
             }
-
-            $url = $asset['browser_download_url'] ?? null;
-            $digest = $asset['digest'] ?? null;
-            if (!is_string($url) || ($digest !== null && !is_string($digest))) {
-                throw new AdministrationException('GitHub lieferte ungültige Release-Daten.');
-            }
-
-            if (!$this->isExpectedDownloadUrl($url, $expectedName)) {
-                throw new AdministrationException('GitHub lieferte eine unerwartete Download-Adresse.');
-            }
-
-            return [
-                'version' => $version,
-                'asset' => [
-                    'url' => $url,
-                    'digest' => $digest,
-                ],
-            ];
         }
-
         throw new AdministrationException('Standalone-JAR im neuesten GitHub-Release nicht gefunden.');
     }
 
-    private function download(string $url): string
+    /** @param array<string, mixed> $asset
+     *  @return array{url: string, digest: ?string}
+     */
+    private function releaseAsset(array $asset, string $expectedName, string $repository): array
+    {
+        $url = $asset['browser_download_url'] ?? null;
+        $digest = $asset['digest'] ?? null;
+        if (!is_string($url) || ($digest !== null && !is_string($digest))) {
+            throw new AdministrationException('GitHub lieferte ungültige Release-Daten.');
+        }
+        $parts = parse_url($url);
+        if (
+            !is_array($parts)
+            || ($parts['scheme'] ?? null) !== 'https'
+            || ($parts['host'] ?? null) !== 'github.com'
+            || isset($parts['port'], $parts['user'], $parts['pass'])
+            || !isset($parts['path'])
+            || !str_starts_with($parts['path'], '/itplr-kosit/' . $repository . '/releases/download/')
+            || basename($parts['path']) !== $expectedName
+        ) {
+            throw new AdministrationException('GitHub lieferte eine unerwartete Download-Adresse.');
+        }
+        return ['url' => $url, 'digest' => $digest];
+    }
+
+    private function download(string $url, string $label): string
     {
         $response = $this->clientService->newClient()->get($url, [
             'connect_timeout' => 15,
             'timeout' => 120,
             'headers' => ['User-Agent' => 'Nextcloud-KoSIT-Validator'],
         ]);
-
         if ($response->getStatusCode() !== 200) {
-            throw new AdministrationException(
-                'Validator-Download fehlgeschlagen (HTTP ' . $response->getStatusCode() . ').'
-            );
+            throw new AdministrationException($label . '-Download fehlgeschlagen (HTTP ' . $response->getStatusCode() . ').');
         }
-
         $body = (string)$response->getBody();
         if ($body === '' || strlen($body) > $this->maxDownloadBytes) {
-            throw new AdministrationException('Validator-Download ist leer oder überschreitet 150 MB.');
+            throw new AdministrationException($label . '-Download ist leer oder überschreitet 150 MB.');
         }
-
         return $body;
     }
 
-    private function verifyDownload(string $body, ?string $digest): void
+    private function verifyZipContainer(string $body, ?string $digest, string $type): void
     {
         if (!str_starts_with($body, "PK\x03\x04")) {
-            throw new AdministrationException('Der Download ist keine gültige JAR-Datei.');
+            throw new AdministrationException('Der Download ist keine gültige ' . $type . '-Datei.');
         }
-
         if ($digest !== null) {
             if (preg_match('/^sha256:([a-f0-9]{64})$/i', $digest, $matches) !== 1) {
                 throw new AdministrationException('Der Download enthält keine gültige SHA-256-Prüfsumme.');
             }
-
-            $expected = $matches[1];
-            if (!hash_equals(strtolower($expected), hash('sha256', $body))) {
+            if (!hash_equals(strtolower($matches[1]), hash('sha256', $body))) {
                 throw new AdministrationException('SHA-256-Prüfung des Downloads fehlgeschlagen.');
             }
         }
     }
 
-    private function isExpectedDownloadUrl(string $url, string $expectedName): bool
+    private function extractConfigurationArchive(string $archive, string $target): void
     {
-        $parts = parse_url($url);
-
-        return is_array($parts)
-            && ($parts['scheme'] ?? null) === 'https'
-            && ($parts['host'] ?? null) === 'github.com'
-            && !isset($parts['port'])
-            && !isset($parts['user'])
-            && !isset($parts['pass'])
-            && isset($parts['path'])
-            && str_starts_with(
-                $parts['path'],
-                '/itplr-kosit/validator/releases/download/'
-            )
-            && basename($parts['path']) === $expectedName;
+        if (!mkdir($target, 0750, true) && !is_dir($target)) {
+            throw new AdministrationException('Temporäres XRechnung-Verzeichnis konnte nicht angelegt werden.');
+        }
+        $zip = new \ZipArchive();
+        if ($zip->open($archive) !== true) {
+            throw new AdministrationException('XRechnung-Konfigurationspaket konnte nicht geöffnet werden.');
+        }
+        try {
+            if ($zip->numFiles < 1 || $zip->numFiles > self::MAX_ARCHIVE_ENTRIES) {
+                throw new AdministrationException('XRechnung-Konfigurationspaket enthält zu viele oder keine Dateien.');
+            }
+            $totalSize = 0;
+            for ($index = 0; $index < $zip->numFiles; $index++) {
+                $stat = $zip->statIndex($index);
+                if ($stat === false) {
+                    throw new AdministrationException('XRechnung-Konfigurationspaket enthält einen ungültigen Eintrag.');
+                }
+                $name = str_replace('\\', '/', $stat['name']);
+                if (
+                    $name === '' || str_starts_with($name, '/') || str_contains($name, "\0")
+                    || in_array('..', explode('/', $name), true)
+                ) {
+                    throw new AdministrationException('XRechnung-Konfigurationspaket enthält einen unsicheren Pfad.');
+                }
+                $attributes = 0;
+                if (
+                    $zip->getExternalAttributesIndex($index, $operationsSystem, $attributes)
+                    && (($attributes >> 16) & 0170000) === 0120000
+                ) {
+                    throw new AdministrationException('Symbolische Links im XRechnung-Konfigurationspaket sind nicht erlaubt.');
+                }
+                $size = $stat['size'];
+                $totalSize += $size;
+                if ($totalSize > self::MAX_EXTRACTED_BYTES) {
+                    throw new AdministrationException('XRechnung-Konfigurationspaket ist entpackt zu groß.');
+                }
+                $destination = $target . '/' . rtrim($name, '/');
+                if (str_ends_with($name, '/')) {
+                    $this->ensureDirectory($destination);
+                    continue;
+                }
+                $this->ensureDirectory(dirname($destination));
+                $input = $zip->getStream($stat['name']);
+                $output = fopen($destination, 'xb');
+                if ($input === false || $output === false) {
+                    if (is_resource($input)) {
+                        fclose($input);
+                    }
+                    if (is_resource($output)) {
+                        fclose($output);
+                    }
+                    throw new AdministrationException('XRechnung-Konfigurationspaket konnte nicht entpackt werden.');
+                }
+                $written = stream_copy_to_stream($input, $output, $size + 1);
+                fclose($input);
+                fclose($output);
+                if ($written !== $size) {
+                    throw new AdministrationException('XRechnung-Konfigurationspaket wurde unvollständig entpackt.');
+                }
+                chmod($destination, 0640);
+            }
+        } finally {
+            $zip->close();
+        }
     }
 
-    private function readInstalledVersion(string $jar): ?string
+    private function validateConfigurationDirectory(string $directory): void
+    {
+        $scenario = $directory . '/scenarios.xml';
+        if (!is_file($scenario) || !is_dir($directory . '/resources')) {
+            throw new AdministrationException('XRechnung-Konfigurationspaket enthält nicht scenarios.xml und resources/.');
+        }
+        $scenarioContent = file_get_contents($scenario);
+        if ($scenarioContent === false || preg_match('/<!DOCTYPE\s/i', $scenarioContent) === 1) {
+            throw new AdministrationException('XRechnung-Konfigurationspaket enthält eine unsichere Szenariodatei.');
+        }
+        $previous = libxml_use_internal_errors(true);
+        try {
+            $document = new \DOMDocument();
+            $loaded = $document->loadXML($scenarioContent, LIBXML_NONET | LIBXML_NOBLANKS);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+        $root = $document->documentElement;
+        if (!$loaded || $root === null || $root->localName !== 'scenarios' || $root->namespaceURI !== self::SCENARIO_NAMESPACE) {
+            throw new AdministrationException('XRechnung-Konfigurationspaket enthält keine gültige KoSIT-Szenariodatei.');
+        }
+    }
+
+    /** @param array{release: string, xrechnung: string, asset: array{url: string, digest: ?string}} $release */
+    private function writeConfigurationMarker(string $directory, array $release): void
+    {
+        $metadata = json_encode([
+            'release' => $release['release'],
+            'xrechnung' => $release['xrechnung'],
+            'scenarioSha256' => hash_file('sha256', $directory . '/scenarios.xml'),
+        ], JSON_THROW_ON_ERROR);
+        if (file_put_contents($directory . '/.kosit-xrechnung-version', $metadata, LOCK_EX) === false) {
+            throw new AdministrationException('Versionsinformation der XRechnung-Konfiguration konnte nicht gespeichert werden.');
+        }
+        chmod($directory . '/.kosit-xrechnung-version', 0640);
+    }
+
+    /** @return array{release: string, xrechnung: string}|null */
+    private function readInstalledConfiguration(string $repository): ?array
+    {
+        if (!is_file($repository . '/scenarios.xml') || !is_dir($repository . '/resources')) {
+            return null;
+        }
+        $marker = @file_get_contents($repository . '/.kosit-xrechnung-version');
+        if ($marker === false) {
+            return null;
+        }
+        try {
+            $metadata = json_decode($marker, true, 8, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return null;
+        }
+        if (
+            !is_array($metadata)
+            || !is_string($metadata['release'] ?? null)
+            || preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $metadata['release']) !== 1
+            || !is_string($metadata['xrechnung'] ?? null)
+            || preg_match('/^[0-9]+\.[0-9]+\.[0-9]+$/', $metadata['xrechnung']) !== 1
+            || !is_string($metadata['scenarioSha256'] ?? null)
+            || !hash_equals($metadata['scenarioSha256'], (string)hash_file('sha256', $repository . '/scenarios.xml'))
+        ) {
+            return null;
+        }
+        return ['release' => $metadata['release'], 'xrechnung' => $metadata['xrechnung']];
+    }
+
+    private function assertCompatibleValidator(string $version): void
+    {
+        if (version_compare($version, '1.6.0', '<') || version_compare($version, '2.0.0', '>=')) {
+            throw new AdministrationException('Die App unterstützt derzeit nur KoSIT-Validator 1.6.x.');
+        }
+    }
+
+    private function writeTemporaryFile(string $directory, string $prefix, string $body, int $mode): string
+    {
+        $path = tempnam($directory, $prefix);
+        if ($path === false || file_put_contents($path, $body, LOCK_EX) !== strlen($body)) {
+            throw new AdministrationException('Temporäre Installationsdatei konnte nicht vollständig geschrieben werden.');
+        }
+        chmod($path, $mode);
+        return $path;
+    }
+
+    private function writeTemporaryValidatorMarker(string $directory, string $jar, string $version): string
+    {
+        $metadata = json_encode([
+            'version' => $version,
+            'size' => filesize($jar),
+            'modified' => filemtime($jar),
+        ], JSON_THROW_ON_ERROR);
+        return $this->writeTemporaryFile($directory, '.validator-version-', $metadata, 0640);
+    }
+
+    private function readInstalledValidatorVersion(string $jar): ?string
     {
         if (!is_file($jar)) {
             return null;
         }
-
-        $marker = $this->readVersionMarker($jar);
-        if ($marker !== null) {
-            return $marker;
+        $marker = @file_get_contents($jar . '.version');
+        if ($marker !== false) {
+            try {
+                $metadata = json_decode($marker, true, 8, JSON_THROW_ON_ERROR);
+            } catch (\JsonException) {
+                $metadata = null;
+            }
+            $version = is_array($metadata) ? ($metadata['version'] ?? null) : null;
+            if (
+                is_string($version)
+                && preg_match('/^[0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$/', $version)
+                && ($metadata['size'] ?? null) === filesize($jar)
+                && ($metadata['modified'] ?? null) === filemtime($jar)
+            ) {
+                return $version;
+            }
         }
-
         if (class_exists(\ZipArchive::class)) {
             $zip = new \ZipArchive();
             if ($zip->open($jar) === true) {
@@ -422,7 +578,6 @@ class ValidatorAdminService
                 } finally {
                     $zip->close();
                 }
-
                 if (
                     is_string($manifest)
                     && preg_match('/^(?:Implementation-Version|Bundle-Version):\s*(\S+)/mi', $manifest, $matches) === 1
@@ -431,53 +586,39 @@ class ValidatorAdminService
                 }
             }
         }
-
-        return preg_match(
-            '/validator-([0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?)-standalone\.jar$/',
-            basename($jar),
-            $matches
-        ) === 1 ? $matches[1] : null;
+        return preg_match('/validator-([0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?)-standalone\.jar$/', basename($jar), $matches) === 1
+            ? $matches[1]
+            : null;
     }
 
-    private function writeVersionMarker(string $jar, string $version): void
+    private function ensureDirectory(string $directory): void
     {
-        $metadata = json_encode([
-            'version' => $version,
-            'size' => filesize($jar),
-            'modified' => filemtime($jar),
-        ], JSON_THROW_ON_ERROR);
-
-        if (file_put_contents($jar . '.version', $metadata, LOCK_EX) === false) {
-            throw new AdministrationException('Versionsinformation konnte nicht gespeichert werden.');
+        if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
+            throw new AdministrationException('Verzeichnis konnte nicht angelegt werden: ' . $directory);
         }
-
-        chmod($jar . '.version', 0640);
+        if (!is_writable($directory)) {
+            throw new AdministrationException('Keine Schreibberechtigung für das Verzeichnis: ' . $directory);
+        }
     }
 
-    private function readVersionMarker(string $jar): ?string
+    private function removeDirectory(string $directory): void
     {
-        $marker = @file_get_contents($jar . '.version');
-        if ($marker === false) {
-            return null;
+        $iterator = new \FilesystemIterator(
+            $directory,
+            \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::CURRENT_AS_FILEINFO
+        );
+        foreach ($iterator as $item) {
+            if (!$item instanceof \SplFileInfo) {
+                continue;
+            }
+            $path = $item->getPathname();
+            if ($item->isLink() || $item->isFile()) {
+                unlink($path);
+            } elseif ($item->isDir()) {
+                $this->removeDirectory($path);
+            }
         }
-
-        try {
-            $metadata = json_decode($marker, true, 8, JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            return null;
-        }
-
-        $version = is_array($metadata) ? ($metadata['version'] ?? null) : null;
-        if (
-            !is_string($version)
-            || !preg_match('/^[0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$/', $version)
-            || ($metadata['size'] ?? null) !== filesize($jar)
-            || ($metadata['modified'] ?? null) !== filemtime($jar)
-        ) {
-            return null;
-        }
-
-        return $version;
+        rmdir($directory);
     }
 
     private function fileState(string $path, bool $executable = false): string
@@ -485,7 +626,6 @@ class ValidatorAdminService
         if (!is_file($path)) {
             return 'missing';
         }
-
         return !$executable || is_executable($path) ? 'available' : 'not-executable';
     }
 
@@ -494,7 +634,6 @@ class ValidatorAdminService
         if (is_dir($path)) {
             return 'available';
         }
-
         return $mayBeCreated && is_writable(dirname($path)) ? 'creatable' : 'missing';
     }
 }

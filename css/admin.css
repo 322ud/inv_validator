@@ -32,7 +32,6 @@ font-family: var(--font-face-monospace, monospace);
 }
 
 .kosit-path-actions,
-.kosit-scenario-actions,
 .kosit-pdf-actions {
 display: flex;
 align-items: center;
@@ -44,36 +43,6 @@ margin-top: 14px;
 .kosit-pdf-actions {
 margin-top: 0;
 margin-bottom: 12px;
-}
-
-.kosit-scenario-editor {
-margin-top: 24px;
-}
-
-.kosit-scenario-editor[hidden] {
-display: none;
-}
-
-.kosit-scenario-editor h4 {
-margin-top: 0;
-}
-
-#kosit-scenario-path {
-overflow-wrap: anywhere;
-}
-
-#kosit-scenario-content {
-display: block;
-width: 100%;
-height: min(60vh, 620px);
-min-height: 320px;
-margin-top: 12px;
-box-sizing: border-box;
-resize: vertical;
-font-family: var(--font-face-monospace, monospace);
-font-size: 13px;
-line-height: 1.45;
-white-space: pre;
 }
 
 .kosit-state {
@@ -90,12 +59,15 @@ color: var(--color-success);
 color: var(--color-error);
 }
 
-.kosit-versions > div {
+.kosit-versions {
 display: grid;
-grid-template-columns: minmax(180px, 240px) 1fr;
-gap: 12px;
-margin: 4px 0;
-padding: 0;
+grid-template-columns: max-content minmax(0, 1fr);
+column-gap: 12px;
+row-gap: 4px;
+}
+
+.kosit-versions > div {
+display: contents;
 }
 
 .kosit-versions dt {
@@ -135,11 +107,20 @@ overflow-x: auto;
 white-space: pre-wrap;
 }
 
-.kosit-update-summary,
-#kosit-scenario-message,
-#kosit-admin-message {
+.kosit-update-summary {
 margin-top: 14px;
 font-weight: 600;
+}
+
+#kosit-admin-message {
+min-height: 1.5em;
+margin: 14px 0 8px;
+line-height: 1.5;
+font-weight: 600;
+}
+
+#kosit-admin-message + .settings-hint {
+margin-top: 0;
 }
 
 .kosit-admin-actions {
@@ -207,8 +188,12 @@ padding: 3px 0;
 border: 0;
 }
 
-.kosit-versions > div {
+.kosit-versions {
 grid-template-columns: 1fr;
-gap: 2px;
+row-gap: 2px;
+}
+
+.kosit-versions dd {
+margin-bottom: 4px;
 }
 }

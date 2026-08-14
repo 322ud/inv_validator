@@ -48,14 +48,10 @@ test('validation UI meets WCAG rules and supports keyboard file selection', asyn
     await fileChooser.setFiles([]);
 });
 
-test('admin UI meets WCAG rules and moves focus into the scenario editor', async ({ page }) => {
+test('admin UI meets WCAG rules', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/index.php/settings/admin/kosit_validator');
     await expect(page.locator('#kosit-admin')).toBeVisible();
-
-    await page.locator('#kosit-edit-scenario').click();
-    await expect(page.locator('#kosit-scenario-editor')).toBeVisible();
-    await expect(page.locator('#kosit-scenario-content')).toBeFocused();
 
     await assertNoAccessibilityViolations(page, '#kosit-admin');
 });

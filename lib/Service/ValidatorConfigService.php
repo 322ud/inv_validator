@@ -16,7 +16,6 @@ class ValidatorConfigService
         'pythonBinary' => 'python_binary',
         'validatorJar' => 'validator_jar',
         'repositoryPath' => 'repository_path',
-        'scenarioFile' => 'scenario_file',
         'tempDirectory' => 'temp_directory',
     ];
 
@@ -89,17 +88,13 @@ class ValidatorConfigService
         return $this->getConfiguredPath(
             self::PATH_KEYS['repositoryPath'],
             'kosit_validator_repository',
-            '/opt/kosit'
+            '/opt/kosit/xrechnung/current'
         );
     }
 
     public function getScenarioFile(): string
     {
-        return $this->getConfiguredPath(
-            self::PATH_KEYS['scenarioFile'],
-            'kosit_validator_scenarios',
-            dirname(__DIR__, 2) . '/config/EN16931_(CII)-szenario.xml'
-        );
+        return $this->getRepositoryPath() . '/scenarios.xml';
     }
 
     public function getTempDirectory(): string
@@ -129,7 +124,6 @@ class ValidatorConfigService
             'pythonBinary' => 'Python',
             'validatorJar' => 'Validator-JAR',
             'repositoryPath' => 'Repository',
-            'scenarioFile' => 'Szenario-Datei',
             'tempDirectory' => 'Temporäres Verzeichnis',
         ];
 

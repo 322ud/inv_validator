@@ -21,7 +21,6 @@ const postPaths = async (page, requestToken, temporaryDirectory) => page.evaluat
         formData.append('javaBinary', '/usr/bin/java');
         formData.append('validatorJar', '/tmp/unauthorized-validator.jar');
         formData.append('repositoryPath', '/tmp/unauthorized-repository');
-        formData.append('scenarioFile', '/tmp/unauthorized-scenario.xml');
         formData.append('tempDirectory', directory);
 
         const headers = token === null ? {} : { requesttoken: token };
@@ -76,53 +75,9 @@ test('enforces admin authorization and CSRF without changing configuration', asy
     const invalidTokenStatus = await postPaths(adminPage, 'invalid-request-token', invalidTokenDirectory);
     expect(invalidTokenStatus).toBe(412);
 
-    const scenarioBefore = await adminPage.evaluate(async () => {
-        const response = await fetch(
-            window.OC.generateUrl('/apps/kosit_validator/admin/status?scenario=1'),
-            {
-                credentials: 'same-origin',
-                headers: { requesttoken: window.OC.requestToken },
-            },
-        );
-
-        return response.json();
-    });
-    expect(scenarioBefore.success).toBe(true);
-
-    const scenarioStatus = await adminPage.evaluate(async (scenario) => {
-        const formData = new FormData();
-        formData.append('action', 'saveScenario');
-        formData.append('content', `${scenario.content}\n`);
-        formData.append('checksum', scenario.checksum);
-
-        const response = await fetch(window.OC.generateUrl('/apps/kosit_validator/admin/paths'), {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { requesttoken: 'invalid-request-token' },
-            body: formData,
-        });
-
-        return response.status;
-    }, scenarioBefore.scenario);
-    expect(scenarioStatus).toBe(412);
-
     await adminPage.reload();
     await expect(adminPage.locator('input[name="tempDirectory"]'))
         .toHaveValue(originalTemporaryDirectory);
-
-    const scenarioAfter = await adminPage.evaluate(async () => {
-        const response = await fetch(
-            window.OC.generateUrl('/apps/kosit_validator/admin/status?scenario=1'),
-            {
-                credentials: 'same-origin',
-                headers: { requesttoken: window.OC.requestToken },
-            },
-        );
-
-        return response.json();
-    });
-    expect(scenarioAfter.scenario.checksum).toBe(scenarioBefore.scenario.checksum);
-    expect(scenarioAfter.scenario.content).toBe(scenarioBefore.scenario.content);
 
     await adminContext.close();
 });
