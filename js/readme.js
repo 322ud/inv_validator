@@ -23,6 +23,20 @@
             });
 
             editor.setReadOnly(true);
+
+            const editorInput = richContent.querySelector('[role="textbox"]');
+            const accessibleLabel = richContent.getAttribute('aria-label');
+
+            if (
+                editorInput
+                && accessibleLabel
+                && !editorInput.hasAttribute('aria-label')
+                && !editorInput.hasAttribute('aria-labelledby')
+                && !editorInput.hasAttribute('title')
+            ) {
+                editorInput.setAttribute('aria-label', accessibleLabel);
+            }
+
             editors.set(viewer, editor);
             richContent.hidden = false;
             fallback.hidden = true;
