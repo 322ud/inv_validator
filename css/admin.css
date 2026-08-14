@@ -51,12 +51,12 @@ font-weight: 600;
 
 .kosit-state--available,
 .kosit-state--creatable {
-color: var(--color-success);
+color: var(--color-success-text);
 }
 
 .kosit-state--missing,
 .kosit-state--not-executable {
-color: var(--color-error);
+color: var(--color-error-text);
 }
 
 .kosit-versions {
@@ -71,9 +71,12 @@ display: contents;
 }
 
 .kosit-versions dt {
-margin: 0;
-padding: 0;
-font-weight: 600;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    white-space: normal;
+    text-align: start;
+    font-weight: 600;
 }
 
 .kosit-versions dd {
