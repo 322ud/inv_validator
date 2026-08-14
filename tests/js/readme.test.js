@@ -65,6 +65,25 @@ describe('README rich text integration', () => {
             .toBe('Nextcloud Text');
     });
 
+    test('labels the editor input when Nextcloud Text renders it asynchronously', async () => {
+        const editor = { setReadOnly: vi.fn() };
+        const createEditor = vi.fn().mockResolvedValue(editor);
+        window.OCA.Text = { createEditor };
+        const initializeReadme = await loadReadme();
+        const viewer = document.querySelector('[data-kosit-readme]');
+
+        await initializeReadme(viewer);
+
+        const editorInput = document.createElement('div');
+        editorInput.setAttribute('role', 'textbox');
+        viewer.querySelector('.kosit-readme-rich').appendChild(editorInput);
+
+        await vi.waitFor(() => {
+            expect(editorInput.getAttribute('aria-label'))
+                .toBe('Formatierter Inhalt der README');
+        });
+    });
+
     test('keeps the plaintext fallback when Nextcloud Text is unavailable', async () => {
         const initializeReadme = await loadReadme();
         const viewer = document.querySelector('[data-kosit-readme]');

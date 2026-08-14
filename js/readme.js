@@ -9,10 +9,42 @@
         const richContent = viewer.querySelector('.kosit-readme-rich');
         const fallback = viewer.querySelector('.kosit-readme-fallback');
         const createEditor = window.OCA?.Text?.createEditor;
+        const accessibleLabel = richContent?.getAttribute('aria-label');
 
         if (!richContent || !fallback || typeof createEditor !== 'function') {
             return null;
         }
+
+        const labelEditorInput = () => {
+            const editorInput = richContent.querySelector('[role="textbox"]');
+
+            if (!editorInput) {
+                return false;
+            }
+
+            if (
+                accessibleLabel
+                && !editorInput.hasAttribute('aria-label')
+                && !editorInput.hasAttribute('aria-labelledby')
+                && !editorInput.hasAttribute('title')
+            ) {
+                editorInput.setAttribute('aria-label', accessibleLabel);
+            }
+
+            return true;
+        };
+        const editorInputObserver = new MutationObserver(() => {
+            if (labelEditorInput()) {
+                editorInputObserver.disconnect();
+            }
+        });
+
+        editorInputObserver.observe(richContent, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['role'],
+        });
 
         try {
             const editor = await createEditor({
@@ -24,17 +56,8 @@
 
             editor.setReadOnly(true);
 
-            const editorInput = richContent.querySelector('[role="textbox"]');
-            const accessibleLabel = richContent.getAttribute('aria-label');
-
-            if (
-                editorInput
-                && accessibleLabel
-                && !editorInput.hasAttribute('aria-label')
-                && !editorInput.hasAttribute('aria-labelledby')
-                && !editorInput.hasAttribute('title')
-            ) {
-                editorInput.setAttribute('aria-label', accessibleLabel);
+            if (labelEditorInput()) {
+                editorInputObserver.disconnect();
             }
 
             editors.set(viewer, editor);
@@ -42,6 +65,7 @@
             fallback.hidden = true;
             return editor;
         } catch {
+            editorInputObserver.disconnect();
             richContent.replaceChildren();
             richContent.hidden = true;
             fallback.hidden = false;
