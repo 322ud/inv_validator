@@ -261,9 +261,9 @@ jobs:
                 esac
               done
           tar --list --gzip --file "$archive" \
-            | rg --fixed-strings --line-regexp 'kosit_validator/appinfo/info.xml'
+            | grep --fixed-strings --line-regexp 'kosit_validator/appinfo/info.xml'
           if tar --list --gzip --file "$archive" \
-            | rg '(^|/)(\.git|\.github|composer\.(json|lock)|node_modules|package(-lock)?\.json|tests|vendor)(/|$)'; then
+            | grep --extended-regexp '(^|/)(\.git|\.github|composer\.(json|lock)|node_modules|package(-lock)?\.json|tests|vendor)(/|$)'; then
             echo 'Development files found in release archive' >&2
             exit 1
           fi
