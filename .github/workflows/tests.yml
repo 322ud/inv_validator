@@ -302,7 +302,7 @@ jobs:
             --admin-pass package-test-password
           php occ app:enable kosit_validator
           php occ app:list --enabled \
-            | rg --fixed-strings --line-regexp \
+            | grep --fixed-strings --line-regexp \
               '  - kosit_validator: ${{ steps.package.outputs.version }}'
       - name: Run installed-package smoke tests
         env:

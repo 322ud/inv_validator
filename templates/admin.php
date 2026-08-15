@@ -103,10 +103,10 @@ $stateLabels = [
     <p class="settings-hint">
     Wenn der Server Python und darin PyMuPDF bereitstellt, kann diese App auch PDF-Dateien mit eingebundener (embedded) XML-Rechnung verarbeiten.
         Wenn beispielsweise PyMuPDF mit
-        <code class="kosit-install-command">python3 -m venv /opt/pymupdf-venv
-/opt/pymupdf-venv/bin/python -m pip install pymupdf</code>
-    in einer virtuellen Umgebung istalliert ist, muss der Systempfad (oben) für Python entsprechend auf
-        <code class="kosit-install-command">/opt/pymupdf-venv/bin/python</code>
+        <code class="kosit-install-command">python3 -m venv /opt/kosit/pymupdf-venv
+/opt/kosit/pymupdf-venv/bin/python -m pip install pymupdf</code>
+    in einer virtuellen Umgebung installiert ist, muss der Systempfad (oben) für Python entsprechend auf
+        <code class="kosit-install-command">/opt/kosit/pymupdf-venv/bin/python</code>
     gesetzt werden.
     </p>
 
