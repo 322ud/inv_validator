@@ -9,20 +9,23 @@ use OCP\IConfig;
 
 class ValidatorConfigService
 {
-    private const DEFAULT_VALIDATOR_JAR = '/opt/kosit/validator-1.6.2-standalone.jar';
+    private const DEFAULT_VALIDATOR_ROOT = '/opt/kosit';
+    private const DEFAULT_VALIDATOR_JAR = '/opt/kosit/validator-standalone.jar';
+    private const VALIDATOR_FILENAME_PATTERN = '/^validator-[0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?-standalone\.jar$/';
 
     private const PATH_KEYS = [
         'javaBinary' => 'java_binary',
         'pythonBinary' => 'python_binary',
-        'validatorJar' => 'validator_jar',
-        'repositoryPath' => 'repository_path',
-        'tempDirectory' => 'temp_directory',
     ];
+
+    private string $validatorRoot;
 
     public function __construct(
         private IConfig $config,
-        private IAppConfig $appConfig
+        private IAppConfig $appConfig,
+        ?string $validatorRoot = null
     ) {
+        $this->validatorRoot = rtrim($validatorRoot ?? self::DEFAULT_VALIDATOR_ROOT, '/');
     }
 
     public function getJavaBinary(): string
@@ -42,25 +45,45 @@ class ValidatorConfigService
 
     public function getValidatorJar(): string
     {
-        $configured = $this->getConfiguredPath(
-            self::PATH_KEYS['validatorJar'],
+        return $this->config->getSystemValueString(
             'kosit_validator_jar',
-            ''
+            self::DEFAULT_VALIDATOR_JAR
         );
+    }
 
-        if ($configured !== '') {
-            return $configured;
+    public function assertValidatorJarIsSafe(string $jar): void
+    {
+        if (!is_link($jar)) {
+            return;
         }
 
-        $jars = glob('/opt/kosit/validator-*-standalone.jar') ?: [];
-        usort($jars, static function (string $left, string $right): int {
-            return version_compare(
-                self::versionFromFilename($right) ?? '0',
-                self::versionFromFilename($left) ?? '0'
-            );
-        });
+        $linkTarget = readlink($jar);
+        if ($linkTarget === false) {
+            throw new \InvalidArgumentException('Validator-Symlink konnte nicht gelesen werden.');
+        }
 
-        return $jars[0] ?? self::DEFAULT_VALIDATOR_JAR;
+        $targetPath = str_starts_with($linkTarget, '/')
+            ? $linkTarget
+            : dirname($jar) . '/' . $linkTarget;
+        $root = realpath($this->validatorRoot);
+        $linkDirectory = realpath(dirname($jar));
+        $target = realpath($targetPath);
+        if (
+            basename($jar) !== 'validator-standalone.jar'
+            || $root === false
+            || $linkDirectory === false
+            || $target === false
+            || is_link($targetPath)
+            || !is_file($target)
+            || !$this->pathIsWithin($linkDirectory, $root)
+            || !$this->pathIsWithin($target, $root)
+            || preg_match(self::VALIDATOR_FILENAME_PATTERN, basename($target)) !== 1
+        ) {
+            throw new \InvalidArgumentException(
+                'Validator-Symlink verweist nicht auf ein kontrolliertes Release innerhalb von '
+                . $this->validatorRoot . '.'
+            );
+        }
     }
 
     public function getPythonBinary(): string
@@ -85,8 +108,7 @@ class ValidatorConfigService
 
     public function getRepositoryPath(): string
     {
-        return $this->getConfiguredPath(
-            self::PATH_KEYS['repositoryPath'],
+        return $this->config->getSystemValueString(
             'kosit_validator_repository',
             '/opt/kosit/xrechnung/current'
         );
@@ -99,8 +121,7 @@ class ValidatorConfigService
 
     public function getTempDirectory(): string
     {
-        return $this->getConfiguredPath(
-            self::PATH_KEYS['tempDirectory'],
+        return $this->config->getSystemValueString(
             'kosit_validator_temp_directory',
             sys_get_temp_dir() . '/nextcloud-kosit-validator'
         );
@@ -122,9 +143,6 @@ class ValidatorConfigService
         $labels = [
             'javaBinary' => 'Java',
             'pythonBinary' => 'Python',
-            'validatorJar' => 'Validator-JAR',
-            'repositoryPath' => 'Repository',
-            'tempDirectory' => 'Temporäres Verzeichnis',
         ];
 
         $normalized = [];
@@ -201,12 +219,8 @@ class ValidatorConfigService
         return null;
     }
 
-    private static function versionFromFilename(string $path): ?string
+    private function pathIsWithin(string $path, string $root): bool
     {
-        return preg_match(
-            '/validator-([0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?)-standalone\.jar$/',
-            basename($path),
-            $matches
-        ) === 1 ? $matches[1] : null;
+        return $path === $root || str_starts_with($path, $root . DIRECTORY_SEPARATOR);
     }
 }

@@ -25,6 +25,9 @@ const adminMarkup = `
 const status = (overrides = {}) => ({
     paths: [
         { label: 'Java', key: 'javaBinary', path: '/usr/bin/java', state: 'available' },
+        { label: 'Validator-JAR', path: '/opt/kosit/validator-standalone.jar', state: 'available' },
+        { label: 'XRechnung-Repository', path: '/opt/kosit/xrechnung/current', state: 'available' },
+        { label: 'Temporäres Verzeichnis', path: '/tmp/nextcloud-kosit-validator', state: 'available' },
         { label: 'Szenario-Datei', path: '/opt/kosit/xrechnung/current/scenarios.xml', state: 'available' },
     ],
     validator: {
@@ -87,6 +90,9 @@ describe('admin UI', () => {
         await vi.waitFor(() => expect(document.getElementById('kosit-admin-message').textContent).toBe('Pfade gespeichert'));
         expect(fetch.mock.calls[0][1].headers.requesttoken).toBe('test-request-token');
         expect(fetch.mock.calls[0][1].body.get('javaBinary')).toBe('/old/java');
+        expect(document.querySelector('input[name="validatorJar"]')).toBeNull();
+        expect(document.querySelector('input[name="repositoryPath"]')).toBeNull();
+        expect(document.querySelector('input[name="tempDirectory"]')).toBeNull();
         expect(document.querySelector('#kosit-paths-body img')).toBeNull();
         expect(document.getElementById('kosit-validator-installed-version').textContent).toBe('1.6.2');
         expect(document.getElementById('kosit-configuration-installed-version').textContent)

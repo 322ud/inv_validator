@@ -20,16 +20,18 @@ final class ValidatorAdminInstallationTest extends TestCase {
 
     private string $temporaryDirectory;
     private string $jarPath;
+    private string $oldJarPath;
     private string $repositoryPath;
     private ValidatorConfigService $config;
 
     protected function setUp(): void {
         $this->temporaryDirectory = sys_get_temp_dir() . '/kosit-install-test-' . bin2hex(random_bytes(8));
         mkdir($this->temporaryDirectory, 0700, true);
-        $this->jarPath = $this->temporaryDirectory . '/validator-1.6.1-standalone.jar';
+        $this->jarPath = $this->temporaryDirectory . '/validator-standalone.jar';
+        $this->oldJarPath = $this->temporaryDirectory . '/validator-1.6.1-standalone.jar';
         $this->repositoryPath = $this->temporaryDirectory . '/xrechnung/current';
-        file_put_contents($this->jarPath, 'old validator');
-        $this->writeValidatorMarker('1.6.1');
+        file_put_contents($this->oldJarPath, 'old validator');
+        symlink(basename($this->oldJarPath), $this->jarPath);
 
         $this->config = $this->createStub(ValidatorConfigService::class);
         $this->config->method('getValidatorJar')->willReturn($this->jarPath);
@@ -62,6 +64,12 @@ final class ValidatorAdminInstallationTest extends TestCase {
         self::assertSame('2026-01-31', $status['configuration']['latestVersion']);
         self::assertSame('3.0.2', $status['configuration']['latestXRechnungVersion']);
         self::assertTrue($status['configuration']['updateAvailable']);
+        $paths = array_column($status['paths'], null, 'label');
+        self::assertArrayHasKey('key', $paths['Java']);
+        self::assertArrayHasKey('key', $paths['Python (optional)']);
+        self::assertArrayNotHasKey('key', $paths['Validator-JAR']);
+        self::assertArrayNotHasKey('key', $paths['XRechnung-Repository']);
+        self::assertArrayNotHasKey('key', $paths['Temporäres Verzeichnis']);
         self::assertSame(self::VALIDATOR_API, $client->requests[0]['url']);
         self::assertSame(self::CONFIGURATION_API, $client->requests[1]['url']);
     }
@@ -89,6 +97,23 @@ final class ValidatorAdminInstallationTest extends TestCase {
         $status = $service->getStatus(true);
 
         self::assertStringContainsString('unerwartete Download-Adresse', $status['configuration']['updateError']);
+    }
+
+    public function testRejectsUncontrolledValidatorAssetName(): void {
+        [$service] = $this->serviceWith([
+            new FakeHttpResponse(200, json_encode([
+                'tag_name' => 'v1.6.2',
+                'assets' => [[
+                    'name' => 'validator-latest-standalone.jar',
+                    'browser_download_url' => self::VALIDATOR_URL,
+                ]],
+            ], JSON_THROW_ON_ERROR)),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
+        ]);
+
+        $status = $service->getStatus(true);
+
+        self::assertStringContainsString('Standalone-JAR', $status['validator']['updateError']);
     }
 
     public function testManualConfigurationIsReportedWithoutInventingVersion(): void {
@@ -130,13 +155,85 @@ final class ValidatorAdminInstallationTest extends TestCase {
 
         $status = $service->installLatest();
 
+        $newJarPath = $this->temporaryDirectory . '/validator-1.6.2-standalone.jar';
+        self::assertTrue(is_link($this->jarPath));
+        self::assertSame(basename($newJarPath), readlink($this->jarPath));
+        self::assertSame($jar, file_get_contents($newJarPath));
         self::assertSame($jar, file_get_contents($this->jarPath));
+        self::assertFileExists($this->oldJarPath);
+        self::assertSame([], glob($this->temporaryDirectory . '/*.version'));
         self::assertTrue(is_link($this->repositoryPath));
         self::assertFileExists($this->repositoryPath . '/scenarios.xml');
         self::assertDirectoryExists($this->repositoryPath . '/resources');
         self::assertSame('1.6.2', $status['validator']['installedVersion']);
         self::assertSame('2026-01-31', $status['configuration']['installedVersion']);
         self::assertSame('3.0.2', $status['configuration']['installedXRechnungVersion']);
+    }
+
+    #[RequiresPhpExtension('zip')]
+    public function testDoesNotSwitchSymlinkBeforeIntegrityCheckSucceeds(): void {
+        $configuration = $this->configurationArchive();
+        [$service] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->validatorReleaseJson('sha256:' . str_repeat('0', 64))),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
+            new FakeHttpResponse(200, "PK\x03\x04new validator"),
+            new FakeHttpResponse(200, $configuration),
+        ]);
+
+        try {
+            $service->installLatest();
+            self::fail('Expected the integrity check to reject the Validator download.');
+        } catch (AdministrationException $e) {
+            self::assertStringContainsString('SHA-256', $e->getMessage());
+        }
+
+        self::assertSame(basename($this->oldJarPath), readlink($this->jarPath));
+        self::assertFileDoesNotExist($this->temporaryDirectory . '/validator-1.6.2-standalone.jar');
+    }
+
+    #[RequiresPhpExtension('zip')]
+    public function testRejectsRealFileAtNeutralValidatorPathWithoutMigration(): void {
+        unlink($this->jarPath);
+        file_put_contents($this->jarPath, 'legacy neutral validator');
+        file_put_contents($this->jarPath . '.version', '{"version":"1.6.1"}');
+        [$service] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
+        ]);
+
+        $status = $service->getStatus(false);
+        self::assertFalse($status['validator']['installed']);
+        self::assertNull($status['validator']['installedVersion']);
+
+        $this->expectException(AdministrationException::class);
+        $this->expectExceptionMessage('kein von der App verwalteter Symlink');
+        $service->installLatest();
+    }
+
+    #[RequiresPhpExtension('zip')]
+    public function testRejectsValidatorSymlinkOutsideManagedRoot(): void {
+        $outsideDirectory = sys_get_temp_dir() . '/kosit-outside-' . bin2hex(random_bytes(8));
+        mkdir($outsideDirectory, 0700, true);
+        $outsideJar = $outsideDirectory . '/validator-1.6.1-standalone.jar';
+        file_put_contents($outsideJar, 'outside validator');
+        unlink($this->jarPath);
+        symlink($outsideJar, $this->jarPath);
+        [$service] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
+        ]);
+
+        try {
+            $status = $service->getStatus(false);
+            self::assertFalse($status['validator']['installed']);
+            $service->installLatest();
+            self::fail('Expected the external symlink target to be rejected.');
+        } catch (AdministrationException $e) {
+            self::assertStringContainsString('kontrolliertes Release', $e->getMessage());
+        } finally {
+            unlink($outsideJar);
+            rmdir($outsideDirectory);
+        }
     }
 
     #[RequiresPhpExtension('zip')]
@@ -170,15 +267,16 @@ XML;
      */
     private function serviceWith(array $responses): array {
         $client = new QueuedHttpClientService($responses);
-        return [new ValidatorAdminService($this->config, $client), $client];
+        return [new ValidatorAdminService($this->config, $client, null, null, $this->temporaryDirectory), $client];
     }
 
-    private function validatorReleaseJson(): string {
+    private function validatorReleaseJson(?string $digest = null): string {
         return json_encode([
             'tag_name' => 'v1.6.2',
             'assets' => [[
                 'name' => 'validator-1.6.2-standalone.jar',
                 'browser_download_url' => self::VALIDATOR_URL,
+                'digest' => $digest,
             ]],
         ], JSON_THROW_ON_ERROR);
     }
@@ -207,14 +305,6 @@ XML;
         self::assertIsString($body);
         unlink($path);
         return $body;
-    }
-
-    private function writeValidatorMarker(string $version): void {
-        file_put_contents($this->jarPath . '.version', json_encode([
-            'version' => $version,
-            'size' => filesize($this->jarPath),
-            'modified' => filemtime($this->jarPath),
-        ], JSON_THROW_ON_ERROR));
     }
 
     private function createInstalledConfiguration(string $release, string $xrechnung): void {

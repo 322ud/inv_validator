@@ -59,20 +59,22 @@ final class AdminControllerTest extends TestCase {
         self::assertSame($exception->getMessage(), $response->getData()['message']);
     }
 
-    public function testSavePathsPassesAllValuesAndReturnsFreshStatus(): void {
+    public function testSavePathsPassesEditableValuesAndReturnsFreshStatus(): void {
         $paths = [
             'javaBinary' => '/usr/bin/java',
             'pythonBinary' => '/usr/bin/python3',
-            'validatorJar' => '/opt/kosit/validator.jar',
-            'repositoryPath' => '/opt/kosit/xrechnung/current',
-            'tempDirectory' => '/tmp/kosit',
+        ];
+        $requestPaths = $paths + [
+            'validatorJar' => '/tmp/ignored-validator.jar',
+            'repositoryPath' => '/tmp/ignored-repository',
+            'tempDirectory' => '/tmp/ignored-temp',
         ];
         $configService = $this->createMock(ValidatorConfigService::class);
         $configService->expects(self::once())->method('savePaths')->with($paths);
         $adminService = $this->createMock(ValidatorAdminService::class);
         $adminService->expects(self::once())->method('getStatus')->with(true)->willReturn(['saved' => true]);
 
-        $response = $this->controller($paths, $adminService, $configService)->savePaths();
+        $response = $this->controller($requestPaths, $adminService, $configService)->savePaths();
 
         self::assertSame(200, $response->getStatus());
         self::assertSame(['success' => true, 'message' => 'Pfade wurden gespeichert.', 'status' => ['saved' => true]], $response->getData());

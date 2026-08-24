@@ -124,6 +124,12 @@ class KoSITValidatorService
             );
         }
 
+        try {
+            $this->config->assertValidatorJarIsSafe($validatorJar);
+        } catch (\InvalidArgumentException $e) {
+            throw new ValidationException($e->getMessage(), 0, $e);
+        }
+
         if (!is_dir($repositoryPath)) {
             throw new ValidationException(
                 "Repository nicht gefunden: {$repositoryPath}"

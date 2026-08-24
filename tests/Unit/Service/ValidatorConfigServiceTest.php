@@ -11,35 +11,47 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class ValidatorConfigServiceTest extends TestCase {
-    public function testAppConfigurationTakesPrecedenceOverSystemConfiguration(): void {
+    public function testEditableAppConfigurationTakesPrecedenceOverSystemConfiguration(): void {
         $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getAppValueString')->with('repository_path', '')->willReturn('/from-app');
+        $appConfig->method('getAppValueString')->with('java_binary', '')->willReturn('/from-app');
         $systemConfig = $this->createMock(IConfig::class);
         $systemConfig->expects(self::never())->method('getSystemValueString');
 
         $service = new ValidatorConfigService($systemConfig, $appConfig);
 
-        self::assertSame('/from-app', $service->getRepositoryPath());
+        self::assertSame('/from-app', $service->getJavaBinary());
     }
 
-    public function testEmptyAppConfigurationFallsBackToSystemConfiguration(): void {
-        $appConfig = $this->createStub(IAppConfig::class);
-        $appConfig->method('getAppValueString')->willReturn('');
+    public function testInfrastructurePathComesFromSystemConfiguration(): void {
         $systemConfig = $this->createMock(IConfig::class);
         $systemConfig->expects(self::once())
             ->method('getSystemValueString')
             ->with('kosit_validator_repository', '/opt/kosit/xrechnung/current')
             ->willReturn('/from-system');
 
-        $service = new ValidatorConfigService($systemConfig, $appConfig);
+        $service = new ValidatorConfigService($systemConfig, $this->createStub(IAppConfig::class));
 
         self::assertSame('/from-system', $service->getRepositoryPath());
+    }
+
+    public function testValidatorUsesOnlyTheVersionNeutralDefaultWhenUnconfigured(): void {
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->expects(self::never())->method('getAppValueString');
+        $systemConfig = $this->createMock(IConfig::class);
+        $systemConfig->expects(self::once())
+            ->method('getSystemValueString')
+            ->with('kosit_validator_jar', '/opt/kosit/validator-standalone.jar')
+            ->willReturn('/opt/kosit/validator-standalone.jar');
+
+        $service = new ValidatorConfigService($systemConfig, $appConfig);
+
+        self::assertSame('/opt/kosit/validator-standalone.jar', $service->getValidatorJar());
     }
 
     public function testSavePathsNormalizesAndPersistsEveryPath(): void {
         $stored = [];
         $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->expects(self::exactly(5))->method('setAppValueString')
+        $appConfig->expects(self::exactly(2))->method('setAppValueString')
             ->willReturnCallback(static function (string $key, string $value) use (&$stored): void {
                 $stored[$key] = $value;
             });
@@ -48,26 +60,69 @@ final class ValidatorConfigServiceTest extends TestCase {
         $service->savePaths([
             'javaBinary' => ' /usr/bin/java/ ',
             'pythonBinary' => ' /usr/bin/python3/ ',
-            'validatorJar' => '/opt/kosit/validator.jar/',
-            'repositoryPath' => '/opt/kosit/',
-            'tempDirectory' => '/',
         ]);
 
         self::assertSame([
             'java_binary' => '/usr/bin/java',
             'python_binary' => '/usr/bin/python3',
-            'validator_jar' => '/opt/kosit/validator.jar',
-            'repository_path' => '/opt/kosit',
-            'temp_directory' => '/',
         ], $stored);
     }
 
     public function testScenarioFileIsDerivedFromRepository(): void {
-        $appConfig = $this->createStub(IAppConfig::class);
-        $appConfig->method('getAppValueString')->with('repository_path', '')->willReturn('/opt/kosit/xrechnung/current');
-        $service = new ValidatorConfigService($this->createStub(IConfig::class), $appConfig);
+        $systemConfig = $this->createStub(IConfig::class);
+        $systemConfig->method('getSystemValueString')->with(
+            'kosit_validator_repository',
+            '/opt/kosit/xrechnung/current'
+        )->willReturn('/opt/kosit/xrechnung/current');
+        $service = new ValidatorConfigService($systemConfig, $this->createStub(IAppConfig::class));
 
         self::assertSame('/opt/kosit/xrechnung/current/scenarios.xml', $service->getScenarioFile());
+    }
+
+    public function testAcceptsControlledValidatorSymlinkWithinManagedRoot(): void {
+        $root = sys_get_temp_dir() . '/kosit-validator-root-' . bin2hex(random_bytes(8));
+        mkdir($root, 0700, true);
+        file_put_contents($root . '/validator-1.6.3-standalone.jar', 'validator');
+        symlink('validator-1.6.3-standalone.jar', $root . '/validator-standalone.jar');
+        $service = new ValidatorConfigService(
+            $this->createStub(IConfig::class),
+            $this->createStub(IAppConfig::class),
+            $root
+        );
+
+        try {
+            $service->assertValidatorJarIsSafe($root . '/validator-standalone.jar');
+            self::addToAssertionCount(1);
+        } finally {
+            unlink($root . '/validator-standalone.jar');
+            unlink($root . '/validator-1.6.3-standalone.jar');
+            rmdir($root);
+        }
+    }
+
+    public function testRejectsValidatorSymlinkOutsideManagedRootAtRuntime(): void {
+        $root = sys_get_temp_dir() . '/kosit-validator-root-' . bin2hex(random_bytes(8));
+        $outsideDirectory = sys_get_temp_dir() . '/kosit-validator-outside-' . bin2hex(random_bytes(8));
+        $outside = $outsideDirectory . '/validator-1.6.3-standalone.jar';
+        mkdir($root, 0700, true);
+        mkdir($outsideDirectory, 0700, true);
+        file_put_contents($outside, 'validator');
+        symlink($outside, $root . '/validator-standalone.jar');
+        $service = new ValidatorConfigService(
+            $this->createStub(IConfig::class),
+            $this->createStub(IAppConfig::class),
+            $root
+        );
+
+        try {
+            $this->expectException(\InvalidArgumentException::class);
+            $service->assertValidatorJarIsSafe($root . '/validator-standalone.jar');
+        } finally {
+            unlink($root . '/validator-standalone.jar');
+            unlink($outside);
+            rmdir($outsideDirectory);
+            rmdir($root);
+        }
     }
 
     #[DataProvider('invalidPathProvider')]
@@ -80,9 +135,6 @@ final class ValidatorConfigServiceTest extends TestCase {
         $service->savePaths([
             'javaBinary' => $path,
             'pythonBinary' => '/usr/bin/python3',
-            'validatorJar' => '/validator.jar',
-            'repositoryPath' => '/repository',
-            'tempDirectory' => '/tmp/kosit',
         ]);
     }
 
@@ -103,10 +155,7 @@ final class ValidatorConfigServiceTest extends TestCase {
         try {
             $service->savePaths([
                 'javaBinary' => '/usr/bin/java',
-                'pythonBinary' => '/usr/bin/python3',
-                'validatorJar' => '/validator.jar',
-                'repositoryPath' => '/repository',
-                'tempDirectory' => 'relative',
+                'pythonBinary' => 'relative',
             ]);
             self::fail('Expected an invalid path exception');
         } catch (\InvalidArgumentException) {

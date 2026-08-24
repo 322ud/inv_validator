@@ -17,18 +17,22 @@ class ValidatorAdminService
     private const MAX_EXTRACTED_BYTES = 300 * 1024 * 1024;
     private const MAX_ARCHIVE_ENTRIES = 20000;
     private const SCENARIO_NAMESPACE = 'http://www.xoev.de/de/validator/framework/1/scenarios';
+    private const VALIDATOR_FILENAME_PATTERN = '/^validator-([0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?)-standalone\.jar$/';
 
     private int $maxDownloadBytes;
     private PdfSupportService $pdfSupportService;
+    private string $validatorRoot;
 
     public function __construct(
         private ValidatorConfigService $config,
         private IClientService $clientService,
         ?int $maxDownloadBytes = null,
-        ?PdfSupportService $pdfSupportService = null
+        ?PdfSupportService $pdfSupportService = null,
+        ?string $validatorRoot = null
     ) {
         $this->maxDownloadBytes = $maxDownloadBytes ?? self::MAX_DOWNLOAD_BYTES;
         $this->pdfSupportService = $pdfSupportService ?? new PdfSupportService($config);
+        $this->validatorRoot = rtrim($validatorRoot ?? '/opt/kosit', '/');
     }
 
     /** @return array<string, mixed> */
@@ -67,13 +71,13 @@ class ValidatorAdminService
                 ['label' => 'PHP', 'path' => $this->config->getPhpBinary(), 'state' => $this->fileState($this->config->getPhpBinary(), true)],
                 ['label' => 'Java', 'key' => 'javaBinary', 'path' => $this->config->getJavaBinary(), 'state' => $this->fileState($this->config->getJavaBinary(), true)],
                 ['label' => 'Python (optional)', 'key' => 'pythonBinary', 'path' => $this->config->getPythonBinary(), 'state' => $this->fileState($this->config->getPythonBinary(), true)],
-                ['label' => 'Validator-JAR', 'key' => 'validatorJar', 'path' => $jar, 'state' => $this->fileState($jar)],
-                ['label' => 'XRechnung-Repository', 'key' => 'repositoryPath', 'path' => $repository, 'state' => $this->directoryState($repository)],
+                ['label' => 'Validator-JAR', 'path' => $jar, 'state' => $this->fileState($jar)],
+                ['label' => 'XRechnung-Repository', 'path' => $repository, 'state' => $this->directoryState($repository)],
                 ['label' => 'Szenario-Datei', 'path' => $this->config->getScenarioFile(), 'state' => $this->fileState($this->config->getScenarioFile())],
-                ['label' => 'Temporäres Verzeichnis', 'key' => 'tempDirectory', 'path' => $this->config->getTempDirectory(), 'state' => $this->directoryState($this->config->getTempDirectory(), true)],
+                ['label' => 'Temporäres Verzeichnis', 'path' => $this->config->getTempDirectory(), 'state' => $this->directoryState($this->config->getTempDirectory(), true)],
             ],
             'validator' => [
-                'installed' => is_file($jar),
+                'installed' => $installedValidatorVersion !== null,
                 'installedVersion' => $installedValidatorVersion,
                 'latestVersion' => $latestValidatorVersion,
                 'updateAvailable' => $installedValidatorVersion !== null
@@ -124,6 +128,8 @@ class ValidatorAdminService
         $releaseDirectory = $repositoryParent . '/releases/' . $configurationRelease['release'];
 
         $this->ensureDirectory($jarDirectory);
+        $this->assertValidatorLinkLocation($jar);
+        $this->assertExistingValidatorLinkIsManaged($jar);
         $this->ensureDirectory($repositoryParent);
         $this->ensureDirectory(dirname($releaseDirectory));
 
@@ -143,7 +149,7 @@ class ValidatorAdminService
         }
 
         $temporaryJar = null;
-        $temporaryJarMarker = null;
+        $temporaryValidatorLink = null;
         $temporaryArchive = null;
         $stagingDirectory = null;
         $temporaryLink = null;
@@ -160,11 +166,31 @@ class ValidatorAdminService
                 $jarBody = $this->download($validatorRelease['asset']['url'], 'Validator');
                 $this->verifyZipContainer($jarBody, $validatorRelease['asset']['digest'], 'JAR');
                 $temporaryJar = $this->writeTemporaryFile($jarDirectory, '.validator-', $jarBody, 0640);
-                $temporaryJarMarker = $this->writeTemporaryValidatorMarker(
-                    $jarDirectory,
-                    $temporaryJar,
-                    $validatorRelease['version']
-                );
+                $validatorFilename = 'validator-' . $validatorRelease['version'] . '-standalone.jar';
+                $validatorReleasePath = $jarDirectory . '/' . $validatorFilename;
+                if (file_exists($validatorReleasePath) || is_link($validatorReleasePath)) {
+                    if (
+                        !is_file($validatorReleasePath)
+                        || is_link($validatorReleasePath)
+                        || !hash_equals(hash('sha256', $jarBody), (string)hash_file('sha256', $validatorReleasePath))
+                    ) {
+                        throw new AdministrationException(
+                            'Das Ziel für das Validator-Release ist bereits belegt: ' . $validatorReleasePath
+                        );
+                    }
+                    unlink($temporaryJar);
+                } elseif (!rename($temporaryJar, $validatorReleasePath)) {
+                    throw new AdministrationException('Validator-Release konnte nicht bereitgestellt werden.');
+                }
+                $temporaryJar = null;
+
+                $temporaryValidatorLink = $jarDirectory . '/.validator-current-' . bin2hex(random_bytes(8));
+                if (!symlink($validatorFilename, $temporaryValidatorLink)) {
+                    throw new AdministrationException('Validator-Symlink konnte nicht vorbereitet werden.');
+                }
+                if ($this->readInstalledValidatorVersion($temporaryValidatorLink) !== $validatorRelease['version']) {
+                    throw new AdministrationException('Validator-Symlink verweist nicht auf ein kontrolliertes Release.');
+                }
             }
 
             if ($installConfiguration) {
@@ -201,14 +227,10 @@ class ValidatorAdminService
             }
 
             if ($installValidator) {
-                if (!rename($temporaryJar, $jar)) {
+                if (!rename($temporaryValidatorLink, $jar)) {
                     throw new AdministrationException('Validator-JAR konnte nicht aktiviert werden.');
                 }
-                $temporaryJar = null;
-                if (!rename($temporaryJarMarker, $jar . '.version')) {
-                    throw new AdministrationException('Versionsinformation des Validators konnte nicht aktiviert werden.');
-                }
-                $temporaryJarMarker = null;
+                $temporaryValidatorLink = null;
             }
 
             if ($installConfiguration) {
@@ -218,7 +240,7 @@ class ValidatorAdminService
                 $temporaryLink = null;
             }
         } finally {
-            foreach ([$temporaryJar, $temporaryJarMarker, $temporaryArchive, $temporaryLink] as $temporary) {
+            foreach ([$temporaryJar, $temporaryValidatorLink, $temporaryArchive, $temporaryLink] as $temporary) {
                 if (is_string($temporary) && (is_file($temporary) || is_link($temporary))) {
                     unlink($temporary);
                 }
@@ -538,57 +560,75 @@ class ValidatorAdminService
         return $path;
     }
 
-    private function writeTemporaryValidatorMarker(string $directory, string $jar, string $version): string
+    private function assertValidatorLinkLocation(string $jar): void
     {
-        $metadata = json_encode([
-            'version' => $version,
-            'size' => filesize($jar),
-            'modified' => filemtime($jar),
-        ], JSON_THROW_ON_ERROR);
-        return $this->writeTemporaryFile($directory, '.validator-version-', $metadata, 0640);
+        if (basename($jar) !== 'validator-standalone.jar' || !$this->isWithinValidatorRoot(dirname($jar))) {
+            throw new AdministrationException(
+                'Der verwaltete Validator-Symlink muss innerhalb von ' . $this->validatorRoot
+                . ' liegen und validator-standalone.jar heißen.'
+            );
+        }
+    }
+
+    private function assertExistingValidatorLinkIsManaged(string $jar): void
+    {
+        if (is_link($jar)) {
+            if ($this->readInstalledValidatorVersion($jar) === null) {
+                throw new AdministrationException(
+                    'Der konfigurierte Validator-Symlink verweist nicht auf ein kontrolliertes Release innerhalb von '
+                    . $this->validatorRoot . ': ' . $jar
+                );
+            }
+            return;
+        }
+
+        if (file_exists($jar)) {
+            throw new AdministrationException(
+                'Der konfigurierte Validator-Pfad existiert und ist kein von der App verwalteter Symlink: ' . $jar
+            );
+        }
     }
 
     private function readInstalledValidatorVersion(string $jar): ?string
     {
-        if (!is_file($jar)) {
+        if (!is_link($jar) || !$this->isWithinValidatorRoot(dirname($jar))) {
             return null;
         }
-        $marker = @file_get_contents($jar . '.version');
-        if ($marker !== false) {
-            try {
-                $metadata = json_decode($marker, true, 8, JSON_THROW_ON_ERROR);
-            } catch (\JsonException) {
-                $metadata = null;
-            }
-            $version = is_array($metadata) ? ($metadata['version'] ?? null) : null;
-            if (
-                is_string($version)
-                && preg_match('/^[0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$/', $version)
-                && ($metadata['size'] ?? null) === filesize($jar)
-                && ($metadata['modified'] ?? null) === filemtime($jar)
-            ) {
-                return $version;
-            }
+
+        $linkTarget = readlink($jar);
+        if ($linkTarget === false) {
+            return null;
         }
-        if (class_exists(\ZipArchive::class)) {
-            $zip = new \ZipArchive();
-            if ($zip->open($jar) === true) {
-                try {
-                    $manifest = $zip->getFromName('META-INF/MANIFEST.MF');
-                } finally {
-                    $zip->close();
-                }
-                if (
-                    is_string($manifest)
-                    && preg_match('/^(?:Implementation-Version|Bundle-Version):\s*(\S+)/mi', $manifest, $matches) === 1
-                ) {
-                    return ltrim(trim($matches[1]), 'vV');
-                }
-            }
+
+        $targetPath = str_starts_with($linkTarget, '/')
+            ? $linkTarget
+            : dirname($jar) . '/' . $linkTarget;
+        if (is_link($targetPath)) {
+            return null;
         }
-        return preg_match('/validator-([0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?)-standalone\.jar$/', basename($jar), $matches) === 1
-            ? $matches[1]
-            : null;
+
+        $resolvedTarget = realpath($targetPath);
+        if (
+            $resolvedTarget === false
+            || !is_file($resolvedTarget)
+            || !$this->isWithinValidatorRoot($resolvedTarget)
+            || preg_match(self::VALIDATOR_FILENAME_PATTERN, basename($resolvedTarget), $matches) !== 1
+        ) {
+            return null;
+        }
+
+        return $matches[1];
+    }
+
+    private function isWithinValidatorRoot(string $path): bool
+    {
+        $root = realpath($this->validatorRoot);
+        $resolved = realpath($path);
+        if ($root === false || $resolved === false) {
+            return false;
+        }
+
+        return $resolved === $root || str_starts_with($resolved, $root . DIRECTORY_SEPARATOR);
     }
 
     private function ensureDirectory(string $directory): void

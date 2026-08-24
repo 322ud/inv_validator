@@ -65,9 +65,6 @@ class AdminController extends Controller
             $this->configService->savePaths([
                 'javaBinary' => $this->request->getParam('javaBinary'),
                 'pythonBinary' => $this->request->getParam('pythonBinary'),
-                'validatorJar' => $this->request->getParam('validatorJar'),
-                'repositoryPath' => $this->request->getParam('repositoryPath'),
-                'tempDirectory' => $this->request->getParam('tempDirectory'),
             ]);
 
             return new DataResponse([

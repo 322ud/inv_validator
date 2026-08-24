@@ -28,7 +28,7 @@ const savePaths = async (page) => {
     await expect(page.locator('#kosit-admin-message')).toHaveText('Pfade wurden gespeichert.');
 };
 
-test('configures paths through Nextcloud administration', async ({ page }) => {
+test('configures interpreter paths and keeps infrastructure paths read-only', async ({ page }) => {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
 
@@ -38,19 +38,23 @@ test('configures paths through Nextcloud administration', async ({ page }) => {
     await expect(admin).toBeVisible();
     await expect(admin.getByRole('heading', { name: 'Anbindung des KoSIT-Validators' })).toBeVisible();
 
-    const temporaryDirectory = page.locator('input[name="tempDirectory"]');
-    const originalTemporaryDirectory = await temporaryDirectory.inputValue();
-    const browserTemporaryDirectory = `${nextcloudRoot}/data/kosit-validator-browser-temp`;
+    await expect(page.locator('input[name="validatorJar"]')).toHaveCount(0);
+    await expect(page.locator('input[name="repositoryPath"]')).toHaveCount(0);
+    await expect(page.locator('input[name="tempDirectory"]')).toHaveCount(0);
 
-    await temporaryDirectory.fill(browserTemporaryDirectory);
-    await savePaths(page);
-    await expect(page.locator('input[name="tempDirectory"]'))
-        .toHaveValue(browserTemporaryDirectory);
+    const pythonBinary = page.locator('input[name="pythonBinary"]');
+    const originalPythonBinary = await pythonBinary.inputValue();
+    const browserPythonBinary = `${nextcloudRoot}/data/test-python`;
 
-    await page.locator('input[name="tempDirectory"]').fill(originalTemporaryDirectory);
+    await pythonBinary.fill(browserPythonBinary);
     await savePaths(page);
-    await expect(page.locator('input[name="tempDirectory"]'))
-        .toHaveValue(originalTemporaryDirectory);
+    await expect(page.locator('input[name="pythonBinary"]'))
+        .toHaveValue(browserPythonBinary);
+
+    await page.locator('input[name="pythonBinary"]').fill(originalPythonBinary);
+    await savePaths(page);
+    await expect(page.locator('input[name="pythonBinary"]'))
+        .toHaveValue(originalPythonBinary);
 
     await expect(pageErrors).toEqual([]);
 });

@@ -68,9 +68,9 @@ $stateLabels = [
         <button id="kosit-save-paths" type="button" class="primary">Pfade speichern</button>
     </div>
     <p class="settings-hint">
-        Gespeicherte Werte haben Vorrang vor den entsprechenden Einträgen in
-        der Nextcloud-<code>config.php</code> und werden sofort für Validierungen,
-        Installationen und Updates verwendet.
+        Java und das optionale Python können hier konfiguriert werden. Die übrigen
+        Pfade werden aus der Nextcloud-<code>config.php</code> beziehungsweise aus
+        ihren sicheren Standardwerten ermittelt.
     </p>
 
     <h4 class="kosit-status-heading">Optionale PDF-Unterstützung</h4>

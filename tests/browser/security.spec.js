@@ -15,13 +15,14 @@ const login = async (page, user, password) => {
     await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
 };
 
-const postPaths = async (page, requestToken, temporaryDirectory) => page.evaluate(
-    async ({ token, directory }) => {
+const postPaths = async (page, requestToken, javaBinary) => page.evaluate(
+    async ({ token, binary }) => {
         const formData = new FormData();
-        formData.append('javaBinary', '/usr/bin/java');
+        formData.append('javaBinary', binary);
+        formData.append('pythonBinary', '/usr/bin/python3');
         formData.append('validatorJar', '/tmp/unauthorized-validator.jar');
         formData.append('repositoryPath', '/tmp/unauthorized-repository');
-        formData.append('tempDirectory', directory);
+        formData.append('tempDirectory', '/tmp/unauthorized-temp');
 
         const headers = token === null ? {} : { requesttoken: token };
         const response = await fetch(window.OC.generateUrl('/apps/kosit_validator/admin/paths'), {
@@ -33,7 +34,7 @@ const postPaths = async (page, requestToken, temporaryDirectory) => page.evaluat
 
         return response.status;
     },
-    { token: requestToken, directory: temporaryDirectory },
+    { token: requestToken, binary: javaBinary },
 );
 
 test('enforces admin authorization and CSRF without changing configuration', async ({ browser }) => {
@@ -47,11 +48,11 @@ test('enforces admin authorization and CSRF without changing configuration', asy
     await expect(userPage.locator('#kosit-status')).toHaveText('XML ist gültig.');
 
     const userRequestToken = await userPage.evaluate(() => window.OC.requestToken);
-    const unauthorizedDirectory = `${nextcloudRoot}/data/unauthorized-temp`;
+    const unauthorizedJava = `${nextcloudRoot}/data/unauthorized-java`;
     const unauthorizedStatus = await postPaths(
         userPage,
         userRequestToken,
-        unauthorizedDirectory,
+        unauthorizedJava,
     );
     expect(unauthorizedStatus).toBe(403);
     await userContext.close();
@@ -63,21 +64,19 @@ test('enforces admin authorization and CSRF without changing configuration', asy
     await adminPage.goto('/index.php/settings/admin/kosit_validator');
     await expect(adminPage.locator('#kosit-admin')).toBeVisible();
 
-    const temporaryDirectory = adminPage.locator('input[name="tempDirectory"]');
-    const originalTemporaryDirectory = await temporaryDirectory.inputValue();
-    expect(originalTemporaryDirectory).not.toBe(unauthorizedDirectory);
+    const javaBinary = adminPage.locator('input[name="javaBinary"]');
+    const originalJavaBinary = await javaBinary.inputValue();
+    expect(originalJavaBinary).not.toBe(unauthorizedJava);
 
-    const missingTokenDirectory = `${nextcloudRoot}/data/missing-token-temp`;
-    const missingTokenStatus = await postPaths(adminPage, null, missingTokenDirectory);
+    const missingTokenStatus = await postPaths(adminPage, null, `${nextcloudRoot}/data/missing-token-java`);
     expect(missingTokenStatus).toBe(412);
 
-    const invalidTokenDirectory = `${nextcloudRoot}/data/invalid-token-temp`;
-    const invalidTokenStatus = await postPaths(adminPage, 'invalid-request-token', invalidTokenDirectory);
+    const invalidTokenStatus = await postPaths(adminPage, 'invalid-request-token', `${nextcloudRoot}/data/invalid-token-java`);
     expect(invalidTokenStatus).toBe(412);
 
     await adminPage.reload();
-    await expect(adminPage.locator('input[name="tempDirectory"]'))
-        .toHaveValue(originalTemporaryDirectory);
+    await expect(adminPage.locator('input[name="javaBinary"]'))
+        .toHaveValue(originalJavaBinary);
 
     await adminContext.close();
 });

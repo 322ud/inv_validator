@@ -1,6 +1,6 @@
 # Nextcloud-Frontend für den KoSIT-Validator
 
-**Aktuelle Version:** [v0.5.0](https://github.com/322ud/kosit_validator/tree/v0.5.0)
+**Aktuelle Version:** [0.5.1](https://github.com/322ud/kosit_validator/tree/0.5.1)
 
 Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der [XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung).
 
@@ -34,21 +34,23 @@ Die Anwendung verwendet folgende Standardpfade:
 |------------|-------|
 | Java | `/usr/bin/java` |
 | Python (optional) | `/usr/bin/python3` |
-| Validator JAR | `/opt/kosit/validator-1.6.2-standalone.jar` |
+| Validator JAR | `/opt/kosit/validator-standalone.jar` |
 | XRechnung-Repository | `/opt/kosit/xrechnung/current` |
 | Szenario-Datei | `/opt/kosit/xrechnung/current/scenarios.xml` (automatisch abgeleitet) |
 
 Die Admin-Seite unter **Administrationseinstellungen → Weitere Einstellungen** zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht. Dasselbe gilt für das optionale Python. Die Admin-Seite prüft mit dem konfigurierten Interpreter, ob PyMuPDF importiert werden kann. Nur dann wird PDF als Eingabe angeboten.
 
-Die Pfade können direkt auf der Admin-Seite bearbeitet und gespeichert werden. Gespeicherte Werte werden von Validierung, Installation und Update-Prüfung sofort verwendet und haben Vorrang vor Einträgen in der Nextcloud-`config.php`. Die Szenariodatei ist immer `scenarios.xml` innerhalb des konfigurierten XRechnung-Repositorys. Solange noch kein Wert über die Admin-Seite gespeichert wurde, bleiben folgende `config.php`-Optionen als Fallback verfügbar:
+Die Pfade für Java und das optionale Python können direkt auf der Admin-Seite bearbeitet und gespeichert werden. Validator-JAR, XRechnung-Repository und temporäres Verzeichnis werden dort nur angezeigt und über die folgenden Optionen in der Nextcloud-`config.php` konfiguriert. Die Szenariodatei ist immer `scenarios.xml` innerhalb des konfigurierten XRechnung-Repositorys:
 
 ```php
 'kosit_validator_java_binary' => '/usr/bin/java',
 'kosit_validator_python_binary' => '/opt/kosit/pymupdf-venv/bin/python',
-'kosit_validator_jar' => '/opt/kosit/validator-1.6.2-standalone.jar',
+'kosit_validator_jar' => '/opt/kosit/validator-standalone.jar',
 'kosit_validator_repository' => '/opt/kosit/xrechnung/current',
 'kosit_validator_temp_directory' => '/tmp/nextcloud-kosit-validator',
 ```
+
+Ohne explizite Konfiguration verwendet die App für den Validator ausschließlich den versionsneutralen Pfad `/opt/kosit/validator-standalone.jar`. Dieser Pfad ist ein von der App verwalteter symbolischer Link auf die aktive Originaldatei nach dem kontrollierten Namensschema `validator-<Version>-standalone.jar`. Link und Ziel müssen innerhalb von `/opt/kosit` liegen. Alte `.version`-Dateien werden nicht ausgewertet; eine vorhandene echte Datei am neutralen Pfad wird nicht automatisch migriert und blockiert die Installation.
 
 Validator-JAR und XRechnung-Konfiguration müssen zueinander kompatibel sein. Die App unterstützt derzeit die Validator-Reihe 1.6.x. Die XRechnung-Konfiguration wird nicht mit der App ausgeliefert, sondern vollständig aus den offiziellen KoSIT-Releases installiert.
 
@@ -66,7 +68,7 @@ sudo apt install openjdk-17-jre
 
 ### KoSIT-Validator und XRechnung-Konfiguration installieren
 
-Die empfohlene Installation erfolgt in der Admin-Seite über **Komponenten installieren**. Die App ermittelt die neuesten offiziellen GitHub-Releases, lädt das zugehörige `validator-<version>-standalone.jar` und das vollständige XRechnung-Konfigurationspaket. Das Paket wird geprüft, in einem versionierten Verzeichnis bereitgestellt und anschließend über den konfigurierten Repositorypfad aktiviert. PHP benötigt dafür die Erweiterung `ZipArchive`. Der Webserver-Benutzer muss für beide Zielverzeichnisse Schreibrechte besitzen.
+Die empfohlene Installation erfolgt in der Admin-Seite über **Komponenten installieren**. Die App ermittelt die neuesten offiziellen GitHub-Releases, lädt das zugehörige `validator-<version>-standalone.jar` und das vollständige XRechnung-Konfigurationspaket. Beide Downloads werden vor ihrer Aktivierung geprüft. Die Validator-JAR wird unter ihrem Originalnamen gespeichert und anschließend durch einen atomaren Austausch des neutralen Symlinks aktiviert; die zuvor aktive Originaldatei bleibt für ein Rollback erhalten. Das Konfigurationspaket wird geprüft, in einem versionierten Verzeichnis bereitgestellt und anschließend über den konfigurierten Repositorypfad aktiviert. PHP benötigt dafür die Erweiterung `ZipArchive`. Der Webserver-Benutzer muss für beide Zielverzeichnisse Schreibrechte besitzen.
 
 Ein bereits vorhandenes echtes Verzeichnis am Repositorypfad wird aus Sicherheitsgründen nicht überschrieben. Für eine von der App verwaltete Installation muss der Pfad fehlen oder ein zuvor von der App angelegter symbolischer Link sein.
 
@@ -78,7 +80,9 @@ Beispielstruktur:
 
 ```text
 /opt/kosit/
+├── validator-standalone.jar -> validator-1.6.3-standalone.jar
 ├── validator-1.6.2-standalone.jar
+├── validator-1.6.3-standalone.jar
 └── xrechnung/
     ├── current -> releases/2026-01-31
     └── releases/
