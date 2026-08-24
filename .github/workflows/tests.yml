@@ -148,10 +148,10 @@ jobs:
           cd "$NEXTCLOUD_ROOT"
           php occ config:system:set trusted_domains 1 --value=127.0.0.1:8080
           php occ config:app:set kosit_validator java_binary --value="$JAVA_HOME/bin/java"
-          php occ config:app:set kosit_validator validator_jar \
+          php occ config:system:set kosit_validator_jar \
             --value="$KOSIT_ASSET_DIRECTORY/validator-${KOSIT_VALIDATOR_VERSION}-standalone.jar"
-          php occ config:app:set kosit_validator repository_path --value="$KOSIT_REPOSITORY"
-          php occ config:app:set kosit_validator temp_directory \
+          php occ config:system:set kosit_validator_repository --value="$KOSIT_REPOSITORY"
+          php occ config:system:set kosit_validator_temp_directory \
             --value="$NEXTCLOUD_ROOT/data/kosit-validator-temp"
       - name: Run browser end-to-end test
         env:
