@@ -11,6 +11,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 class PageController extends Controller
 {
@@ -18,7 +19,8 @@ class PageController extends Controller
         string $appName,
         IRequest $request,
         private ValidatorAdminService $adminService,
-        private TextEditorLoader $textEditorLoader
+        private TextEditorLoader $textEditorLoader,
+        private LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
     }
@@ -28,12 +30,24 @@ class PageController extends Controller
     public function index(): TemplateResponse
     {
         $this->textEditorLoader->load();
+        $status = $this->adminService->getStatus(true);
+        if ($status['validator']['updateAvailable'] || $status['configuration']['updateAvailable']) {
+            try {
+                $status = $this->adminService->installLatest();
+            } catch (\Throwable $e) {
+                $this->logger->error('Automatic KoSIT update failed: {message}', [
+                    'message' => $e->getMessage(),
+                    'exception' => $e,
+                ]);
+                $status = $this->adminService->getStatus(false);
+            }
+        }
 
         return new TemplateResponse(
             'kosit_validator',
             'index',
             [
-                'status' => $this->adminService->getStatus(true),
+                'status' => $status,
             ]
         );
     }

@@ -171,6 +171,47 @@ final class ValidatorAdminInstallationTest extends TestCase {
     }
 
     #[RequiresPhpExtension('zip')]
+    public function testConfigurationUpdateDoesNotDownloadCurrentValidator(): void {
+        $newJarPath = $this->temporaryDirectory . '/validator-1.6.2-standalone.jar';
+        file_put_contents($newJarPath, 'current validator');
+        unlink($this->jarPath);
+        symlink(basename($newJarPath), $this->jarPath);
+        $this->createInstalledConfiguration('2025-07-10', '3.0.2');
+        [$service, $client] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationArchive()),
+        ]);
+
+        $status = $service->installLatest();
+
+        self::assertSame('current validator', file_get_contents($this->jarPath));
+        self::assertSame('2026-01-31', $status['configuration']['installedVersion']);
+        self::assertSame([
+            self::VALIDATOR_API, self::CONFIGURATION_API, self::CONFIGURATION_URL,
+        ], array_column($client->requests, 'url'));
+    }
+
+    #[RequiresPhpExtension('zip')]
+    public function testValidatorUpdateDoesNotDownloadCurrentConfiguration(): void {
+        $this->createInstalledConfiguration('2026-01-31', '3.0.2');
+        $repositoryTarget = readlink($this->repositoryPath);
+        [$service, $client] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
+            new FakeHttpResponse(200, "PK\x03\x04new validator"),
+        ]);
+
+        $status = $service->installLatest();
+
+        self::assertSame('1.6.2', $status['validator']['installedVersion']);
+        self::assertSame($repositoryTarget, readlink($this->repositoryPath));
+        self::assertSame([
+            self::VALIDATOR_API, self::CONFIGURATION_API, self::VALIDATOR_URL,
+        ], array_column($client->requests, 'url'));
+    }
+
+    #[RequiresPhpExtension('zip')]
     public function testDoesNotSwitchSymlinkBeforeIntegrityCheckSucceeds(): void {
         $configuration = $this->configurationArchive();
         [$service] = $this->serviceWith([

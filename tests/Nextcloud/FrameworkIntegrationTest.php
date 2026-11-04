@@ -145,7 +145,9 @@ final class FrameworkIntegrationTest extends TestCase
 
         self::assertSame('kosit_validator', $response->getApp());
         self::assertSame('index', $response->getTemplateName());
-        self::assertStringContainsString('id="kosit-validator"', $response->render());
+        $html = $response->render();
+        self::assertStringContainsString('id="kosit-validator"', $html);
+        self::assertStringNotContainsString('Administrator informieren', $html);
     }
 
     public function testPublicPageAndValidationAttributesMatchSecurityContract(): void

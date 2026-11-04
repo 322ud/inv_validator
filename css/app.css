@@ -121,12 +121,6 @@ min-height: 100%;
 display: none !important;
 }
 
-#kosit-update-notice {
-margin-top: 8px;
-color: var(--color-warning-text, #8a4b08);
-font-weight: 600;
-}
-
 #kosit-upload-options {
 display: flex;
 align-items: center;

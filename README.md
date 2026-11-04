@@ -70,6 +70,8 @@ sudo apt install openjdk-17-jre
 
 Die empfohlene Installation erfolgt in der Admin-Seite über **Komponenten installieren**. Die App ermittelt die neuesten offiziellen GitHub-Releases, lädt das zugehörige `validator-<version>-standalone.jar` und das vollständige XRechnung-Konfigurationspaket. Beide Downloads werden vor ihrer Aktivierung geprüft. Die Validator-JAR wird unter ihrem Originalnamen gespeichert und anschließend durch einen atomaren Austausch des neutralen Symlinks aktiviert; die zuvor aktive Originaldatei bleibt für ein Rollback erhalten. Das Konfigurationspaket wird geprüft, in einem versionierten Verzeichnis bereitgestellt und anschließend über den konfigurierten Repositorypfad aktiviert. PHP benötigt dafür die Erweiterung `ZipArchive`. Der Webserver-Benutzer muss für beide Zielverzeichnisse Schreibrechte besitzen.
 
+Beim Öffnen der Prüfseite prüft die App auf neue Validator- und XRechnung-Releases und installiert verfügbare Updates automatisch mit denselben Kompatibilitäts- und Integritätsprüfungen. Es werden nur neuere Komponenten geladen. Die bisherige Aufforderung an Benutzer, einen Administrator zu informieren, entfällt. Bei einem Updatefehler bleibt die Prüfseite verfügbar; der Fehler wird im Nextcloud-Protokoll festgehalten. Die Erstinstallation und manuell verwaltete Installationen bleiben Aufgabe der Administration.
+
 Ein bereits vorhandenes echtes Verzeichnis am Repositorypfad wird aus Sicherheitsgründen nicht überschrieben. Für eine von der App verwaltete Installation muss der Pfad fehlen oder ein zuvor von der App angelegter symbolischer Link sein.
 
 Alternativ kann das JAR weiterhin manuell installiert werden.
@@ -191,7 +193,7 @@ Aktueller Implementierungsstand:
 - Die Oberfläche ist für alle angemeldeten Nextcloud-Benutzer verfügbar.
 - Der Validierungsendpunkt kann von jedem angemeldeten Benutzer aufgerufen werden.
 - Der Endpunkt ist durch den Nextcloud-CSRF-Token geschützt.
-- Status, Installation und Updates sind ausschließlich für Administratoren erreichbar und ebenfalls CSRF-geschützt.
+- Die Status- und Installationsendpunkte sind ausschließlich für Administratoren erreichbar und CSRF-geschützt. Automatische Updates werden auch beim Öffnen der Prüfseite durch normale Benutzer ausgeführt.
 - Es wird höchstens ein Validator-Prozess gleichzeitig ausgeführt.
 - Prozessausgaben und Berichte besitzen serverseitige Größenlimits.
 - XML-Berichte müssen wohlgeformt sein, den KoSIT-Namensraum verwenden und genau eine eindeutige Bewertung enthalten; `DOCTYPE` ist nicht erlaubt.

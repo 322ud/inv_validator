@@ -74,13 +74,6 @@
             </div>
         </div>
 
-        <?php if (($status['validator']['updateAvailable'] || $status['configuration']['updateAvailable'])
-            && ($status['validator']['latestVersion'] !== null || $status['configuration']['latestVersion'] !== null)): ?>
-            <p id="kosit-update-notice" role="status">
-                Eine neue Validator- oder XRechnung-Konfiguration ist verfügbar – Administrator informieren!
-            </p>
-        <?php endif; ?>
-
         <div id="kosit-upload-options">
             <input
                 type="file"
