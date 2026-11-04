@@ -1,6 +1,6 @@
 # Nextcloud-Frontend für den KoSIT-Validator
 
-**Aktuelle Version:** [0.5.1](https://github.com/322ud/kosit_validator/tree/0.5.1)
+**Aktuelle Version:** [0.5.2](https://github.com/322ud/kosit_validator/tree/0.5.2)
 
 Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der [XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung).
 

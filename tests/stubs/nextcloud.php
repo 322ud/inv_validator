@@ -9,6 +9,8 @@ namespace OCP {
 
     interface IConfig {
         public function getSystemValueString(string $key, string $default = ''): string;
+
+        public function getAppValue(string $appName, string $key, string $default = ''): string;
     }
 
     interface IRequest {
@@ -20,7 +22,51 @@ namespace OCP {
 
     interface IURLGenerator {
         public function imagePath(string $appName, string $file): string;
+
+        /** @param array<string, mixed> $args */
+        public function linkToRoute(string $routeName, array $args = []): string;
     }
+
+    interface IUser {
+        public function getUID(): string;
+    }
+
+    interface IUserSession {
+        public function getUser(): ?IUser;
+    }
+
+    interface IGroupManager {
+        public function isAdmin(string $userId): bool;
+    }
+
+    interface INavigationManager {
+        /** @param array<string, mixed>|callable(): array<string, mixed> $entry */
+        public function add(array|callable $entry): void;
+    }
+}
+
+namespace OCP\App {
+    interface IAppManager {
+        public function isEnabledForUser(string $appId, ?\OCP\IUser $user = null): bool;
+    }
+}
+
+namespace OCP\AppFramework\Bootstrap {
+    interface IBootstrap {
+        public function register(IRegistrationContext $context): void;
+
+        public function boot(IBootContext $context): void;
+    }
+
+    interface IRegistrationContext {
+        public function registerEventListener(string $event, string $listener, int $priority = 0): void;
+    }
+
+    interface IBootContext {}
+}
+
+namespace OCP\Navigation\Events {
+    class LoadAdditionalEntriesEvent extends \OCP\EventDispatcher\Event {}
 }
 
 namespace OCP\AppFramework\Services {
@@ -33,6 +79,11 @@ namespace OCP\AppFramework\Services {
 
 namespace OCP\EventDispatcher {
     class Event {}
+
+    /** @template T of Event */
+    interface IEventListener {
+        public function handle(Event $event): void;
+    }
 
     interface IEventDispatcher {
         public function dispatchTyped(Event $event): void;

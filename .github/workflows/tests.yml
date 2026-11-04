@@ -56,7 +56,7 @@ jobs:
     name: Nextcloud 34 integration
     runs-on: ubuntu-latest
     env:
-      NEXTCLOUD_VERSION: 34.0.3
+      NEXTCLOUD_VERSION: 34.0.5
       KOSIT_VALIDATOR_VERSION: 1.6.2
       KOSIT_CONFIGURATION_VERSION: 2026-01-31
 
@@ -123,7 +123,7 @@ jobs:
             integration-user
           php occ app:disable firstrunwizard
           php occ app:enable kosit_validator
-          php occ app:list --enabled | grep --fixed-strings --line-regexp '  - kosit_validator: 0.5.1'
+          php occ app:list --enabled | grep --fixed-strings --line-regexp '  - kosit_validator: 0.5.2'
       - name: Run Nextcloud framework integration tests
         run: |
           "$NEXTCLOUD_ROOT/apps/kosit_validator/vendor/bin/phpunit" \
@@ -220,7 +220,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [php, javascript, nextcloud, kosit]
     env:
-      NEXTCLOUD_VERSION: 34.0.3
+      NEXTCLOUD_VERSION: 34.0.5
 
     steps:
       - uses: actions/checkout@v7

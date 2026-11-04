@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\KoSITValidator\Tests\Nextcloud;
 
 use OCA\KoSITValidator\AppInfo\Application;
+use OCA\KoSITValidator\Listener\NavigationListener;
 use OCA\KoSITValidator\Controller\AdminController;
 use OCA\KoSITValidator\Controller\PageController;
 use OCA\KoSITValidator\Controller\ValidationController;
@@ -17,6 +18,13 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\IURLGenerator;
+use OCP\IConfig;
+use OCP\IGroupManager;
+use OCP\IL10N;
+use OCP\INavigationManager;
+use OCP\IUser;
+use OCP\IUserSession;
+use OCP\Navigation\Events\LoadAdditionalEntriesEvent;
 use OCP\Server;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -37,6 +45,7 @@ final class FrameworkIntegrationTest extends TestCase
         self::assertTrue($appManager->isEnabledForUser(Application::APP_ID));
 
         $container = $this->application->getContainer();
+        self::assertInstanceOf(NavigationListener::class, $container->get(NavigationListener::class));
         self::assertInstanceOf(ValidatorConfigService::class, $container->get(ValidatorConfigService::class));
         self::assertInstanceOf(KoSITValidatorService::class, $container->get(KoSITValidatorService::class));
         self::assertInstanceOf(ValidatorAdminService::class, $container->get(ValidatorAdminService::class));
@@ -78,6 +87,55 @@ final class FrameworkIntegrationTest extends TestCase
             '/apps/kosit_validator/admin/paths',
             $urlGenerator->linkToRoute('kosit_validator.admin.savePaths')
         );
+    }
+
+    #[DataProvider('navigationVisibilityProvider')]
+    public function testNavigationVisibility(
+        bool $loggedIn,
+        bool $enabled,
+        bool $hidden,
+        bool $admin,
+        bool $visible
+    ): void {
+        $navigation = $this->createMock(INavigationManager::class);
+        if ($visible) {
+            $navigation->expects(self::once())->method('add')->with(self::callback(
+                static fn (array $entry): bool => $entry['id'] === Application::APP_ID
+                    && str_contains($entry['href'], '/apps/kosit_validator/')
+            ));
+        } else {
+            $navigation->expects(self::never())->method('add');
+        }
+        $user = $this->createStub(IUser::class);
+        $user->method('getUID')->willReturn('navigation-test-user');
+        $session = $this->createStub(IUserSession::class);
+        $session->method('getUser')->willReturn($loggedIn ? $user : null);
+        $apps = $this->createStub(IAppManager::class);
+        $apps->method('isEnabledForUser')->willReturn($enabled);
+        $config = $this->createStub(IConfig::class);
+        $config->method('getAppValue')->willReturn($hidden ? 'yes' : 'no');
+        $groups = $this->createStub(IGroupManager::class);
+        $groups->method('isAdmin')->willReturn($admin);
+
+        $listener = new NavigationListener(
+            $navigation,
+            $config,
+            $session,
+            $groups,
+            $apps,
+            Server::get(IURLGenerator::class),
+            $this->application->getContainer()->get(IL10N::class),
+        );
+        $listener->handle(new LoadAdditionalEntriesEvent());
+    }
+
+    public static function navigationVisibilityProvider(): iterable
+    {
+        yield 'guest' => [false, true, false, false, false];
+        yield 'disabled for user' => [true, false, false, false, false];
+        yield 'normal user' => [true, true, false, false, true];
+        yield 'hidden for normal user' => [true, true, true, false, false];
+        yield 'visible for admin when hidden' => [true, true, true, true, true];
     }
 
     public function testPageControllerRendersTheRealTemplate(): void

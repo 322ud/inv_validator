@@ -11,18 +11,22 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Navigation\Events\LoadAdditionalEntriesEvent;
 
-class Application extends App implements IBootstrap {
+class Application extends App implements IBootstrap
+{
     public const APP_ID = 'kosit_validator';
     public const SUPPORTS_HIDDEN_NAVIGATION = true;
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct(self::APP_ID);
     }
 
-    public function register(IRegistrationContext $context): void {
+    public function register(IRegistrationContext $context): void
+    {
         $context->registerEventListener(LoadAdditionalEntriesEvent::class, NavigationListener::class);
     }
 
-    public function boot(IBootContext $context): void {
+    public function boot(IBootContext $context): void
+    {
     }
 }

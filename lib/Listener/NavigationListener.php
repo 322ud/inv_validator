@@ -16,7 +16,8 @@ use OCP\IUserSession;
 use OCP\Navigation\Events\LoadAdditionalEntriesEvent;
 
 /** @implements IEventListener<LoadAdditionalEntriesEvent> */
-class NavigationListener implements IEventListener {
+class NavigationListener implements IEventListener
+{
     public function __construct(
         private INavigationManager $navigation,
         private IConfig $config,
@@ -28,7 +29,8 @@ class NavigationListener implements IEventListener {
     ) {
     }
 
-    public function handle(Event $event): void {
+    public function handle(Event $event): void
+    {
         if (!$event instanceof LoadAdditionalEntriesEvent) {
             return;
         }
@@ -36,8 +38,10 @@ class NavigationListener implements IEventListener {
         if ($user === null || !$this->apps->isEnabledForUser('kosit_validator', $user)) {
             return;
         }
-        if ($this->config->getAppValue('kosit_validator', 'hide_navigation', 'no') === 'yes'
-            && !$this->groups->isAdmin($user->getUID())) {
+        if (
+            $this->config->getAppValue('kosit_validator', 'hide_navigation', 'no') === 'yes'
+            && !$this->groups->isAdmin($user->getUID())
+        ) {
             return;
         }
         $this->navigation->add([
