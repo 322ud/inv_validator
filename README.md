@@ -50,7 +50,7 @@ Die Pfade für Java und das optionale Python können direkt auf der Admin-Seite 
 'kosit_validator_temp_directory' => '/tmp/nextcloud-kosit-validator',
 ```
 
-Ohne explizite Konfiguration verwendet die App für den Validator ausschließlich den versionsneutralen Pfad `/opt/kosit/validator-standalone.jar`. Dieser Pfad ist ein von der App verwalteter symbolischer Link auf die aktive Originaldatei nach dem kontrollierten Namensschema `validator-<Version>-standalone.jar`. Link und Ziel müssen innerhalb von `/opt/kosit` liegen. Alte `.version`-Dateien werden nicht ausgewertet; eine vorhandene echte Datei am neutralen Pfad wird nicht automatisch migriert und blockiert die Installation.
+Ohne explizite Konfiguration verwendet die App für den Validator ausschließlich den versionsneutralen Pfad `/opt/kosit/validator-standalone.jar`. Dieser Pfad ist ein von der App verwalteter symbolischer Link auf die aktive Originaldatei nach dem kontrollierten Namensschema `validator-<Version>-standalone.jar`. Link und Ziel müssen innerhalb von `/opt/kosit` liegen.
 
 Validator-JAR und XRechnung-Konfiguration müssen zueinander kompatibel sein. Die App unterstützt derzeit die Validator-Reihe 1.6.x. Die XRechnung-Konfiguration wird nicht mit der App ausgeliefert, sondern vollständig aus den offiziellen KoSIT-Releases installiert.
 
@@ -71,8 +71,6 @@ sudo apt install openjdk-17-jre
 Die empfohlene Installation erfolgt in der Admin-Seite über **Komponenten installieren**. Die App ermittelt die neuesten offiziellen GitHub-Releases, lädt das zugehörige `validator-<version>-standalone.jar` und das vollständige XRechnung-Konfigurationspaket. Beide Downloads werden vor ihrer Aktivierung geprüft. Die Validator-JAR wird unter ihrem Originalnamen gespeichert und anschließend durch einen atomaren Austausch des neutralen Symlinks aktiviert; die zuvor aktive Originaldatei bleibt für ein Rollback erhalten. Das Konfigurationspaket wird geprüft, in einem versionierten Verzeichnis bereitgestellt und anschließend über den konfigurierten Repositorypfad aktiviert. PHP benötigt dafür die Erweiterung `ZipArchive`. Der Webserver-Benutzer muss für beide Zielverzeichnisse Schreibrechte besitzen.
 
 Ein bereits vorhandenes echtes Verzeichnis am Repositorypfad wird aus Sicherheitsgründen nicht überschrieben. Für eine von der App verwaltete Installation muss der Pfad fehlen oder ein zuvor von der App angelegter symbolischer Link sein.
-
-Beim Update von einer App-Version vor 0.5 muss der Repositorypfad einmalig auf ein neues, noch nicht vorhandenes Ziel wie `/opt/kosit/xrechnung/current` gesetzt werden. Der frühere separate Szenariopfad wird nicht mehr ausgewertet. Anschließend installiert **Komponenten installieren** Szenario und Ressourcen gemeinsam. Eine vorhandene manuelle Konfiguration bleibt unangetastet und kann weiterhin verwendet werden, wenn ihr Verzeichnis unmittelbar `scenarios.xml` und `resources/` enthält; ihre Release-Version wird ohne App-Marker als unbekannt angezeigt.
 
 Alternativ kann das JAR weiterhin manuell installiert werden.
 
@@ -299,12 +297,9 @@ Bei Pushes und Pull Requests führt GitHub Actions die PHP-Suite mit PHP 8.2, 8.
 
 ## Offene Aufgaben
 
-- [ ] Internationalisierung (i18n) einführen, zunächst mindestens mit deutschen, englischen und französischen Übersetzungen
-- [ ] Nutzerspezifische Validierungsszenarien über eine eigene Konfigurationsseite ermöglichen
+- [ ] Internationalisierung (i18n) einführen, zunächst mit englischen Übersetzungen
 - [ ] Zugriff auf die Validierung nach Nextcloud-Gruppen oder Rollen beschränkbar machen
 - [ ] Warteschlange für parallele Validierungsanfragen einführen
-- [ ] Mehrere XML-Rechnungsdokumente in einem Vorgang prüfen
-- [ ] Kompatibilitätsmatrix für zukünftige Validator-Hauptversionen erweitern
 
 ---
 
