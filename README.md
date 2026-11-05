@@ -1,6 +1,6 @@
 # Nextcloud-Frontend für den KoSIT-Validator
 
-**Aktuelle Version:** [0.5.2](https://github.com/322ud/kosit_validator/tree/0.5.2)
+**Aktuelle Version:** [0.5.3](https://github.com/322ud/kosit_validator/tree/v0.5.3)
 
 Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der [XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung).
 
@@ -289,7 +289,7 @@ Ein reproduzierbares Produktionsarchiv mit SHA-256-Datei erzeugen:
 bash scripts/build-release.sh
 ```
 
-Das Archiv unter `dist/` enthält ausschließlich die zur Laufzeit benötigten App-Dateien. CI installiert genau dieses Archiv zusätzlich in einer frischen Nextcloud-34-Instanz, aktiviert die App und führt Framework-Smoke-Tests aus.
+Das Archiv unter `dist/` verwendet das USTAR-Format ohne PAX-Metadaten und enthält ausschließlich die zur Laufzeit benötigten App-Dateien. Nicht in USTAR darstellbare Pfade oder Metadaten führen zum Abbruch der Paketerstellung. CI prüft das Archivformat, installiert genau dieses Archiv zusätzlich in einer frischen Nextcloud-34-Instanz, aktiviert die App und führt Framework-Smoke-Tests aus.
 
 Die Tests decken insbesondere die Interpretation der KoSIT-Berichte, die Pfadkonfiguration, Validator- und XRechnung-Updates, externe Release-Daten, Prozessabbrüche und konkurrierende Validierungen sowie den HTTP-Vertrag der Validierungs- und Admin-Endpunkte ab.
 

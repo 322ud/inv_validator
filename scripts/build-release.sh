@@ -55,8 +55,7 @@ tar \
     --owner=0 \
     --group=0 \
     --numeric-owner \
-    --format=posix \
-    --pax-option=delete=atime,delete=ctime \
+    --format=ustar \
     "$app_id"
 
 (
