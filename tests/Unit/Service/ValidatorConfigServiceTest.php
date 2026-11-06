@@ -11,6 +11,18 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class ValidatorConfigServiceTest extends TestCase {
+    public function testAutomaticUpdatesDefaultToOffAndPersistIndependently(): void {
+        $values = [];
+        $app = $this->createMock(IAppConfig::class);
+        $app->method('getAppValueString')->willReturnCallback(static function (string $key, string $default) use (&$values): string { return $values[$key] ?? $default; });
+        $app->method('setAppValueString')->willReturnCallback(static function (string $key, string $value) use (&$values): void { $values[$key] = $value; });
+        $service = new ValidatorConfigService($this->createStub(IConfig::class), $app);
+        self::assertSame(['validator' => false, 'configuration' => false], $service->getAutoUpdates());
+        $service->saveAutoUpdates(true, false);
+        self::assertSame(['auto_update_validator' => 'yes', 'auto_update_configuration' => 'no'], $values);
+        self::assertSame(['validator' => true, 'configuration' => false], $service->getAutoUpdates());
+    }
+
     public function testEditableAppConfigurationTakesPrecedenceOverSystemConfiguration(): void {
         $appConfig = $this->createMock(IAppConfig::class);
         $appConfig->method('getAppValueString')->with('java_binary', '')->willReturn('/from-app');

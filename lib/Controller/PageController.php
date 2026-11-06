@@ -30,17 +30,14 @@ class PageController extends Controller
     public function index(): TemplateResponse
     {
         $this->textEditorLoader->load();
-        $status = $this->adminService->getStatus(true);
-        if ($status['validator']['updateAvailable'] || $status['configuration']['updateAvailable']) {
-            try {
-                $status = $this->adminService->installLatest();
-            } catch (\Throwable $e) {
-                $this->logger->error('Automatic KoSIT update failed: {message}', [
-                    'message' => $e->getMessage(),
-                    'exception' => $e,
-                ]);
-                $status = $this->adminService->getStatus(false);
-            }
+        try {
+            $status = $this->adminService->updateOnStart();
+        } catch (\Throwable $e) {
+            $this->logger->error('Automatic KoSIT update failed: {message}', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+            $status = $this->adminService->getStatus(false);
         }
 
         return new TemplateResponse(

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Existing version tag to publish (for example v0.5.3)'
+        description: 'Existing version tag to publish (for example v0.5.4)'
         required: true
         type: string
 
@@ -293,7 +293,10 @@ jobs:
         with:
           ref: ${{ needs.source.outputs.ref }}
       - name: Define temporary paths
-        run: echo "NEXTCLOUD_PACKAGE_ROOT=$RUNNER_TEMP/nextcloud-package-test" >> "$GITHUB_ENV"
+        run: |
+          echo "NEXTCLOUD_PACKAGE_ROOT=$RUNNER_TEMP/nextcloud-package-test" >> "$GITHUB_ENV"
+          echo "NEXTCLOUD_OCC=$RUNNER_TEMP/nextcloud-package-test/occ" >> "$GITHUB_ENV"
+          echo "APP_SIGNING_DIRECTORY=$RUNNER_TEMP/app-signing" >> "$GITHUB_ENV"
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -303,12 +306,75 @@ jobs:
           tools: composer:v2
       - name: Install test dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Set up signing tools
+        run: |
+          if ! command -v openssl >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install --yes openssl
+          fi
+          command -v openssl
+          openssl version
+      - name: Cache Nextcloud release
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/nextcloud-${{ env.NEXTCLOUD_VERSION }}.tar.bz2
+          key: nextcloud-${{ env.NEXTCLOUD_VERSION }}-release
+      - name: Download and verify Nextcloud
+        working-directory: ${{ runner.temp }}
+        run: |
+          archive="nextcloud-${NEXTCLOUD_VERSION}.tar.bz2"
+          if [ ! -f "$archive" ]; then
+            curl --fail --silent --show-error --location \
+              "https://download.nextcloud.com/server/releases/$archive" \
+              --output "$archive"
+          fi
+          curl --fail --silent --show-error --location \
+            "https://download.nextcloud.com/server/releases/$archive.sha256" \
+            | head -n 1 \
+            | sha256sum --check --strict -
+      - name: Initialize isolated Nextcloud for signing and package tests
+        run: |
+          mkdir "$NEXTCLOUD_PACKAGE_ROOT"
+          tar --extract --bzip2 \
+            --file "${{ runner.temp }}/nextcloud-${NEXTCLOUD_VERSION}.tar.bz2" \
+            --directory "$NEXTCLOUD_PACKAGE_ROOT" \
+            --strip-components=1
+          cd "$NEXTCLOUD_PACKAGE_ROOT"
+          php occ maintenance:install \
+            --database sqlite \
+            --admin-user package-admin \
+            --admin-pass package-test-password
+      - name: Test release signing contract
+        run: vendor/bin/phpunit --bootstrap tests/bootstrap.php tests/Build
+      - name: Prepare release signing credentials
+        if: needs.source.outputs.tag != ''
+        env:
+          SIGNING_KEY_PEM: ${{ secrets.APP_SIGNING_PRIVATE_KEY }}
+          SIGNING_CERTIFICATE_PEM: ${{ secrets.APP_SIGNING_CERTIFICATE }}
+        run: |
+          if [[ -z "$SIGNING_KEY_PEM" || -z "$SIGNING_CERTIFICATE_PEM" ]]; then
+            echo 'Releases require APP_SIGNING_PRIVATE_KEY and APP_SIGNING_CERTIFICATE secrets.' >&2
+            exit 1
+          fi
+          umask 077
+          mkdir --mode=0700 "$APP_SIGNING_DIRECTORY"
+          printf '%s\n' "$SIGNING_KEY_PEM" > "$APP_SIGNING_DIRECTORY/app.key"
+          printf '%s\n' "$SIGNING_CERTIFICATE_PEM" > "$APP_SIGNING_DIRECTORY/app.crt"
+          echo "APP_SIGNING_KEY_FILE=$APP_SIGNING_DIRECTORY/app.key" >> "$GITHUB_ENV"
+          echo "APP_SIGNING_CERTIFICATE_FILE=$APP_SIGNING_DIRECTORY/app.crt" >> "$GITHUB_ENV"
       - name: Build reproducible app package
         id: package
+        env:
+          APP_REQUIRE_SIGNING: ${{ needs.source.outputs.tag != '' && '1' || '0' }}
         run: |
           archive="$(bash scripts/build-release.sh)"
           comparison_archive="$(bash scripts/build-release.sh "${{ runner.temp }}/release-reproducibility-check")"
           cmp "$archive" "$comparison_archive"
+          if [[ "$APP_REQUIRE_SIGNING" == 1 ]]; then
+            for suffix in .sig .sig.b64 .crt; do
+              cmp "$archive$suffix" "$comparison_archive$suffix"
+            done
+          fi
           filename="$(basename "$archive")"
           version="${filename#kosit_validator-}"
           version="${version%.tar.gz}"
@@ -316,6 +382,12 @@ jobs:
           echo "checksum=$archive.sha256" >> "$GITHUB_OUTPUT"
           echo "name=${filename%.tar.gz}" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Remove temporary signing credentials
+        if: always()
+        run: |
+          if [[ -n "${APP_SIGNING_DIRECTORY:-}" ]]; then
+            rm --force -- "$APP_SIGNING_DIRECTORY/app.key" "$APP_SIGNING_DIRECTORY/app.crt"
+          fi
       - name: Verify archive structure
         run: |
           archive="${{ steps.package.outputs.archive }}"
@@ -336,39 +408,18 @@ jobs:
           fi
           cd "$(dirname "$archive")"
           sha256sum --check --strict "$(basename "$archive").sha256"
-      - name: Cache Nextcloud release
-        uses: actions/cache@v6
-        with:
-          path: ${{ runner.temp }}/nextcloud-${{ env.NEXTCLOUD_VERSION }}.tar.bz2
-          key: nextcloud-${{ env.NEXTCLOUD_VERSION }}-release
-      - name: Download and verify Nextcloud
-        working-directory: ${{ runner.temp }}
-        run: |
-          archive="nextcloud-${NEXTCLOUD_VERSION}.tar.bz2"
-          if [ ! -f "$archive" ]; then
-            curl --fail --silent --show-error --location \
-              "https://download.nextcloud.com/server/releases/$archive" \
-              --output "$archive"
-          fi
-          curl --fail --silent --show-error --location \
-            "https://download.nextcloud.com/server/releases/$archive.sha256" \
-            | head -n 1 \
-            | sha256sum --check --strict -
       - name: Install package in a fresh Nextcloud
+        env:
+          APP_REQUIRE_SIGNING: ${{ needs.source.outputs.tag != '' && '1' || '0' }}
         run: |
-          mkdir "$NEXTCLOUD_PACKAGE_ROOT"
-          tar --extract --bzip2 \
-            --file "${{ runner.temp }}/nextcloud-${NEXTCLOUD_VERSION}.tar.bz2" \
-            --directory "$NEXTCLOUD_PACKAGE_ROOT" \
-            --strip-components=1
           tar --extract --gzip \
             --file "${{ steps.package.outputs.archive }}" \
             --directory "$NEXTCLOUD_PACKAGE_ROOT/apps"
           cd "$NEXTCLOUD_PACKAGE_ROOT"
-          php occ maintenance:install \
-            --database sqlite \
-            --admin-user package-admin \
-            --admin-pass package-test-password
+          if [[ "$APP_REQUIRE_SIGNING" == 1 ]]; then
+            test -s apps/kosit_validator/appinfo/signature.json
+            php occ integrity:check-app kosit_validator
+          fi
           php occ app:enable kosit_validator
           php occ app:list --enabled \
             | grep --fixed-strings --line-regexp \
@@ -384,6 +435,9 @@ jobs:
           path: |
             ${{ steps.package.outputs.archive }}
             ${{ steps.package.outputs.checksum }}
+            ${{ steps.package.outputs.archive }}.sig
+            ${{ steps.package.outputs.archive }}.sig.b64
+            ${{ steps.package.outputs.archive }}.crt
           if-no-files-found: error
           retention-days: 14
 
@@ -403,12 +457,29 @@ jobs:
         with:
           name: ${{ needs.release-package.outputs.name }}
           path: release-assets
+      - name: Set up archive signature verification
+        run: |
+          if ! command -v openssl >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install --yes openssl
+          fi
+          command -v openssl
       - name: Verify downloaded checksum
         working-directory: release-assets
         env:
           APP_VERSION: ${{ needs.release-package.outputs.version }}
         run: sha256sum --check --strict "kosit_validator-$APP_VERSION.tar.gz.sha256"
-      - name: Publish GitHub release with package and checksum
+      - name: Verify downloaded archive signature
+        working-directory: release-assets
+        env:
+          APP_VERSION: ${{ needs.release-package.outputs.version }}
+        run: |
+          archive="kosit_validator-$APP_VERSION.tar.gz"
+          openssl x509 -in "$archive.crt" -pubkey -noout > "$RUNNER_TEMP/release-public.pem"
+          openssl base64 -d -A -in "$archive.sig.b64" -out "$RUNNER_TEMP/release-signature"
+          cmp "$archive.sig" "$RUNNER_TEMP/release-signature"
+          openssl dgst -sha512 -verify "$RUNNER_TEMP/release-public.pem" -signature "$archive.sig" "$archive"
+      - name: Publish GitHub release with package, signatures and checksum
         uses: actions/github-script@v9
         env:
           RELEASE_TAG: ${{ needs.source.outputs.tag }}
@@ -428,13 +499,14 @@ jobs:
               if (error.status !== 404) throw error;
               ({ data: release } = await github.rest.repos.createRelease({
                 ...repo, tag_name: tag, name: tag, draft: true,
-                body: 'Produktionspaket im USTAR-Format mit SHA-256-Prüfsumme. Beide Dateien herunterladen und mit `sha256sum --check kosit_validator-' + version + '.tar.gz.sha256` prüfen.'
+                body: 'Signiertes Produktionspaket im USTAR-Format mit SHA-256-Prüfsummen, öffentlichem Zertifikat und SHA-512-Archivsignatur (binär und Base64). Alle Anhänge herunterladen und mit `sha256sum --check kosit_validator-' + version + '.tar.gz.sha256` prüfen.'
               }));
             }
             const assets = await github.paginate(github.rest.repos.listReleaseAssets, {
               ...repo, release_id: release.id
             });
-            for (const name of [`kosit_validator-${version}.tar.gz`, `kosit_validator-${version}.tar.gz.sha256`]) {
+            for (const suffix of ['', '.sha256', '.sig', '.sig.b64', '.crt']) {
+              const name = `kosit_validator-${version}.tar.gz${suffix}`;
               const data = fs.readFileSync(`release-assets/${name}`);
               const digest = 'sha256:' + crypto.createHash('sha256').update(data).digest('hex');
               const existing = assets.find(asset => asset.name === name);
@@ -444,7 +516,7 @@ jobs:
               }
               await github.rest.repos.uploadReleaseAsset({
                 ...repo, release_id: release.id, name, data,
-                headers: { 'content-type': name.endsWith('.gz') ? 'application/gzip' : 'text/plain' }
+                headers: { 'content-type': name.endsWith('.gz') ? 'application/gzip' : (name.endsWith('.sig') ? 'application/octet-stream' : 'text/plain') }
               });
             }
             if (release.draft) {

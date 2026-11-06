@@ -19,7 +19,7 @@
         class="section"
         data-pdf-supported="<?php p($pdfAvailable ? 'true' : 'false'); ?>"
     >
-        <h2>Nextcloud-Frontend für den KoSIT-Validator</h2>
+        <h2>prüfeXRechnung</h2>
 
         <p class="kosit-validator-intro">
             Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator Version

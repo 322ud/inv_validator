@@ -2,6 +2,8 @@
 
 return [
     'routes' => [
+        ['name' => 'admin#removeComponent', 'url' => '/admin/components/remove', 'verb' => 'POST'],
+        ['name' => 'admin#saveSettings', 'url' => '/admin/settings', 'verb' => 'POST'],
         [
             'name' => 'page#index',
             'url' => '/',

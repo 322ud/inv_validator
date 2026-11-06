@@ -22,7 +22,7 @@ class Admin implements ISettings
         $this->textEditorLoader->load();
 
         return new TemplateResponse('kosit_validator', 'admin', [
-            'status' => $this->adminService->getStatus(true),
+            'status' => $this->adminService->getAdminStatus(),
         ]);
     }
 

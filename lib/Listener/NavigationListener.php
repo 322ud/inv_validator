@@ -50,7 +50,7 @@ class NavigationListener implements IEventListener
             'order' => 100,
             'href' => $this->urls->linkToRoute('kosit_validator.page.index'),
             'icon' => $this->urls->imagePath('kosit_validator', 'app.svg'),
-            'name' => $this->l10n->t('XRechnung prüfen'),
+            'name' => $this->l10n->t('prüfeXRechnung'),
         ]);
     }
 }

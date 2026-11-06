@@ -1,151 +1,143 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const adminMarkup = `
-    <div id="kosit-admin">
-        <table><tbody id="kosit-paths-body">
-            <tr><td><input class="kosit-path-input" name="javaBinary" value="/old/java"></td></tr>
-        </tbody></table>
-        <span id="kosit-validator-installed-version"></span>
-        <span id="kosit-validator-latest-version"></span>
-        <span id="kosit-configuration-installed-version"></span>
-        <span id="kosit-configuration-latest-version"></span>
-        <p id="kosit-update-summary"></p>
-        <p id="kosit-admin-message"></p>
-        <span id="kosit-pdf-availability"></span>
-        <span id="kosit-python-version"></span>
-        <span id="kosit-pymupdf-version"></span>
-        <p id="kosit-pdf-reason"></p>
-        <button id="kosit-save-paths"></button>
-        <button id="kosit-check-update"></button>
-        <button id="kosit-check-pdf"></button>
-        <button id="kosit-install"></button>
-    </div>
-`;
-
-const status = (overrides = {}) => ({
-    paths: [
-        { label: 'Java', key: 'javaBinary', path: '/usr/bin/java', state: 'available' },
-        { label: 'Validator-JAR', path: '/opt/kosit/validator-standalone.jar', state: 'available' },
-        { label: 'XRechnung-Repository', path: '/opt/kosit/xrechnung/current', state: 'available' },
-        { label: 'Temporäres Verzeichnis', path: '/tmp/nextcloud-kosit-validator', state: 'available' },
-        { label: 'Szenario-Datei', path: '/opt/kosit/xrechnung/current/scenarios.xml', state: 'available' },
-    ],
-    validator: {
-        installed: true,
-        installedVersion: '1.6.1',
-        latestVersion: '1.6.2',
-        updateAvailable: true,
-        updateError: null,
-    },
-    configuration: {
-        installed: true,
-        installedVersion: '2025-07-10',
-        installedXRechnungVersion: '3.0.2',
-        latestVersion: '2026-01-31',
-        latestXRechnungVersion: '3.0.2',
-        updateAvailable: true,
-        updateError: null,
-    },
-    pdfSupport: {
-        available: false,
-        pythonVersion: '3.12.0',
-        pymupdfVersion: null,
-        reason: 'PyMuPDF fehlt.',
-    },
-    ...overrides,
-});
-
+const markup = `
+<div id="kosit-admin">
+<form id="kosit-settings-form">
+<input type="checkbox" name="validator" role="switch">
+<input type="checkbox" name="configuration" role="switch">
+<button type="submit">Speichern</button>
+</form>
+<form id="kosit-paths-form">
+<input name="javaBinary" value="/usr/bin/java"><input name="pythonBinary" value="/usr/bin/python3">
+<button type="submit" id="kosit-save-paths">Pfade speichern</button>
+</form>
+<button id="kosit-check-system">Prüfen</button>
+<table><tbody id="kosit-system-body"><tr><td><button data-component="validator">Update auf 1.6.2</button></td></tr></tbody></table>
+<div id="kosit-managed-components"></div><p id="kosit-admin-message"></p>
+<div data-kosit-readme><div class="kosit-readme-rich" hidden></div><pre class="kosit-readme-fallback"><span id="kosit-help-java" data-heading="Java installieren">Java installieren</span></pre></div>
+</div>`;
+const checks = [
+    { id: 'java', label: 'Java', ok: false, version: '8', detail: '/usr/bin/java', help: 'java' },
+    { id: 'validator', label: 'Validator', ok: true, version: '1.6.2', detail: '/opt/kosit/validator.jar', action: null },
+];
 const response = (body, httpStatus = 200) => ({
     ok: httpStatus >= 200 && httpStatus < 300,
     status: httpStatus,
     text: vi.fn().mockResolvedValue(typeof body === 'string' ? body : JSON.stringify(body)),
 });
-
 const loadAdmin = async () => {
-    const addEventListener = vi.spyOn(document, 'addEventListener');
+    const listener = vi.spyOn(document, 'addEventListener');
     vi.resetModules();
     await import('../../js/admin.js');
-    const initializer = addEventListener.mock.calls.findLast(([event]) => event === 'DOMContentLoaded')?.[1];
-    addEventListener.mockRestore();
-    initializer();
+    const initialize = listener.mock.calls.findLast(([event]) => event === 'DOMContentLoaded')[1];
+    listener.mockRestore();
+    initialize();
+};
+const waitMessage = async (text) => {
+    await vi.waitFor(() => expect(document.getElementById('kosit-admin-message').textContent).toBe(text));
 };
 
-describe('admin UI', () => {
-    beforeEach(() => {
-        document.body.innerHTML = adminMarkup;
-    });
+describe('admin system UI', () => {
+    beforeEach(() => { document.body.innerHTML = markup; });
 
-    test('saves paths and safely refreshes both component versions', async () => {
-        const resultStatus = status({
-            paths: [{ label: '<img src=x onerror=alert(1)>', key: 'javaBinary', path: '/new/java', state: 'available' }],
-            validator: { ...status().validator, installedVersion: '1.6.2', updateAvailable: false },
-            configuration: { ...status().configuration, installedVersion: '2026-01-31', updateAvailable: false },
-        });
-        const fetch = vi.fn().mockResolvedValue(response({ success: true, message: 'Pfade gespeichert', status: resultStatus }));
+    test('saves independent switches with a CSRF token', async () => {
+        const fetch = vi.fn().mockResolvedValue(response({ success: true, message: 'Gespeichert' }));
         vi.stubGlobal('fetch', fetch);
         await loadAdmin();
+        document.querySelector('[name="validator"]').checked = true;
+        document.querySelector('#kosit-settings-form button').click();
+        await waitMessage('Gespeichert');
+        const [url, options] = fetch.mock.calls[0];
+        expect(url).toBe('/nextcloud/apps/kosit_validator/admin/settings');
+        expect(options.body.get('validator')).toBe('yes');
+        expect(options.body.get('configuration')).toBe('no');
+        expect(options.headers.requesttoken).toBe('test-request-token');
+    });
 
+    test('saves paths and renders versions, problems and help without HTML injection', async () => {
+        const fetch = vi.fn().mockResolvedValue(response({ success: true, message: 'Gespeichert', status: {
+            checks: [{ ...checks[0], detail: '<img src=x onerror=alert(1)>' }, checks[1]],
+        } }));
+        vi.stubGlobal('fetch', fetch);
+        await loadAdmin();
         document.getElementById('kosit-save-paths').click();
-
-        await vi.waitFor(() => expect(document.getElementById('kosit-admin-message').textContent).toBe('Pfade gespeichert'));
-        expect(fetch.mock.calls[0][1].headers.requesttoken).toBe('test-request-token');
-        expect(fetch.mock.calls[0][1].body.get('javaBinary')).toBe('/old/java');
-        expect(document.querySelector('input[name="validatorJar"]')).toBeNull();
-        expect(document.querySelector('input[name="repositoryPath"]')).toBeNull();
-        expect(document.querySelector('input[name="tempDirectory"]')).toBeNull();
-        expect(document.querySelector('#kosit-paths-body img')).toBeNull();
-        expect(document.getElementById('kosit-validator-installed-version').textContent).toBe('1.6.2');
-        expect(document.getElementById('kosit-configuration-installed-version').textContent)
-            .toBe('XRechnung 3.0.2 / 2026-01-31');
-        expect(document.getElementById('kosit-update-summary').textContent).toBe('Die Installation ist aktuell.');
+        await waitMessage('Gespeichert');
+        expect(fetch.mock.calls[0][1].body.get('javaBinary')).toBe('/usr/bin/java');
+        expect(document.querySelector('#kosit-system-body img')).toBeNull();
+        expect(document.querySelector('[data-check="validator"]').textContent).toContain('1.6.2');
+        expect(document.querySelector('[data-check="validator"] button')).toBeNull();
+        expect(document.querySelector('[data-check="java"] a').hash).toBe('#kosit-help-java');
     });
 
-    test('installs both components and restores action buttons after errors', async () => {
-        const current = status({
-            validator: { ...status().validator, installedVersion: '1.6.2', updateAvailable: false },
-            configuration: { ...status().configuration, installedVersion: '2026-01-31', updateAvailable: false },
-        });
-        const fetch = vi.fn()
-            .mockResolvedValueOnce(response({ success: true, message: 'Installiert', status: current }))
-            .mockRejectedValueOnce(new Error('offline'));
+    test('installs only the requested component and removes the update button after success', async () => {
+        const fetch = vi.fn().mockResolvedValue(response({ success: true, message: 'Installiert', status: { checks } }));
         vi.stubGlobal('fetch', fetch);
         await loadAdmin();
-
-        document.getElementById('kosit-install').click();
-        await vi.waitFor(() => expect(document.getElementById('kosit-admin-message').textContent).toBe('Installiert'));
-        expect(document.getElementById('kosit-install').textContent).toBe('Komponenten aktualisieren');
-        expect(document.getElementById('kosit-install').disabled).toBe(false);
-
-        document.getElementById('kosit-install').click();
-        await vi.waitFor(() => expect(document.getElementById('kosit-admin-message').textContent).toBe('offline'));
-        expect(document.getElementById('kosit-check-update').disabled).toBe(false);
+        document.querySelector('[data-component]').click();
+        await waitMessage('Installiert');
+        expect(fetch.mock.calls[0][1].body.get('component')).toBe('validator');
+        expect(document.querySelector('[data-component]')).toBeNull();
     });
 
-    test('reports component-specific update errors', async () => {
-        const failed = status({
-            validator: { ...status().validator, updateError: 'Validator nicht erreichbar' },
-            configuration: { ...status().configuration, updateError: 'Konfiguration nicht erreichbar' },
-        });
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: failed })));
+    test('shows an available version on the update button and offers installation for missing components', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: { checks: [
+            { ...checks[1], action: 'update', latestVersion: '1.6.3' },
+            { ...checks[0], id: 'configuration', action: 'install', version: null },
+        ] } })));
         await loadAdmin();
-
-        document.getElementById('kosit-check-update').click();
-
-        await vi.waitFor(() => expect(document.getElementById('kosit-admin-message').textContent)
-            .toBe('Die Update-Prüfung konnte nicht abgeschlossen werden.'));
-        expect(document.getElementById('kosit-update-summary').textContent)
-            .toContain('Validator nicht erreichbar / Konfiguration nicht erreichbar');
+        document.getElementById('kosit-check-system').click();
+        await waitMessage('Systemprüfung abgeschlossen.');
+        expect(document.querySelector('[data-component="validator"]').textContent).toBe('Update auf 1.6.3');
+        expect(document.querySelector('[data-component="configuration"]').textContent).toBe('Installieren');
     });
 
-    test('checks optional PDF support again', async () => {
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({
-            success: true,
-            pdfSupport: { available: true, pythonVersion: '3.13.5', pymupdfVersion: '1.26.4', reason: null },
-        })));
+    test('recovers from network and non-JSON errors', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValueOnce(response('<html>Gateway</html>', 502)));
         await loadAdmin();
+        document.getElementById('kosit-check-system').click();
+        await waitMessage('offline');
+        expect(document.getElementById('kosit-check-system').disabled).toBe(false);
+        document.getElementById('kosit-check-system').click();
+        await waitMessage('Unerwartete Serverantwort (HTTP 502).');
+    });
 
-        document.getElementById('kosit-check-pdf').click();
+    test('requires a separate enabled switch for each recorded component', async () => {
+        const managedComponents = ['validator', 'configuration'].map((component) => ({
+            component, label: component, version: '1', lastOperationAt: '2026-11-06T13:00:00+00:00',
+            paths: [`/opt/kosit/${component}`], recordToken: `${component}-record`,
+        }));
+        const fetch = vi.fn()
+            .mockResolvedValueOnce(response({ success: true, status: { checks, managedComponents } }))
+            .mockResolvedValueOnce(response({ success: true, message: 'Entfernt', status: { checks, managedComponents: [managedComponents[1]] } }));
+        vi.stubGlobal('fetch', fetch);
+        await loadAdmin();
+        document.getElementById('kosit-check-system').click();
+        await waitMessage('Systemprüfung abgeschlossen.');
+        const form = document.querySelector('[data-remove-component="validator"]');
+        expect(form.elements.confirmed.checked).toBe(false);
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        expect(fetch).toHaveBeenCalledTimes(1);
+        form.elements.confirmed.checked = true;
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        await waitMessage('Entfernt');
+        expect(fetch.mock.calls[1][0]).toBe('/nextcloud/apps/kosit_validator/admin/components/remove');
+        expect(fetch.mock.calls[1][1].headers.requesttoken).toBe('test-request-token');
+        expect(fetch.mock.calls[1][1].body.get('confirmed')).toBe('1');
+        expect(fetch.mock.calls[1][1].body.get('component')).toBe('validator');
+        expect(fetch.mock.calls[1][1].body.get('recordToken')).toBe('validator-record');
+        expect(document.querySelector('[data-remove-component="configuration"]')).not.toBeNull();
+        expect(document.querySelector('[data-remove-component="configuration"] [name="confirmed"]').checked).toBe(false);
+    });
 
-        await vi.waitFor(() => expect(document.getElementById('kosit-pdf-availability').textContent).toBe('Verfügbar'));
+    test('help links navigate to the solution in the embedded README', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: { checks } })));
+        await loadAdmin();
+        document.getElementById('kosit-check-system').click();
+        await waitMessage('Systemprüfung abgeschlossen.');
+        const scroll = vi.fn();
+        document.getElementById('kosit-help-java').scrollIntoView = scroll;
+        document.querySelector('[data-readme-help]').click();
+        expect(scroll).toHaveBeenCalledOnce();
     });
 });

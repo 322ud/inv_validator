@@ -21,6 +21,9 @@ final class ValidatorProcessRunner
      */
     public function run(array $command): array
     {
+        if (!function_exists('proc_open')) {
+            throw new ValidationException('PHP proc_open ist nicht verfügbar.');
+        }
         $process = proc_open(
             $command,
             [

@@ -36,7 +36,7 @@ class ValidatorAdminService
     }
 
     /** @return array<string, mixed> */
-    public function getStatus(bool $checkUpdates = true): array
+    public function getStatus(bool $checkUpdates = true, bool $checkValidator = true, bool $checkConfiguration = true): array
     {
         $jar = $this->config->getValidatorJar();
         $repository = $this->config->getRepositoryPath();
@@ -47,13 +47,14 @@ class ValidatorAdminService
         $validatorError = null;
         $configurationError = null;
 
-        if ($checkUpdates) {
+        if ($checkUpdates && $checkValidator) {
             try {
                 $validatorRelease = $this->fetchLatestValidatorRelease();
             } catch (\Throwable $e) {
                 $validatorError = $e->getMessage();
             }
-
+        }
+        if ($checkUpdates && $checkConfiguration) {
             try {
                 $configurationRelease = $this->fetchLatestConfigurationRelease();
             } catch (\Throwable $e) {
@@ -104,6 +105,30 @@ class ValidatorAdminService
         ];
     }
 
+    /** @return array<string, mixed> */
+    public function getAdminStatus(): array
+    {
+        $status = $this->getStatus(true);
+        $status['autoUpdates'] = $this->config->getAutoUpdates();
+        $status['checks'] = (new SystemCheckService($this->config))->check($status);
+        $status['managedComponents'] = (new ComponentRemovalService($this->config))->pending();
+        return $status;
+    }
+
+    /** @return array<string, mixed> */
+    public function updateOnStart(): array
+    {
+        $settings = $this->config->getAutoUpdates();
+        $status = $this->getStatus(
+            $settings['validator'] || $settings['configuration'],
+            $settings['validator'],
+            $settings['configuration']
+        );
+        $validator = $settings['validator'] && $status['validator']['updateAvailable'];
+        $configuration = $settings['configuration'] && $status['configuration']['updateAvailable'];
+        return $validator || $configuration ? $this->installLatest($validator, $configuration) : $status;
+    }
+
     /** @return array<string, bool|string|null> */
     public function getPdfSupportStatus(): array
     {
@@ -111,29 +136,38 @@ class ValidatorAdminService
     }
 
     /** @return array<string, mixed> */
-    public function installLatest(): array
+    public function installLatest(bool $validator = true, bool $configuration = true): array
     {
-        if (!class_exists(\ZipArchive::class)) {
+        if ($configuration && !class_exists(\ZipArchive::class)) {
             throw new AdministrationException('Die PHP-Erweiterung ZipArchive wird für die Installation benötigt.');
         }
 
-        $validatorRelease = $this->fetchLatestValidatorRelease();
-        $configurationRelease = $this->fetchLatestConfigurationRelease();
-        $this->assertCompatibleValidator($validatorRelease['version']);
+        if (!$validator && !$configuration) {
+            return $this->getStatus(false);
+        }
+        $validatorRelease = $validator ? $this->fetchLatestValidatorRelease() : null;
+        $configurationRelease = $configuration ? $this->fetchLatestConfigurationRelease() : null;
+        if ($validatorRelease !== null) {
+            $this->assertCompatibleValidator($validatorRelease['version']);
+        }
 
         $jar = $this->config->getValidatorJar();
         $repository = $this->config->getRepositoryPath();
         $jarDirectory = dirname($jar);
         $repositoryParent = dirname($repository);
-        $releaseDirectory = $repositoryParent . '/releases/' . $configurationRelease['release'];
+        $releaseDirectory = $repositoryParent . '/releases/' . ($configurationRelease['release'] ?? '');
 
         $this->ensureDirectory($jarDirectory);
-        $this->assertValidatorLinkLocation($jar);
-        $this->assertExistingValidatorLinkIsManaged($jar);
-        $this->ensureDirectory($repositoryParent);
-        $this->ensureDirectory(dirname($releaseDirectory));
+        if ($validator) {
+            $this->assertValidatorLinkLocation($jar);
+            $this->assertExistingValidatorLinkIsManaged($jar);
+        }
+        if ($configuration) {
+            $this->ensureDirectory($repositoryParent);
+            $this->ensureDirectory(dirname($releaseDirectory));
+        }
 
-        if (file_exists($repository) && !is_link($repository)) {
+        if ($configuration && file_exists($repository) && !is_link($repository)) {
             throw new AdministrationException(
                 'Das konfigurierte XRechnung-Repository existiert und wird nicht von der App verwaltet: ' . $repository
             );
@@ -148,6 +182,7 @@ class ValidatorAdminService
             throw new AdministrationException('Eine Installation läuft bereits.');
         }
 
+        $registry = $this->config->getInstallationRegistry();
         $temporaryJar = null;
         $temporaryValidatorLink = null;
         $temporaryArchive = null;
@@ -156,11 +191,11 @@ class ValidatorAdminService
 
         try {
             $installedValidatorVersion = $this->readInstalledValidatorVersion($jar);
-            $installValidator = $installedValidatorVersion === null
-                || version_compare($validatorRelease['version'], $installedValidatorVersion, '>');
+            $installValidator = $validatorRelease !== null && ($installedValidatorVersion === null
+                || version_compare($validatorRelease['version'], $installedValidatorVersion, '>'));
             $installedConfiguration = $this->readInstalledConfiguration($repository);
-            $installConfiguration = ($installedConfiguration['release'] ?? null) === null
-                || strcmp($configurationRelease['release'], (string)$installedConfiguration['release']) > 0;
+            $installConfiguration = $configurationRelease !== null && (($installedConfiguration['release'] ?? null) === null
+                || strcmp($configurationRelease['release'], (string)$installedConfiguration['release']) > 0);
 
             if ($installValidator) {
                 $jarBody = $this->download($validatorRelease['asset']['url'], 'Validator');
@@ -178,9 +213,13 @@ class ValidatorAdminService
                             'Das Ziel für das Validator-Release ist bereits belegt: ' . $validatorReleasePath
                         );
                     }
+                    $registry->prepare('validator', $validatorRelease['version'], $validatorReleasePath, null);
                     unlink($temporaryJar);
-                } elseif (!rename($temporaryJar, $validatorReleasePath)) {
-                    throw new AdministrationException('Validator-Release konnte nicht bereitgestellt werden.');
+                } else {
+                    $registry->prepare('validator', $validatorRelease['version'], $validatorReleasePath, ['' => hash('sha256', $jarBody)]);
+                    if (!rename($temporaryJar, $validatorReleasePath)) {
+                        throw new AdministrationException('Validator-Release konnte nicht bereitgestellt werden.');
+                    }
                 }
                 $temporaryJar = null;
 
@@ -201,6 +240,7 @@ class ValidatorAdminService
                             'Das Zielverzeichnis des XRechnung-Releases ist bereits belegt: ' . $releaseDirectory
                         );
                     }
+                    $registry->prepare('configuration', $configurationRelease['release'], $releaseDirectory, null);
                 } else {
                     $archiveBody = $this->download($configurationRelease['asset']['url'], 'XRechnung-Konfiguration');
                     $this->verifyZipContainer($archiveBody, $configurationRelease['asset']['digest'], 'ZIP');
@@ -214,6 +254,7 @@ class ValidatorAdminService
                     $this->extractConfigurationArchive($temporaryArchive, $stagingDirectory);
                     $this->validateConfigurationDirectory($stagingDirectory);
                     $this->writeConfigurationMarker($stagingDirectory, $configurationRelease);
+                    $registry->prepare('configuration', $configurationRelease['release'], $releaseDirectory, $registry->manifest($stagingDirectory));
                     if (!rename($stagingDirectory, $releaseDirectory)) {
                         throw new AdministrationException('Das XRechnung-Release konnte nicht bereitgestellt werden.');
                     }
@@ -227,17 +268,21 @@ class ValidatorAdminService
             }
 
             if ($installValidator) {
+                $registry->prepareLink('validator', $jar, $validatorReleasePath);
                 if (!rename($temporaryValidatorLink, $jar)) {
                     throw new AdministrationException('Validator-JAR konnte nicht aktiviert werden.');
                 }
                 $temporaryValidatorLink = null;
+                $registry->activated('validator', $jar, $validatorReleasePath);
             }
 
             if ($installConfiguration) {
+                $registry->prepareLink('configuration', $repository, $releaseDirectory);
                 if (!rename($temporaryLink, $repository)) {
                     throw new AdministrationException('Das XRechnung-Release konnte nicht aktiviert werden.');
                 }
                 $temporaryLink = null;
+                $registry->activated('configuration', $repository, $releaseDirectory);
             }
         } finally {
             foreach ([$temporaryJar, $temporaryValidatorLink, $temporaryArchive, $temporaryLink] as $temporary) {
@@ -253,11 +298,15 @@ class ValidatorAdminService
         }
 
         $status = $this->getStatus(false);
-        $status['validator']['latestVersion'] = $validatorRelease['version'];
-        $status['validator']['updateAvailable'] = false;
-        $status['configuration']['latestVersion'] = $configurationRelease['release'];
-        $status['configuration']['latestXRechnungVersion'] = $configurationRelease['xrechnung'];
-        $status['configuration']['updateAvailable'] = false;
+        if ($validatorRelease !== null) {
+            $status['validator']['latestVersion'] = $validatorRelease['version'];
+            $status['validator']['updateAvailable'] = false;
+        }
+        if ($configurationRelease !== null) {
+            $status['configuration']['latestVersion'] = $configurationRelease['release'];
+            $status['configuration']['latestXRechnungVersion'] = $configurationRelease['xrechnung'];
+            $status['configuration']['updateAvailable'] = false;
+        }
         return $status;
     }
 

@@ -3,20 +3,42 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
     <id>kosit_validator</id>
-    <name>Nextcloud-Frontend für den KoSIT-Validator</name>
-    <summary>Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der XRechnung-Spezifikation</summary>
-    <description>Dieses Nextcloud-Frontend übergibt XML-Rechnungsdokumente an den separat ausgeführten Validator der Koordinierungsstelle für IT-Standards (KoSIT). Der KoSIT-Validator prüft sie anhand des konfigurierten Validierungsszenarios auf Konformität mit der XRechnung-Spezifikation. Bei hybriden PDF-Rechnungen extrahiert die App zuvor das eingebettete XML-Rechnungsdokument und zeigt anschließend den vom Validator erzeugten Prüfbericht an. Die PDF-Datei selbst wird nicht validiert.</description>
-    <version>0.5.3</version>
-    <licence>agpl</licence>
+    <name>prüfeXRechnung</name>
+    <summary>Validate XRechnung invoices locally using the KoSIT Validator</summary>
+    <summary lang="de">XRechnung-Rechnungen lokal mit dem KoSIT-Validator prüfen</summary>
+    <description>Validate XML invoices against the XRechnung specification using the separately installed KoSIT Validator and view its validation report directly in Nextcloud.
+
+Validation runs locally on the server with Java and the configured XRechnung validation scenarios. For hybrid PDF invoices, optional Python/PyMuPDF support extracts the embedded invoice XML. Only that XML is validated, not the PDF itself.
+
+Server setup is required: Java 11 or later, PHP process execution, and readable validator and scenario files. Administrators can install the KoSIT Validator and the XRechnung configuration from their official GitHub releases through the app. This requires writable installation directories; installing or updating the configuration also requires PHP ZipArchive. Java and optional Python/PyMuPDF must be provided separately.
+
+The administration page includes system checks, component versions, manual installation and updates, and separate automatic-update switches for each downloadable component. Automatic updates on opening the app are disabled by default.</description>
+    <description lang="de">Prüft XML-Rechnungen mit dem separat installierten KoSIT-Validator auf Konformität mit der XRechnung-Spezifikation und zeigt den erzeugten Prüfbericht direkt in Nextcloud an.
+
+Die Prüfung erfolgt lokal auf dem Server mit Java und den konfigurierten XRechnung-Validierungsszenarien. Bei hybriden PDF-Rechnungen extrahiert die optionale Python-/PyMuPDF-Unterstützung das eingebettete Rechnungs-XML. Ausschließlich dieses XML wird geprüft, nicht die PDF-Datei selbst.
+
+Die Servereinrichtung erfordert Java ab Version 11, die Ausführung externer Prozesse aus PHP und lesbare Validator- und Szenariodateien. Die Administration kann den KoSIT-Validator und die XRechnung-Konfiguration über die App aus den offiziellen GitHub-Releases installieren. Dafür sind beschreibbare Installationsverzeichnisse erforderlich; für Installation und Updates der Konfiguration zusätzlich PHP ZipArchive. Java und optional Python/PyMuPDF müssen separat bereitgestellt werden.
+
+Die Admin-Seite bietet Systemprüfungen, Komponenten-Versionen, manuelle Installation und Updates sowie getrennte Schalter für automatische Updates der herunterladbaren Komponenten. Updates beim Öffnen der App sind standardmäßig ausgeschaltet.</description>
+    <version>0.5.4</version>
+    <licence>AGPL-3.0-or-later</licence>
     <author>Frank Busse</author>
     <namespace>KoSITValidator</namespace>
+    <documentation>
+      <user>https://github.com/322ud/kosit_validator#verwendung</user>
+      <admin>https://github.com/322ud/kosit_validator#installation</admin>
+      <developer>https://github.com/322ud/kosit_validator#entwicklung-und-tests</developer>
+    </documentation>
     <category>tools</category>
+    <category>office</category>
+    <website>https://github.com/322ud/kosit_validator</website>
+    <bugs>https://github.com/322ud/kosit_validator/issues</bugs>
+    <repository type="git">https://github.com/322ud/kosit_validator.git</repository>
 
     <dependencies>
+      <php min-version="8.2" />
       <nextcloud min-version="34" max-version="34" />
     </dependencies>
-
-
 
     <settings>
       <admin>OCA\KoSITValidator\Settings\Admin</admin>

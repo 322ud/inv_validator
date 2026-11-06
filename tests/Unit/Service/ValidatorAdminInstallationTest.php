@@ -6,6 +6,8 @@ namespace OCA\KoSITValidator\Tests\Unit\Service;
 
 use OCA\KoSITValidator\Exception\AdministrationException;
 use OCA\KoSITValidator\Service\ValidatorAdminService;
+use OCA\KoSITValidator\Service\ComponentInstallationRegistry;
+use OCP\AppFramework\Services\IAppConfig;
 use OCA\KoSITValidator\Service\ValidatorConfigService;
 use OCA\KoSITValidator\Tests\Support\FakeHttpResponse;
 use OCA\KoSITValidator\Tests\Support\QueuedHttpClientService;
@@ -23,6 +25,7 @@ final class ValidatorAdminInstallationTest extends TestCase {
     private string $oldJarPath;
     private string $repositoryPath;
     private ValidatorConfigService $config;
+    private ComponentInstallationRegistry $registry;
 
     protected function setUp(): void {
         $this->temporaryDirectory = sys_get_temp_dir() . '/kosit-install-test-' . bin2hex(random_bytes(8));
@@ -33,7 +36,13 @@ final class ValidatorAdminInstallationTest extends TestCase {
         file_put_contents($this->oldJarPath, 'old validator');
         symlink(basename($this->oldJarPath), $this->jarPath);
 
+        $stored = [];
+        $app = $this->createStub(IAppConfig::class);
+        $app->method('getAppValueString')->willReturnCallback(static function (string $key, string $default) use (&$stored): string { return $stored[$key] ?? $default; });
+        $app->method('setAppValueString')->willReturnCallback(static function (string $key, string $value) use (&$stored): void { $stored[$key] = $value; });
+        $this->registry = new ComponentInstallationRegistry($app);
         $this->config = $this->createStub(ValidatorConfigService::class);
+        $this->config->method('getInstallationRegistry')->willReturnCallback(fn () => $this->registry);
         $this->config->method('getValidatorJar')->willReturn($this->jarPath);
         $this->config->method('getAppDirectory')->willReturn($this->temporaryDirectory);
         $this->config->method('getPhpBinary')->willReturn(PHP_BINARY);
@@ -46,6 +55,69 @@ final class ValidatorAdminInstallationTest extends TestCase {
 
     protected function tearDown(): void {
         $this->removeDirectory($this->temporaryDirectory);
+    }
+
+    public function testDefaultStartupDoesNotContactReleaseServers(): void {
+        $this->config->method('getAutoUpdates')->willReturn(['validator' => false, 'configuration' => false]);
+        [$service, $client] = $this->serviceWith([]);
+        $service->updateOnStart();
+        self::assertSame([], $client->requests);
+    }
+
+    public function testStartupUpdatesOnlyEnabledValidatorAndLeavesConfigurationUntouched(): void {
+        $this->config->method('getAutoUpdates')->willReturn(['validator' => true, 'configuration' => false]);
+        $this->createInstalledConfiguration('2025-07-10', '3.0.2');
+        $oldTarget = readlink($this->repositoryPath);
+        [$service, $client] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, "PK\x03\x04new validator"),
+        ]);
+        $status = $service->updateOnStart();
+        self::assertSame('1.6.2', $status['validator']['installedVersion']);
+        $record = $this->registry->get('validator');
+        self::assertSame('installed', $record['state']);
+        self::assertSame('1.6.2', $record['version']);
+        self::assertNotFalse(strtotime($record['lastOperationAt']));
+        self::assertSame(hash('sha256', "PK\x03\x04new validator"), $record['artifacts'][$this->temporaryDirectory . '/validator-1.6.2-standalone.jar']['manifest']['']);
+        self::assertSame($oldTarget, readlink($this->repositoryPath));
+        self::assertSame([self::VALIDATOR_API, self::VALIDATOR_API, self::VALIDATOR_URL], array_column($client->requests, 'url'));
+    }
+
+    #[RequiresPhpExtension('zip')]
+    public function testStartupUpdatesOnlyEnabledConfiguration(): void {
+        $this->config->method('getAutoUpdates')->willReturn(['validator' => false, 'configuration' => true]);
+        $this->createInstalledConfiguration('2025-07-10', '3.0.2');
+        [$service, $client] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationReleaseJson()),
+            new FakeHttpResponse(200, $this->configurationArchive()),
+        ]);
+        $status = $service->updateOnStart();
+        self::assertSame('2026-01-31', $status['configuration']['installedVersion']);
+        self::assertSame('installed', $this->registry->get('configuration')['state']);
+        self::assertNull($this->registry->get('validator'));
+        self::assertSame(basename($this->oldJarPath), readlink($this->jarPath));
+        self::assertSame([self::CONFIGURATION_API, self::CONFIGURATION_API, self::CONFIGURATION_URL], array_column($client->requests, 'url'));
+    }
+
+    public function testRegistryWriteFailurePreventsPublishingUntrackedArtifact(): void {
+        $app = $this->createStub(IAppConfig::class);
+        $app->method('getAppValueString')->willReturn('');
+        $app->method('setAppValueString')->willThrowException(new \RuntimeException('database offline'));
+        $this->registry = new ComponentInstallationRegistry($app);
+        [$service] = $this->serviceWith([
+            new FakeHttpResponse(200, $this->validatorReleaseJson()),
+            new FakeHttpResponse(200, "PK\x03\x04new validator"),
+        ]);
+        try {
+            $service->installLatest(true, false);
+            self::fail('Expected the missing durable record to prevent publication');
+        } catch (\RuntimeException $e) {
+            self::assertSame('database offline', $e->getMessage());
+        }
+        self::assertFileDoesNotExist($this->temporaryDirectory . '/validator-1.6.2-standalone.jar');
+        self::assertSame(basename($this->oldJarPath), readlink($this->jarPath));
     }
 
     public function testStatusReportsBothAvailableUpdates(): void {

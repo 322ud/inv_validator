@@ -1,139 +1,21 @@
-#kosit-admin {
-max-width: 980px;
-}
-
-#kosit-admin h4 {
-margin-top: 28px;
-}
-
-.kosit-paths {
-width: 100%;
-margin-top: 12px;
-border-collapse: collapse;
-}
-
-.kosit-paths th,
-.kosit-paths td {
-padding: 9px 12px;
-border-bottom: 1px solid var(--color-border);
-text-align: left;
-vertical-align: top;
-}
-
-.kosit-paths code {
-overflow-wrap: anywhere;
-}
-
-.kosit-path-input {
-width: 100%;
-min-width: 280px;
-box-sizing: border-box;
-font-family: var(--font-face-monospace, monospace);
-}
-
-.kosit-path-actions,
-.kosit-pdf-actions {
-display: flex;
-align-items: center;
-flex-wrap: wrap;
-gap: 10px;
-margin-top: 14px;
-}
-
-.kosit-pdf-actions {
-margin-top: 0;
-margin-bottom: 12px;
-}
-
-.kosit-state {
-font-weight: 600;
-}
-
-.kosit-state--available,
-.kosit-state--creatable {
-color: var(--color-success-text);
-}
-
-.kosit-state--missing,
-.kosit-state--not-executable {
-color: var(--color-error-text);
-}
-
-.kosit-versions {
-display: grid;
-grid-template-columns: max-content minmax(0, 1fr);
-column-gap: 12px;
-row-gap: 4px;
-}
-
-.kosit-versions > div {
-display: contents;
-}
-
-.kosit-versions dt {
-    width: auto;
-    margin: 0;
-    padding: 0;
-    white-space: normal;
-    text-align: start;
-    font-weight: 600;
-}
-
-.kosit-versions dd {
-margin: 0;
-padding: 0;
-}
-
-#kosit-admin .kosit-status-heading {
-margin-bottom: 6px;
-}
-
-#kosit-admin .kosit-status-heading + .kosit-versions {
-margin-top: 0;
-margin-bottom: 8px;
-}
-
-#kosit-pdf-reason {
-margin-bottom: 12px;
-line-height: 1.4;
-}
-
-#kosit-pdf-reason + .settings-hint {
-margin-top: 0;
-}
-
-.kosit-install-command {
-display: block;
-margin-top: 8px;
-padding: 10px;
-overflow-x: auto;
-white-space: pre-wrap;
-}
-
-.kosit-update-summary {
-margin-top: 14px;
-font-weight: 600;
-}
-
-#kosit-admin-message {
-min-height: 1.5em;
-margin: 14px 0 8px;
-line-height: 1.5;
-font-weight: 600;
-}
-
-#kosit-admin-message + .settings-hint {
-margin-top: 0;
-}
-
-.kosit-admin-actions {
-display: flex;
-align-items: center;
-flex-wrap: wrap;
-gap: 10px;
-margin-top: 14px;
-}
-
+#kosit-admin { max-width: 1100px; }
+#kosit-admin section { margin-top: 28px; }
+#kosit-admin h3 { margin-bottom: 12px; }
+.kosit-switch { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+.kosit-switch input { appearance: auto; width: 20px; height: 20px; }
+.kosit-path-settings { margin-top: 20px; }
+.kosit-path-settings summary { cursor: pointer; }
+#kosit-paths-form label { display: block; margin: 12px 0; }
+.kosit-path-input { display: block; width: 100%; max-width: 650px; box-sizing: border-box; }
+.kosit-table-scroll { overflow-x: auto; margin-top: 12px; }
+.kosit-system { width: 100%; border-collapse: collapse; }
+.kosit-system th, .kosit-system td { padding: 10px; border-bottom: 1px solid var(--color-border); text-align: left; vertical-align: top; }
+.kosit-system th { min-width: 150px; }
+.kosit-check-detail { overflow-wrap: anywhere; }
+.kosit-system td:last-child a { display: block; margin-top: 6px; }
+.kosit-state--available { color: var(--color-success-text); }
+.kosit-state--missing { color: var(--color-error-text); }
+#kosit-admin-message { min-height: 1.5em; margin: 16px 0; }
 .kosit-readme-embed {
 margin-top: 36px;
 padding-top: 20px;
@@ -167,36 +49,9 @@ overflow-wrap: anywhere;
 display: none !important;
 }
 
-@media (max-width: 700px) {
-.kosit-paths,
-.kosit-paths tbody,
-.kosit-paths tr,
-.kosit-paths th,
-.kosit-paths td {
-display: block;
-}
-
-.kosit-paths thead {
-display: none;
-}
-
-.kosit-paths tr {
-padding: 8px 0;
-border-bottom: 1px solid var(--color-border);
-}
-
-.kosit-paths th,
-.kosit-paths td {
-padding: 3px 0;
-border: 0;
-}
-
-.kosit-versions {
-grid-template-columns: 1fr;
-row-gap: 2px;
-}
-
-.kosit-versions dd {
-margin-bottom: 4px;
-}
-}
+#kosit-component-removal { margin-top: 24px; }
+#kosit-component-removal summary { cursor: pointer; }
+.kosit-remove-component { margin: 16px 0; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--border-radius); }
+.kosit-remove-component code { overflow-wrap: anywhere; }
+.kosit-remove-component label { display: block; margin: 12px 0; }
+.kosit-remove-component label.kosit-switch { display: flex; }

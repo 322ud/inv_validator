@@ -58,7 +58,7 @@ final class FrameworkIntegrationTest extends TestCase
 
         $section = $container->get(AdminSection::class);
         self::assertSame('kosit_validator', $section->getID());
-        self::assertSame('Anbindung des KoSIT-Validators', $section->getName());
+        self::assertSame('prüfeXRechnung', $section->getName());
         self::assertSame(80, $section->getPriority());
         self::assertStringContainsString('/apps/kosit_validator/img/app.svg', $section->getIcon());
     }
@@ -170,6 +170,8 @@ final class FrameworkIntegrationTest extends TestCase
         yield 'status' => ['status'];
         yield 'install' => ['install'];
         yield 'save paths' => ['savePaths'];
+        yield 'save settings' => ['saveSettings'];
+        yield 'remove component' => ['removeComponent'];
     }
 
     /** @param class-string $attribute */

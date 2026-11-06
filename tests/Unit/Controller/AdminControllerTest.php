@@ -16,7 +16,7 @@ final class AdminControllerTest extends TestCase {
     public function testStatusReturnsUpdateStatus(): void {
         $status = ['validator' => ['installed' => true]];
         $adminService = $this->createMock(ValidatorAdminService::class);
-        $adminService->expects(self::once())->method('getStatus')->with(true)->willReturn($status);
+        $adminService->expects(self::once())->method('getAdminStatus')->willReturn($status);
 
         $response = $this->controller([], $adminService)->status();
 
@@ -38,12 +38,13 @@ final class AdminControllerTest extends TestCase {
     public function testInstallReturnsInstalledStatus(): void {
         $status = ['validator' => ['installed' => true], 'configuration' => ['installed' => true]];
         $adminService = $this->createMock(ValidatorAdminService::class);
-        $adminService->expects(self::once())->method('installLatest')->willReturn($status);
+        $adminService->expects(self::once())->method('installLatest')->with(true, true)->willReturn($status);
+        $adminService->method('getAdminStatus')->willReturn($status);
 
         $response = $this->controller([], $adminService)->install();
 
         self::assertSame(200, $response->getStatus());
-        self::assertSame('KoSIT-Validator und XRechnung-Konfiguration wurden erfolgreich installiert.', $response->getData()['message']);
+        self::assertSame('Komponentenaktion abgeschlossen.', $response->getData()['message']);
         self::assertSame($status, $response->getData()['status']);
     }
 
@@ -72,7 +73,7 @@ final class AdminControllerTest extends TestCase {
         $configService = $this->createMock(ValidatorConfigService::class);
         $configService->expects(self::once())->method('savePaths')->with($paths);
         $adminService = $this->createMock(ValidatorAdminService::class);
-        $adminService->expects(self::once())->method('getStatus')->with(true)->willReturn(['saved' => true]);
+        $adminService->expects(self::once())->method('getAdminStatus')->willReturn(['saved' => true]);
 
         $response = $this->controller($requestPaths, $adminService, $configService)->savePaths();
 
@@ -88,6 +89,41 @@ final class AdminControllerTest extends TestCase {
 
         self::assertSame(400, $response->getStatus());
         self::assertSame('Ungültiger Pfad', $response->getData()['message']);
+    }
+
+    public function testSettingsPersistIndependentSwitches(): void {
+        $config = $this->createMock(ValidatorConfigService::class);
+        $config->expects(self::once())->method('saveAutoUpdates')->with(true, false);
+        $response = $this->controller(['validator' => 'yes', 'configuration' => 'no'], configService: $config)->saveSettings();
+        self::assertSame(200, $response->getStatus());
+    }
+
+    public function testInvalidSettingsDoNotChangeConfiguration(): void {
+        $config = $this->createMock(ValidatorConfigService::class);
+        $config->expects(self::never())->method('saveAutoUpdates');
+        self::assertSame(400, $this->controller(['validator' => 'yes'], configService: $config)->saveSettings()->getStatus());
+    }
+
+    public function testComponentActionCannotInstallOtherComponent(): void {
+        $admin = $this->createMock(ValidatorAdminService::class);
+        $admin->expects(self::once())->method('installLatest')->with(false, true)->willReturn([]);
+        $admin->method('getAdminStatus')->willReturn([]);
+        self::assertSame(200, $this->controller(['component' => 'configuration'], $admin)->install()->getStatus());
+    }
+
+    public function testInvalidComponentIsRejected(): void {
+        $admin = $this->createMock(ValidatorAdminService::class);
+        $admin->expects(self::never())->method('installLatest');
+        self::assertSame(400, $this->controller(['component' => 'unknown'], $admin)->install()->getStatus());
+    }
+
+    public function testRemoveComponentRejectsMissingOrWrongConfirmationBeforeAccessingFiles(): void {
+        foreach ([null, '', '0', 'yes', 'ja', true] as $answer) {
+            $config = $this->createMock(ValidatorConfigService::class);
+            $config->expects(self::never())->method('getInstallationRegistry');
+            $response = $this->controller(['component' => 'validator', 'confirmed' => $answer, 'recordToken' => 'token'], configService: $config)->removeComponent();
+            self::assertSame(400, $response->getStatus());
+        }
     }
 
     /** @param array<string, mixed> $parameters */

@@ -36,12 +36,13 @@ test('configures interpreter paths and keeps infrastructure paths read-only', as
     await page.goto('/index.php/settings/admin/kosit_validator');
     const admin = page.locator('#kosit-admin');
     await expect(admin).toBeVisible();
-    await expect(admin.getByRole('heading', { name: 'Anbindung des KoSIT-Validators' })).toBeVisible();
+    await expect(admin.getByRole('heading', { name: 'prüfeXRechnung' })).toBeVisible();
 
     await expect(page.locator('input[name="validatorJar"]')).toHaveCount(0);
     await expect(page.locator('input[name="repositoryPath"]')).toHaveCount(0);
     await expect(page.locator('input[name="tempDirectory"]')).toHaveCount(0);
 
+    await admin.locator('summary').filter({ hasText: 'Programmpfade' }).click();
     const pythonBinary = page.locator('input[name="pythonBinary"]');
     const originalPythonBinary = await pythonBinary.inputValue();
     const browserPythonBinary = `${nextcloudRoot}/data/test-python`;

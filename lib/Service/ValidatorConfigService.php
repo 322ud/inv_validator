@@ -28,6 +28,11 @@ class ValidatorConfigService
         $this->validatorRoot = rtrim($validatorRoot ?? self::DEFAULT_VALIDATOR_ROOT, '/');
     }
 
+    public function getInstallationRegistry(): ComponentInstallationRegistry
+    {
+        return new ComponentInstallationRegistry($this->appConfig);
+    }
+
     public function getJavaBinary(): string
     {
         $configured = $this->getConfiguredPath(
@@ -135,6 +140,21 @@ class ValidatorConfigService
     public function getAppDirectory(): string
     {
         return dirname(__DIR__, 2);
+    }
+
+    /** @return array{validator: bool, configuration: bool} */
+    public function getAutoUpdates(): array
+    {
+        return [
+            'validator' => $this->appConfig->getAppValueString('auto_update_validator', 'no') === 'yes',
+            'configuration' => $this->appConfig->getAppValueString('auto_update_configuration', 'no') === 'yes',
+        ];
+    }
+
+    public function saveAutoUpdates(bool $validator, bool $configuration): void
+    {
+        $this->appConfig->setAppValueString('auto_update_validator', $validator ? 'yes' : 'no');
+        $this->appConfig->setAppValueString('auto_update_configuration', $configuration ? 'yes' : 'no');
     }
 
     /** @param array<string, mixed> $paths */
