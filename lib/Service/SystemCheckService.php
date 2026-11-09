@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Service;
+namespace OCA\INValidator\Service;
 
 /** Diagnostics run in the web server's PHP context, without installing components. */
 class SystemCheckService
@@ -156,13 +156,13 @@ class SystemCheckService
         $probeFile = null;
         try {
             if ($parent !== $directory) {
-                $probeDirectory = $parent . '/.pruefexrechnung-check-' . bin2hex(random_bytes(8));
+                $probeDirectory = $parent . '/.inv-validator-check-' . bin2hex(random_bytes(8));
                 if (!@mkdir($probeDirectory, 0700)) {
                     return false;
                 }
                 $parent = $probeDirectory;
             }
-            $probeFile = $parent . '/.pruefexrechnung-check-' . bin2hex(random_bytes(8));
+            $probeFile = $parent . '/.inv-validator-check-' . bin2hex(random_bytes(8));
             $handle = @fopen($probeFile, 'x');
             if ($handle === false) {
                 return false;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Service;
+namespace OCA\INValidator\Service;
 
 use OCP\AppFramework\Services\IAppConfig;
 use OCP\IConfig;
@@ -37,7 +37,7 @@ class ValidatorConfigService
     {
         $configured = $this->getConfiguredPath(
             self::PATH_KEYS['javaBinary'],
-            'kosit_validator_java_binary',
+            'inv_validator_java_binary',
             ''
         );
 
@@ -51,7 +51,7 @@ class ValidatorConfigService
     public function getValidatorJar(): string
     {
         return $this->config->getSystemValueString(
-            'kosit_validator_jar',
+            'inv_validator_jar',
             self::DEFAULT_VALIDATOR_JAR
         );
     }
@@ -95,7 +95,7 @@ class ValidatorConfigService
     {
         $configured = $this->getConfiguredPath(
             self::PATH_KEYS['pythonBinary'],
-            'kosit_validator_python_binary',
+            'inv_validator_python_binary',
             ''
         );
 
@@ -114,7 +114,7 @@ class ValidatorConfigService
     public function getRepositoryPath(): string
     {
         return $this->config->getSystemValueString(
-            'kosit_validator_repository',
+            'inv_validator_repository',
             '/opt/kosit/xrechnung/current'
         );
     }
@@ -127,8 +127,8 @@ class ValidatorConfigService
     public function getTempDirectory(): string
     {
         return $this->config->getSystemValueString(
-            'kosit_validator_temp_directory',
-            sys_get_temp_dir() . '/nextcloud-kosit-validator'
+            'inv_validator_temp_directory',
+            sys_get_temp_dir() . '/nextcloud-inv-validator'
         );
     }
 

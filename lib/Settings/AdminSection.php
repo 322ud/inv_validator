@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Settings;
+namespace OCA\INValidator\Settings;
 
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -18,12 +18,12 @@ class AdminSection implements IIconSection
 
     public function getID(): string
     {
-        return 'kosit_validator';
+        return 'inv_validator';
     }
 
     public function getName(): string
     {
-        return $this->l10n->t('prüfeXRechnung');
+        return $this->l10n->t('INValidator');
     }
 
     public function getPriority(): int
@@ -33,6 +33,6 @@ class AdminSection implements IIconSection
 
     public function getIcon(): string
     {
-        return $this->urlGenerator->imagePath('kosit_validator', 'app.svg');
+        return $this->urlGenerator->imagePath('inv_validator', 'app.svg');
     }
 }

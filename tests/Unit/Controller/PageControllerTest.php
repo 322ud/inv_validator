@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Controller;
+namespace OCA\INValidator\Tests\Unit\Controller;
 
-use OCA\KoSITValidator\Controller\PageController;
-use OCA\KoSITValidator\Service\TextEditorLoader;
-use OCA\KoSITValidator\Service\ValidatorAdminService;
+use OCA\INValidator\Controller\PageController;
+use OCA\INValidator\Service\TextEditorLoader;
+use OCA\INValidator\Service\ValidatorAdminService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -30,7 +30,7 @@ final class PageControllerTest extends TestCase
         );
 
         $controller = new PageController(
-            'kosit_validator',
+            'inv_validator',
             $this->createMock(IRequest::class),
             $adminService,
             $textEditorLoader,
@@ -53,7 +53,7 @@ final class PageControllerTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::never())->method('error');
         $controller = new PageController(
-            'kosit_validator',
+            'inv_validator',
             $this->createMock(IRequest::class),
             $adminService,
             new TextEditorLoader($this->createMock(IEventDispatcher::class)),
@@ -79,7 +79,7 @@ final class PageControllerTest extends TestCase
             ['message' => 'Download failed', 'exception' => $error]
         );
         $controller = new PageController(
-            'kosit_validator',
+            'inv_validator',
             $this->createMock(IRequest::class),
             $adminService,
             new TextEditorLoader($this->createMock(IEventDispatcher::class)),

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Controller;
+namespace OCA\INValidator\Controller;
 
-use OCA\KoSITValidator\Service\ValidatorAdminService;
-use OCA\KoSITValidator\Service\ComponentRemovalService;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Service\ValidatorAdminService;
+use OCA\INValidator\Service\ComponentRemovalService;
+use OCA\INValidator\Service\ValidatorConfigService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;

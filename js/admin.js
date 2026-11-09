@@ -8,11 +8,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const writeChecks = root.querySelector('#kosit-write-checks');
     const writeCheckIds = ['temp', 'validator-write', 'configuration-write'];
     const viewer = root.querySelector('[data-kosit-readme]');
-    window.OCA?.KoSITValidator?.initializeReadme(viewer);
+    window.OCA?.INValidator?.initializeReadme(viewer);
     let busy = false;
 
     const request = async (url, options = {}) => {
-        const response = await fetch(OC.generateUrl(`/apps/kosit_validator/admin/${url}`), {
+        const response = await fetch(OC.generateUrl(`/apps/inv_validator/admin/${url}`), {
             credentials: 'same-origin',
             ...options,
             headers: { requesttoken: OC.requestToken, ...options.headers },

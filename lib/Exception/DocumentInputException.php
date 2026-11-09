@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Exception;
+namespace OCA\INValidator\Exception;
 
 class DocumentInputException extends \RuntimeException
 {

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<ruleset name="KoSIT Validator">
+<ruleset name="INValidator">
     <description>Code style rules for the KoSIT Validator production code.</description>
 
     <file>lib</file>

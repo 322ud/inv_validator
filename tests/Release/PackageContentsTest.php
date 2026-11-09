@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Release;
+namespace OCA\INValidator\Tests\Release;
 
-use OCA\KoSITValidator\AppInfo\Application;
+use OCA\INValidator\AppInfo\Application;
 use OCP\App\IAppManager;
 use OCP\Server;
 use PHPUnit\Framework\TestCase;
@@ -17,7 +17,7 @@ final class PackageContentsTest extends TestCase {
         $nextcloudRoot = getenv('NEXTCLOUD_PACKAGE_ROOT');
         self::assertIsString($nextcloudRoot);
         self::assertNotSame('', $nextcloudRoot);
-        $this->appDirectory = $nextcloudRoot . '/apps/kosit_validator';
+        $this->appDirectory = $nextcloudRoot . '/apps/inv_validator';
 
         $expectedVersion = getenv('EXPECTED_APP_VERSION');
         self::assertIsString($expectedVersion);
@@ -38,9 +38,9 @@ final class PackageContentsTest extends TestCase {
         self::assertFileExists($this->appDirectory . '/templates/index.php');
         self::assertFileExists($this->appDirectory . '/THIRD_PARTY_NOTICES.md');
 
-        $metadata = Server::get(IAppManager::class)->getAppInfo('kosit_validator');
+        $metadata = Server::get(IAppManager::class)->getAppInfo('inv_validator');
         self::assertIsArray($metadata);
-        self::assertSame('kosit_validator', $metadata['id'] ?? null);
+        self::assertSame('inv_validator', $metadata['id'] ?? null);
         self::assertSame($this->expectedVersion, $metadata['version'] ?? null);
 
         $applicationClass = new \ReflectionClass(Application::class);

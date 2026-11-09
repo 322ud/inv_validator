@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Integration\Service;
+namespace OCA\INValidator\Tests\Integration\Service;
 
-use OCA\KoSITValidator\Exception\ValidationException;
-use OCA\KoSITValidator\Service\KoSITValidatorService;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
-use OCA\KoSITValidator\Service\ValidatorProcessRunner;
+use OCA\INValidator\Exception\ValidationException;
+use OCA\INValidator\Service\KoSITValidatorService;
+use OCA\INValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Service\ValidatorProcessRunner;
 use PHPUnit\Framework\TestCase;
 
 final class KoSITValidatorProcessIntegrationTest extends TestCase {
@@ -119,7 +119,7 @@ final class KoSITValidatorProcessIntegrationTest extends TestCase {
     }
 
     private function assertNoWorkingDirectoriesRemain(): void {
-        self::assertSame([], glob($this->temporaryDirectory . '/kosit-validator-*') ?: []);
+        self::assertSame([], glob($this->temporaryDirectory . '/inv-validator-*') ?: []);
     }
 
     private function assertLockIsAvailable(): void {

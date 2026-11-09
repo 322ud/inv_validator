@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const appMarkup = `
-    <div id="kosit-scroll-container"><div id="kosit-validator">
+    <div id="kosit-scroll-container"><div id="inv-validator">
         <input id="kosit-xml-file" type="file">
         <button id="kosit-select-file-button" type="button">Datei auswählen</button>
         <div id="kosit-status"></div>
@@ -63,12 +63,12 @@ describe('validation UI', () => {
         touch.rel = 'apple-touch-icon';
         touch.href = '/touch.png';
         document.head.append(original, touch);
-        document.getElementById('kosit-validator').dataset.faviconUrl = '/apps/kosit_validator/img/app.svg?v=1';
+        document.getElementById('inv-validator').dataset.faviconUrl = '/apps/inv_validator/img/app.svg?v=1';
         try {
             await loadApp();
             const icons = document.head.querySelectorAll('link[rel~="icon"]');
             expect(icons).toHaveLength(1);
-            expect(icons[0].getAttribute('href')).toBe('/apps/kosit_validator/img/app.svg?v=1');
+            expect(icons[0].getAttribute('href')).toBe('/apps/inv_validator/img/app.svg?v=1');
             expect(icons[0].type).toBe('image/svg+xml');
             expect(touch.isConnected).toBe(true);
         } finally {
@@ -161,13 +161,13 @@ describe('validation UI', () => {
         vi.stubGlobal('fetch', fetch);
         await loadApp();
 
-        drop([droppedFile('invoice.xml', '<Invoice/>')], document.getElementById('kosit-validator'));
+        drop([droppedFile('invoice.xml', '<Invoice/>')], document.getElementById('inv-validator'));
 
         await vi.waitFor(() => {
             expect(document.getElementById('kosit-status').textContent).toBe('XML ist gültig.');
         });
         const [, options] = fetch.mock.calls[0];
-        expect(fetch.mock.calls[0][0]).toBe('/nextcloud/apps/kosit_validator/validate');
+        expect(fetch.mock.calls[0][0]).toBe('/nextcloud/apps/inv_validator/validate');
         expect(options.method).toBe('POST');
         expect(options.credentials).toBe('same-origin');
         expect(options.headers.requesttoken).toBe('test-request-token');
@@ -204,7 +204,7 @@ describe('validation UI', () => {
             reportHtml: null,
         }));
         vi.stubGlobal('fetch', fetch);
-        document.getElementById('kosit-validator').dataset.pdfSupported = 'true';
+        document.getElementById('inv-validator').dataset.pdfSupported = 'true';
         await loadApp();
         drop([droppedFile('invoice.pdf', '%PDF-fake')]);
 

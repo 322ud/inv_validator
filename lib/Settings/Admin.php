@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Settings;
+namespace OCA\INValidator\Settings;
 
-use OCA\KoSITValidator\Service\ValidatorAdminService;
-use OCA\KoSITValidator\Service\TextEditorLoader;
+use OCA\INValidator\Service\ValidatorAdminService;
+use OCA\INValidator\Service\TextEditorLoader;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Settings\ISettings;
 
@@ -21,14 +21,14 @@ class Admin implements ISettings
     {
         $this->textEditorLoader->load();
 
-        return new TemplateResponse('kosit_validator', 'admin', [
+        return new TemplateResponse('inv_validator', 'admin', [
             'status' => $this->adminService->getAdminStatus(),
         ]);
     }
 
     public function getSection(): string
     {
-        return 'kosit_validator';
+        return 'inv_validator';
     }
 
     public function getPriority(): int

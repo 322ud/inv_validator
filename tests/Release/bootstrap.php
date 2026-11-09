@@ -14,7 +14,7 @@ if ($workspaceRoot === false) {
 
 $_SERVER['HTTP_HOST'] = 'localhost';
 $_SERVER['REQUEST_METHOD'] = 'GET';
-$_SERVER['REQUEST_URI'] = '/index.php/apps/kosit_validator/';
+$_SERVER['REQUEST_URI'] = '/index.php/apps/inv_validator/';
 $_SERVER['SCRIPT_FILENAME'] = $nextcloudRoot . '/index.php';
 $_SERVER['SCRIPT_NAME'] = '/index.php';
 $_SERVER['SERVER_NAME'] = 'localhost';
@@ -26,9 +26,9 @@ if (!$composerLoader instanceof \Composer\Autoload\ClassLoader) {
     throw new RuntimeException('Could not configure the Composer class loader');
 }
 $composerLoader->setPsr4(
-    'OCA\\KoSITValidator\\',
-    [$nextcloudRoot . '/apps/kosit_validator/lib']
+    'OCA\\INValidator\\',
+    [$nextcloudRoot . '/apps/inv_validator/lib']
 );
 
-\OC_App::loadApp(\OCA\KoSITValidator\AppInfo\Application::APP_ID);
+\OC_App::loadApp(\OCA\INValidator\AppInfo\Application::APP_ID);
 \OC_Hook::clear();

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Service;
+namespace OCA\INValidator\Service;
 
 class ValidationResult
 {

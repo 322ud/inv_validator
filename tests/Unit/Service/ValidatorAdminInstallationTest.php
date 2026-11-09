@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Service;
+namespace OCA\INValidator\Tests\Unit\Service;
 
-use OCA\KoSITValidator\Exception\AdministrationException;
-use OCA\KoSITValidator\Service\ValidatorAdminService;
-use OCA\KoSITValidator\Service\ComponentInstallationRegistry;
+use OCA\INValidator\Exception\AdministrationException;
+use OCA\INValidator\Service\ValidatorAdminService;
+use OCA\INValidator\Service\ComponentInstallationRegistry;
 use OCP\AppFramework\Services\IAppConfig;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
-use OCA\KoSITValidator\Tests\Support\FakeHttpResponse;
-use OCA\KoSITValidator\Tests\Support\QueuedHttpClientService;
+use OCA\INValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Tests\Support\FakeHttpResponse;
+use OCA\INValidator\Tests\Support\QueuedHttpClientService;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 

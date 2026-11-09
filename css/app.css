@@ -37,7 +37,7 @@ background: url("../img/app.svg") center / contain no-repeat;
 box-shadow: inset 0 0 0 3px var(--color-primary-element);
 }
 
-#kosit-validator.section {
+#inv-validator.section {
 width: 100% !important;
 max-width: none !important;
 min-width: 0;
@@ -45,7 +45,7 @@ box-sizing: border-box;
 align-self: stretch;
 }
 
-.kosit-validator-intro {
+.inv-validator-intro {
 display: block;
 }
 

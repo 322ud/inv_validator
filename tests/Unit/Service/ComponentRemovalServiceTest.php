@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Service;
+namespace OCA\INValidator\Tests\Unit\Service;
 
-use OCA\KoSITValidator\Exception\AdministrationException;
-use OCA\KoSITValidator\Service\ComponentInstallationRegistry;
-use OCA\KoSITValidator\Service\ComponentRemovalService;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Exception\AdministrationException;
+use OCA\INValidator\Service\ComponentInstallationRegistry;
+use OCA\INValidator\Service\ComponentRemovalService;
+use OCA\INValidator\Service\ValidatorConfigService;
 use OCP\AppFramework\Services\IAppConfig;
 use PHPUnit\Framework\TestCase;
 

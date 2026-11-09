@@ -1,6 +1,6 @@
 <?php
 
-namespace OCA\KoSITValidator\Exception;
+namespace OCA\INValidator\Exception;
 
 class ValidationException extends \RuntimeException
 {

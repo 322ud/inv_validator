@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Nextcloud;
+namespace OCA\INValidator\Tests\Nextcloud;
 
-use OCA\KoSITValidator\AppInfo\Application;
-use OCA\KoSITValidator\Listener\NavigationListener;
-use OCA\KoSITValidator\Controller\AdminController;
-use OCA\KoSITValidator\Controller\PageController;
-use OCA\KoSITValidator\Controller\ValidationController;
-use OCA\KoSITValidator\Service\KoSITValidatorService;
-use OCA\KoSITValidator\Service\ValidatorAdminService;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
-use OCA\KoSITValidator\Settings\Admin;
-use OCA\KoSITValidator\Settings\AdminSection;
+use OCA\INValidator\AppInfo\Application;
+use OCA\INValidator\Listener\NavigationListener;
+use OCA\INValidator\Controller\AdminController;
+use OCA\INValidator\Controller\PageController;
+use OCA\INValidator\Controller\ValidationController;
+use OCA\INValidator\Service\KoSITValidatorService;
+use OCA\INValidator\Service\ValidatorAdminService;
+use OCA\INValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Settings\Admin;
+use OCA\INValidator\Settings\AdminSection;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -53,14 +53,14 @@ final class FrameworkIntegrationTest extends TestCase
         self::assertInstanceOf(ValidationController::class, $container->get(ValidationController::class));
 
         $settings = $container->get(Admin::class);
-        self::assertSame('kosit_validator', $settings->getSection());
+        self::assertSame('inv_validator', $settings->getSection());
         self::assertSame(50, $settings->getPriority());
 
         $section = $container->get(AdminSection::class);
-        self::assertSame('kosit_validator', $section->getID());
-        self::assertSame('prüfeXRechnung', $section->getName());
+        self::assertSame('inv_validator', $section->getID());
+        self::assertSame('INValidator', $section->getName());
         self::assertSame(80, $section->getPriority());
-        self::assertStringContainsString('/apps/kosit_validator/img/app.svg', $section->getIcon());
+        self::assertStringContainsString('/apps/inv_validator/img/app.svg', $section->getIcon());
     }
 
     public function testNamedRoutesAreRegistered(): void
@@ -68,24 +68,24 @@ final class FrameworkIntegrationTest extends TestCase
         $urlGenerator = Server::get(IURLGenerator::class);
 
         self::assertStringContainsString(
-            '/apps/kosit_validator/',
-            $urlGenerator->linkToRoute('kosit_validator.page.index')
+            '/apps/inv_validator/',
+            $urlGenerator->linkToRoute('inv_validator.page.index')
         );
         self::assertStringEndsWith(
-            '/apps/kosit_validator/validate',
-            $urlGenerator->linkToRoute('kosit_validator.validation.validate')
+            '/apps/inv_validator/validate',
+            $urlGenerator->linkToRoute('inv_validator.validation.validate')
         );
         self::assertStringEndsWith(
-            '/apps/kosit_validator/admin/status',
-            $urlGenerator->linkToRoute('kosit_validator.admin.status')
+            '/apps/inv_validator/admin/status',
+            $urlGenerator->linkToRoute('inv_validator.admin.status')
         );
         self::assertStringEndsWith(
-            '/apps/kosit_validator/admin/install',
-            $urlGenerator->linkToRoute('kosit_validator.admin.install')
+            '/apps/inv_validator/admin/install',
+            $urlGenerator->linkToRoute('inv_validator.admin.install')
         );
         self::assertStringEndsWith(
-            '/apps/kosit_validator/admin/paths',
-            $urlGenerator->linkToRoute('kosit_validator.admin.savePaths')
+            '/apps/inv_validator/admin/paths',
+            $urlGenerator->linkToRoute('inv_validator.admin.savePaths')
         );
     }
 
@@ -101,7 +101,7 @@ final class FrameworkIntegrationTest extends TestCase
         if ($visible) {
             $navigation->expects(self::once())->method('add')->with(self::callback(
                 static fn (array $entry): bool => $entry['id'] === Application::APP_ID
-                    && str_contains($entry['href'], '/apps/kosit_validator/')
+                    && str_contains($entry['href'], '/apps/inv_validator/')
             ));
         } else {
             $navigation->expects(self::never())->method('add');
@@ -143,10 +143,10 @@ final class FrameworkIntegrationTest extends TestCase
         $controller = $this->application->getContainer()->get(PageController::class);
         $response = $controller->index();
 
-        self::assertSame('kosit_validator', $response->getApp());
+        self::assertSame('inv_validator', $response->getApp());
         self::assertSame('index', $response->getTemplateName());
         $html = $response->render();
-        self::assertStringContainsString('id="kosit-validator"', $html);
+        self::assertStringContainsString('id="inv-validator"', $html);
         self::assertStringNotContainsString('Administrator informieren', $html);
     }
 

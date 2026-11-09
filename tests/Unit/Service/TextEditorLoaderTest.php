@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Service;
+namespace OCA\INValidator\Tests\Unit\Service;
 
-use OCA\KoSITValidator\Service\TextEditorLoader;
+use OCA\INValidator\Service\TextEditorLoader;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 

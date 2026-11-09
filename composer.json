@@ -1,6 +1,6 @@
 {
-    "name": "kosit/nextcloud-validator",
-    "description": "Nextcloud frontend for the KoSIT Validator",
+    "name": "322ud/inv-validator",
+    "description": "INValidator: local invoice validation with the KoSIT Validator",
     "type": "project",
     "license": "AGPL-3.0-or-later",
     "require-dev": {
@@ -11,12 +11,12 @@
     },
     "autoload": {
         "psr-4": {
-            "OCA\\KoSITValidator\\": "lib/"
+            "OCA\\INValidator\\": "lib/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "OCA\\KoSITValidator\\Tests\\": "tests/"
+            "OCA\\INValidator\\Tests\\": "tests/"
         }
     },
     "scripts": {

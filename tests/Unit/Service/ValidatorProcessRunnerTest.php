@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Service;
+namespace OCA\INValidator\Tests\Unit\Service;
 
-use OCA\KoSITValidator\Exception\ValidationException;
-use OCA\KoSITValidator\Service\ValidatorProcessRunner;
+use OCA\INValidator\Exception\ValidationException;
+use OCA\INValidator\Service\ValidatorProcessRunner;
 use PHPUnit\Framework\TestCase;
 
 final class ValidatorProcessRunnerTest extends TestCase {

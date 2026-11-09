@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Controller;
+namespace OCA\INValidator\Controller;
 
-use OCA\KoSITValidator\Exception\DocumentInputException;
-use OCA\KoSITValidator\Exception\ValidationException;
-use OCA\KoSITValidator\Service\KoSITValidatorService;
-use OCA\KoSITValidator\Service\PdfXmlExtractor;
+use OCA\INValidator\Exception\DocumentInputException;
+use OCA\INValidator\Exception\ValidationException;
+use OCA\INValidator\Service\KoSITValidatorService;
+use OCA\INValidator\Service\PdfXmlExtractor;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\DataResponse;

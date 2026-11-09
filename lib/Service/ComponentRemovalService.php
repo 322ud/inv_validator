@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Service;
+namespace OCA\INValidator\Service;
 
-use OCA\KoSITValidator\Exception\AdministrationException;
+use OCA\INValidator\Exception\AdministrationException;
 
 /** Removes only unchanged artifacts for which this app has a durable ownership record. */
 class ComponentRemovalService

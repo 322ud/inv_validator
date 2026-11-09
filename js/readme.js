@@ -74,8 +74,8 @@
     };
 
     window.OCA = window.OCA || {};
-    window.OCA.KoSITValidator = {
-        ...window.OCA.KoSITValidator,
+    window.OCA.INValidator = {
+        ...window.OCA.INValidator,
         initializeReadme,
     };
 })();

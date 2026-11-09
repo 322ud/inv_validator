@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Controller;
+namespace OCA\INValidator\Controller;
 
-use OCA\KoSITValidator\Service\ValidatorAdminService;
-use OCA\KoSITValidator\Service\TextEditorLoader;
+use OCA\INValidator\Service\ValidatorAdminService;
+use OCA\INValidator\Service\TextEditorLoader;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -41,7 +41,7 @@ class PageController extends Controller
         }
 
         return new TemplateResponse(
-            'kosit_validator',
+            'inv_validator',
             'index',
             [
                 'status' => $status,

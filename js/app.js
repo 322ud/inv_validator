@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const validator = document.getElementById('kosit-validator');
+    const validator = document.getElementById('inv-validator');
     const fileInput = document.getElementById('kosit-xml-file');
     const dropZone = document.getElementById('kosit-scroll-container');
     const selectFileButton = document.getElementById('kosit-select-file-button');
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         readmeDialog.hidden = false;
         readmeClose.focus();
-        window.OCA?.KoSITValidator?.initializeReadme(readmeViewer);
+        window.OCA?.INValidator?.initializeReadme(readmeViewer);
     });
 
     readmeClose?.addEventListener('click', closeReadme);
@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('document', file, file.name);
             formData.append('requesttoken', OC.requestToken);
 
-            const response = await fetch(OC.generateUrl('/apps/kosit_validator/validate'), {
+            const response = await fetch(OC.generateUrl('/apps/inv_validator/validate'), {
                 method: 'POST',
                 headers: {
                     requesttoken: OC.requestToken,

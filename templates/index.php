@@ -1,9 +1,9 @@
 <?php
     /** @var array<string, mixed> $_ */
 
-    script('kosit_validator', 'readme');
-    script('kosit_validator', 'app');
-    style('kosit_validator', 'app');
+    script('inv_validator', 'readme');
+    script('inv_validator', 'app');
+    style('inv_validator', 'app');
 
     $status = $_['status'];
     $pdfAvailable = (bool)($status['pdfSupport']['available'] ?? false);
@@ -15,14 +15,14 @@
     style="flex:1 1 auto;width:100%;height:100%;min-width:0;overflow-x:hidden;overflow-y:auto;"
 >
     <div
-        id="kosit-validator"
+        id="inv-validator"
         class="section"
         data-pdf-supported="<?php p($pdfAvailable ? 'true' : 'false'); ?>"
-        data-favicon-url="<?php p(image_path('kosit_validator', 'app.svg')); ?>"
+        data-favicon-url="<?php p(image_path('inv_validator', 'app.svg')); ?>"
     >
-        <h2>prüfeXRechnung</h2>
+        <h2>INValidator</h2>
 
-        <p class="kosit-validator-intro">
+        <p class="inv-validator-intro">
             Prüft XML-Rechnungsdokumente mit dem Standard
             <span id="kosit-configuration-name"><?php p($status['configuration']['name'] ?? 'unbekannt'); ?></span>.
             <a

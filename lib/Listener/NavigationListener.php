@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Listener;
+namespace OCA\INValidator\Listener;
 
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
@@ -35,22 +35,22 @@ class NavigationListener implements IEventListener
             return;
         }
         $user = $this->session->getUser();
-        if ($user === null || !$this->apps->isEnabledForUser('kosit_validator', $user)) {
+        if ($user === null || !$this->apps->isEnabledForUser('inv_validator', $user)) {
             return;
         }
         if (
-            $this->config->getAppValue('kosit_validator', 'hide_navigation', 'no') === 'yes'
+            $this->config->getAppValue('inv_validator', 'hide_navigation', 'no') === 'yes'
             && !$this->groups->isAdmin($user->getUID())
         ) {
             return;
         }
         $this->navigation->add([
-            'id' => 'kosit_validator',
-            'app' => 'kosit_validator',
+            'id' => 'inv_validator',
+            'app' => 'inv_validator',
             'order' => 100,
-            'href' => $this->urls->linkToRoute('kosit_validator.page.index'),
-            'icon' => $this->urls->imagePath('kosit_validator', 'app.svg'),
-            'name' => $this->l10n->t('prüfeXRechnung'),
+            'href' => $this->urls->linkToRoute('inv_validator.page.index'),
+            'icon' => $this->urls->imagePath('inv_validator', 'app.svg'),
+            'name' => $this->l10n->t('INValidator'),
         ]);
     }
 }

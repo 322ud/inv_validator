@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Service;
+namespace OCA\INValidator\Service;
 
-use OCA\KoSITValidator\Exception\AdministrationException;
+use OCA\INValidator\Exception\AdministrationException;
 use OCP\Http\Client\IClientService;
 
 class ValidatorAdminService

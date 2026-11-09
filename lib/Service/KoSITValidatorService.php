@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Service;
+namespace OCA\INValidator\Service;
 
-use OCA\KoSITValidator\Exception\ValidationException;
+use OCA\INValidator\Exception\ValidationException;
 
 class KoSITValidatorService
 {
@@ -146,7 +146,7 @@ class KoSITValidatorService
     private function createTempDirectory(): string
     {
         $tempDir = $this->config->getTempDirectory()
-        . '/kosit-validator-'
+        . '/inv-validator-'
         . bin2hex(random_bytes(16));
 
         if (!mkdir($tempDir, 0700, true) && !is_dir($tempDir)) {

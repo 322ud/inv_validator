@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Service;
+namespace OCA\INValidator\Tests\Unit\Service;
 
-use OCA\KoSITValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Service\ValidatorConfigService;
 use OCP\AppFramework\Services\IAppConfig;
 use OCP\IConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -38,7 +38,7 @@ final class ValidatorConfigServiceTest extends TestCase {
         $systemConfig = $this->createMock(IConfig::class);
         $systemConfig->expects(self::once())
             ->method('getSystemValueString')
-            ->with('kosit_validator_repository', '/opt/kosit/xrechnung/current')
+            ->with('inv_validator_repository', '/opt/kosit/xrechnung/current')
             ->willReturn('/from-system');
 
         $service = new ValidatorConfigService($systemConfig, $this->createStub(IAppConfig::class));
@@ -52,7 +52,7 @@ final class ValidatorConfigServiceTest extends TestCase {
         $systemConfig = $this->createMock(IConfig::class);
         $systemConfig->expects(self::once())
             ->method('getSystemValueString')
-            ->with('kosit_validator_jar', '/opt/kosit/validator-standalone.jar')
+            ->with('inv_validator_jar', '/opt/kosit/validator-standalone.jar')
             ->willReturn('/opt/kosit/validator-standalone.jar');
 
         $service = new ValidatorConfigService($systemConfig, $appConfig);
@@ -83,7 +83,7 @@ final class ValidatorConfigServiceTest extends TestCase {
     public function testScenarioFileIsDerivedFromRepository(): void {
         $systemConfig = $this->createStub(IConfig::class);
         $systemConfig->method('getSystemValueString')->with(
-            'kosit_validator_repository',
+            'inv_validator_repository',
             '/opt/kosit/xrechnung/current'
         )->willReturn('/opt/kosit/xrechnung/current');
         $service = new ValidatorConfigService($systemConfig, $this->createStub(IAppConfig::class));
@@ -92,7 +92,7 @@ final class ValidatorConfigServiceTest extends TestCase {
     }
 
     public function testAcceptsControlledValidatorSymlinkWithinManagedRoot(): void {
-        $root = sys_get_temp_dir() . '/kosit-validator-root-' . bin2hex(random_bytes(8));
+        $root = sys_get_temp_dir() . '/inv-validator-root-' . bin2hex(random_bytes(8));
         mkdir($root, 0700, true);
         file_put_contents($root . '/validator-1.6.3-standalone.jar', 'validator');
         symlink('validator-1.6.3-standalone.jar', $root . '/validator-standalone.jar');
@@ -113,8 +113,8 @@ final class ValidatorConfigServiceTest extends TestCase {
     }
 
     public function testRejectsValidatorSymlinkOutsideManagedRootAtRuntime(): void {
-        $root = sys_get_temp_dir() . '/kosit-validator-root-' . bin2hex(random_bytes(8));
-        $outsideDirectory = sys_get_temp_dir() . '/kosit-validator-outside-' . bin2hex(random_bytes(8));
+        $root = sys_get_temp_dir() . '/inv-validator-root-' . bin2hex(random_bytes(8));
+        $outsideDirectory = sys_get_temp_dir() . '/inv-validator-outside-' . bin2hex(random_bytes(8));
         $outside = $outsideDirectory . '/validator-1.6.3-standalone.jar';
         mkdir($root, 0700, true);
         mkdir($outsideDirectory, 0700, true);

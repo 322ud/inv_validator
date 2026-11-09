@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\EndToEnd;
+namespace OCA\INValidator\Tests\EndToEnd;
 
-use OCA\KoSITValidator\Service\KoSITValidatorService;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
-use OCA\KoSITValidator\Service\ValidatorProcessRunner;
+use OCA\INValidator\Service\KoSITValidatorService;
+use OCA\INValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Service\ValidatorProcessRunner;
 use PHPUnit\Framework\TestCase;
 
 final class KoSITValidatorSmokeTest extends TestCase {
@@ -106,7 +106,7 @@ final class KoSITValidatorSmokeTest extends TestCase {
     }
 
     private function assertNoWorkingDirectoriesRemain(): void {
-        self::assertSame([], glob($this->temporaryDirectory . '/kosit-validator-*') ?: []);
+        self::assertSame([], glob($this->temporaryDirectory . '/inv-validator-*') ?: []);
     }
 
     private function removeDirectory(string $directory): void {

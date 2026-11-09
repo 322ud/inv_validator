@@ -25,7 +25,7 @@ const postPaths = async (page, requestToken, javaBinary) => page.evaluate(
         formData.append('tempDirectory', '/tmp/unauthorized-temp');
 
         const headers = token === null ? {} : { requesttoken: token };
-        const response = await fetch(window.OC.generateUrl('/apps/kosit_validator/admin/paths'), {
+        const response = await fetch(window.OC.generateUrl('/apps/inv_validator/admin/paths'), {
             method: 'POST',
             credentials: 'same-origin',
             headers,
@@ -42,8 +42,8 @@ test('enforces admin authorization and CSRF without changing configuration', asy
     const userPage = await userContext.newPage();
 
     await login(userPage, 'integration-user', 'integration-user-password');
-    await userPage.goto('/index.php/apps/kosit_validator/');
-    await expect(userPage.getByRole('heading', { name: 'prüfeXRechnung' })).toBeVisible();
+    await userPage.goto('/index.php/apps/inv_validator/');
+    await expect(userPage.getByRole('heading', { name: 'INValidator' })).toBeVisible();
     await userPage.locator('#kosit-xml-file').setInputFiles(validInvoicePath);
     await expect(userPage.locator('#kosit-status')).toHaveText('XML ist gültig.');
 
@@ -61,7 +61,7 @@ test('enforces admin authorization and CSRF without changing configuration', asy
     const adminPage = await adminContext.newPage();
 
     await login(adminPage, 'admin', 'integration-test-password');
-    await adminPage.goto('/index.php/settings/admin/kosit_validator');
+    await adminPage.goto('/index.php/settings/admin/inv_validator');
     await expect(adminPage.locator('#kosit-admin')).toBeVisible();
 
     const javaBinary = adminPage.locator('input[name="javaBinary"]');

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Service;
+namespace OCA\INValidator\Service;
 
-use OCA\KoSITValidator\Exception\DocumentInputException;
-use OCA\KoSITValidator\Exception\ValidationException;
+use OCA\INValidator\Exception\DocumentInputException;
+use OCA\INValidator\Exception\ValidationException;
 
 class PdfXmlExtractor
 {

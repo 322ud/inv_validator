@@ -47,7 +47,7 @@ describe('admin system UI', () => {
         document.querySelector('[name="validator"]').click();
         await waitMessage('Gespeichert');
         const [url, options] = fetch.mock.calls[0];
-        expect(url).toBe('/nextcloud/apps/kosit_validator/admin/settings');
+        expect(url).toBe('/nextcloud/apps/inv_validator/admin/settings');
         expect(options.body.get('validator')).toBe('yes');
         expect(options.body.get('configuration')).toBe('no');
         expect(options.headers.requesttoken).toBe('test-request-token');
@@ -158,7 +158,7 @@ describe('admin system UI', () => {
         form.elements.confirmed.checked = true;
         form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
         await waitMessage('Entfernt');
-        expect(fetch.mock.calls[1][0]).toBe('/nextcloud/apps/kosit_validator/admin/components/remove');
+        expect(fetch.mock.calls[1][0]).toBe('/nextcloud/apps/inv_validator/admin/components/remove');
         expect(fetch.mock.calls[1][1].headers.requesttoken).toBe('test-request-token');
         expect(fetch.mock.calls[1][1].body.get('confirmed')).toBe('1');
         expect(fetch.mock.calls[1][1].body.get('component')).toBe('validator');

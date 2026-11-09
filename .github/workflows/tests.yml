@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Existing version tag to publish (for example v0.5.4)'
+        description: 'Existing version tag to publish (for example v1.0.0)'
         required: true
         type: string
 
@@ -170,7 +170,7 @@ jobs:
             --file "${{ runner.temp }}/nextcloud-${NEXTCLOUD_VERSION}.tar.bz2" \
             --directory "$NEXTCLOUD_ROOT" \
             --strip-components=1
-          cp --archive "$GITHUB_WORKSPACE" "$NEXTCLOUD_ROOT/apps/kosit_validator"
+          cp --archive "$GITHUB_WORKSPACE" "$NEXTCLOUD_ROOT/apps/inv_validator"
           cd "$NEXTCLOUD_ROOT"
           php occ maintenance:install \
             --database sqlite \
@@ -181,13 +181,13 @@ jobs:
             --display-name='Integration User' \
             integration-user
           php occ app:disable firstrunwizard
-          php occ app:enable kosit_validator
+          php occ app:enable inv_validator
           app_version="$(sed -n 's:.*<version>\([^<]*\)</version>.*:\1:p' "$GITHUB_WORKSPACE/appinfo/info.xml")"
-          php occ app:list --enabled | grep --fixed-strings --line-regexp "  - kosit_validator: $app_version"
+          php occ app:list --enabled | grep --fixed-strings --line-regexp "  - inv_validator: $app_version"
       - name: Run Nextcloud framework integration tests
         run: |
-          "$NEXTCLOUD_ROOT/apps/kosit_validator/vendor/bin/phpunit" \
-            --configuration "$NEXTCLOUD_ROOT/apps/kosit_validator/tests/Nextcloud/phpunit.xml"
+          "$NEXTCLOUD_ROOT/apps/inv_validator/vendor/bin/phpunit" \
+            --configuration "$NEXTCLOUD_ROOT/apps/inv_validator/tests/Nextcloud/phpunit.xml"
       - name: Install browser test dependencies
         run: |
           npm ci
@@ -204,15 +204,15 @@ jobs:
           unzip -q \
             "$KOSIT_ASSET_DIRECTORY/xrechnung-3.0.2-validator-configuration-${KOSIT_CONFIGURATION_VERSION}.zip" \
             -d "$KOSIT_REPOSITORY"
-          mkdir --parents "$NEXTCLOUD_ROOT/data/kosit-validator-temp"
+          mkdir --parents "$NEXTCLOUD_ROOT/data/inv-validator-temp"
           cd "$NEXTCLOUD_ROOT"
           php occ config:system:set trusted_domains 1 --value=127.0.0.1:8080
-          php occ config:app:set kosit_validator java_binary --value="$JAVA_HOME/bin/java"
-          php occ config:system:set kosit_validator_jar \
+          php occ config:app:set inv_validator java_binary --value="$JAVA_HOME/bin/java"
+          php occ config:system:set inv_validator_jar \
             --value="$KOSIT_ASSET_DIRECTORY/validator-${KOSIT_VALIDATOR_VERSION}-standalone.jar"
-          php occ config:system:set kosit_validator_repository --value="$KOSIT_REPOSITORY"
-          php occ config:system:set kosit_validator_temp_directory \
-            --value="$NEXTCLOUD_ROOT/data/kosit-validator-temp"
+          php occ config:system:set inv_validator_repository --value="$KOSIT_REPOSITORY"
+          php occ config:system:set inv_validator_temp_directory \
+            --value="$NEXTCLOUD_ROOT/data/inv-validator-temp"
       - name: Run browser end-to-end test
         env:
           KOSIT_VALID_INVOICE: ${{ env.KOSIT_ASSET_DIRECTORY }}/01.01a-INVOICE_ubl.xml
@@ -376,7 +376,7 @@ jobs:
             done
           fi
           filename="$(basename "$archive")"
-          version="${filename#kosit_validator-}"
+          version="${filename#inv_validator-}"
           version="${version%.tar.gz}"
           echo "archive=$archive" >> "$GITHUB_OUTPUT"
           echo "checksum=$archive.sha256" >> "$GITHUB_OUTPUT"
@@ -395,12 +395,12 @@ jobs:
           tar --list --gzip --file "$archive" \
             | while IFS= read -r entry; do
                 case "$entry" in
-                  kosit_validator|kosit_validator/*) ;;
+                  inv_validator|inv_validator/*) ;;
                   *) echo "Unexpected archive entry: $entry" >&2; exit 1 ;;
                 esac
               done
           tar --list --gzip --file "$archive" \
-            | grep --fixed-strings --line-regexp 'kosit_validator/appinfo/info.xml'
+            | grep --fixed-strings --line-regexp 'inv_validator/appinfo/info.xml'
           if tar --list --gzip --file "$archive" \
             | grep --extended-regexp '(^|/)(\.git|\.github|composer\.(json|lock)|node_modules|package(-lock)?\.json|tests|vendor)(/|$)'; then
             echo 'Development files found in release archive' >&2
@@ -417,13 +417,13 @@ jobs:
             --directory "$NEXTCLOUD_PACKAGE_ROOT/apps"
           cd "$NEXTCLOUD_PACKAGE_ROOT"
           if [[ "$APP_REQUIRE_SIGNING" == 1 ]]; then
-            test -s apps/kosit_validator/appinfo/signature.json
-            php occ integrity:check-app kosit_validator
+            test -s apps/inv_validator/appinfo/signature.json
+            php occ integrity:check-app inv_validator
           fi
-          php occ app:enable kosit_validator
+          php occ app:enable inv_validator
           php occ app:list --enabled \
             | grep --fixed-strings --line-regexp \
-              '  - kosit_validator: ${{ steps.package.outputs.version }}'
+              '  - inv_validator: ${{ steps.package.outputs.version }}'
       - name: Run installed-package smoke tests
         env:
           EXPECTED_APP_VERSION: ${{ steps.package.outputs.version }}
@@ -468,13 +468,13 @@ jobs:
         working-directory: release-assets
         env:
           APP_VERSION: ${{ needs.release-package.outputs.version }}
-        run: sha256sum --check --strict "kosit_validator-$APP_VERSION.tar.gz.sha256"
+        run: sha256sum --check --strict "inv_validator-$APP_VERSION.tar.gz.sha256"
       - name: Verify downloaded archive signature
         working-directory: release-assets
         env:
           APP_VERSION: ${{ needs.release-package.outputs.version }}
         run: |
-          archive="kosit_validator-$APP_VERSION.tar.gz"
+          archive="inv_validator-$APP_VERSION.tar.gz"
           openssl x509 -in "$archive.crt" -pubkey -noout > "$RUNNER_TEMP/release-public.pem"
           openssl base64 -d -A -in "$archive.sig.b64" -out "$RUNNER_TEMP/release-signature"
           cmp "$archive.sig" "$RUNNER_TEMP/release-signature"
@@ -499,14 +499,14 @@ jobs:
               if (error.status !== 404) throw error;
               ({ data: release } = await github.rest.repos.createRelease({
                 ...repo, tag_name: tag, name: tag, draft: true,
-                body: 'Signiertes Produktionspaket im USTAR-Format mit SHA-256-Prüfsummen, öffentlichem Zertifikat und SHA-512-Archivsignatur (binär und Base64). Alle Anhänge herunterladen und mit `sha256sum --check kosit_validator-' + version + '.tar.gz.sha256` prüfen.'
+                body: 'Signiertes Produktionspaket im USTAR-Format mit SHA-256-Prüfsummen, öffentlichem Zertifikat und SHA-512-Archivsignatur (binär und Base64). Alle Anhänge herunterladen und mit `sha256sum --check inv_validator-' + version + '.tar.gz.sha256` prüfen.'
               }));
             }
             const assets = await github.paginate(github.rest.repos.listReleaseAssets, {
               ...repo, release_id: release.id
             });
             for (const suffix of ['', '.sha256', '.sig', '.sig.b64', '.crt']) {
-              const name = `kosit_validator-${version}.tar.gz${suffix}`;
+              const name = `inv_validator-${version}.tar.gz${suffix}`;
               const data = fs.readFileSync(`release-assets/${name}`);
               const digest = 'sha256:' + crypto.createHash('sha256').update(data).digest('hex');
               const existing = assets.find(asset => asset.name === name);

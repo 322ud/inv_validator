@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Build;
+namespace OCA\INValidator\Tests\Build;
 
 use PHPUnit\Framework\TestCase;
 

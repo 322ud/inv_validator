@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Service;
+namespace OCA\INValidator\Tests\Unit\Service;
 
-use OCA\KoSITValidator\Service\SystemCheckService;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Service\SystemCheckService;
+use OCA\INValidator\Service\ValidatorConfigService;
 use PHPUnit\Framework\TestCase;
 
 final class SystemCheckServiceTest extends TestCase
@@ -44,7 +44,7 @@ final class SystemCheckServiceTest extends TestCase
             self::assertNull($checks['configuration']['action']);
             self::assertSame('updates', $checks['configuration']['help']);
             self::assertFalse($checks['python']['ok']);
-            self::assertSame([], glob($root . '/.pruefexrechnung-check-*'));
+            self::assertSame([], glob($root . '/.inv-validator-check-*'));
 
             file_put_contents($java, "#!/bin/sh\necho 'openjdk version \"1.8.0\"' >&2\n");
             file_put_contents($root . '/scenarios.xml', '<broken');

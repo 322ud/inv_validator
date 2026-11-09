@@ -32,10 +32,10 @@ const assertNoAccessibilityViolations = async (page, selector) => {
 
 test('validation UI meets WCAG rules and supports keyboard file selection', async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto('/index.php/apps/kosit_validator/');
-    await expect(page.locator('#kosit-validator')).toBeVisible();
+    await page.goto('/index.php/apps/inv_validator/');
+    await expect(page.locator('#inv-validator')).toBeVisible();
 
-    await assertNoAccessibilityViolations(page, '#kosit-validator');
+    await assertNoAccessibilityViolations(page, '#inv-validator');
 
     const selectButton = page.locator('#kosit-select-file-button');
     await selectButton.focus();
@@ -50,7 +50,7 @@ test('validation UI meets WCAG rules and supports keyboard file selection', asyn
 
 test('admin UI meets WCAG rules', async ({ page }) => {
     await loginAsAdmin(page);
-    await page.goto('/index.php/settings/admin/kosit_validator');
+    await page.goto('/index.php/settings/admin/inv_validator');
     await expect(page.locator('#kosit-admin')).toBeVisible();
 
     await assertNoAccessibilityViolations(page, '#kosit-admin');

@@ -1,6 +1,6 @@
-# prüfeXRechnung
+# INValidator
 
-**Aktuelle Version:** [0.5.5](https://github.com/322ud/kosit_validator/tree/0.5.5)
+**Aktuelle Version:** [1.0.0](https://github.com/322ud/inv_validator/tree/v1.0.0)
 
 Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der [XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung).
 
@@ -38,16 +38,16 @@ Die Anwendung verwendet folgende Standardpfade:
 | XRechnung-Repository | `/opt/kosit/xrechnung/current` |
 | Szenario-Datei | `/opt/kosit/xrechnung/current/scenarios.xml` (automatisch abgeleitet) |
 
-Die Admin-Seite unter **Administrationseinstellungen → prüfeXRechnung** zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht. Dasselbe gilt für das optionale Python. Die Admin-Seite prüft mit dem konfigurierten Interpreter, ob PyMuPDF importiert werden kann. Nur dann wird PDF als Eingabe angeboten.
+Die Admin-Seite unter **Administrationseinstellungen → INValidator** zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht. Dasselbe gilt für das optionale Python. Die Admin-Seite prüft mit dem konfigurierten Interpreter, ob PyMuPDF importiert werden kann. Nur dann wird PDF als Eingabe angeboten.
 
 Die Pfade für Java und das optionale Python können direkt auf der Admin-Seite bearbeitet und gespeichert werden. Validator-JAR, XRechnung-Repository und temporäres Verzeichnis werden dort nur angezeigt und über die folgenden Optionen in der Nextcloud-`config.php` konfiguriert. Die Szenariodatei ist immer `scenarios.xml` innerhalb des konfigurierten XRechnung-Repositorys:
 
 ```php
-'kosit_validator_java_binary' => '/usr/bin/java',
-'kosit_validator_python_binary' => '/opt/kosit/pymupdf-venv/bin/python',
-'kosit_validator_jar' => '/opt/kosit/validator-standalone.jar',
-'kosit_validator_repository' => '/opt/kosit/xrechnung/current',
-'kosit_validator_temp_directory' => '/tmp/nextcloud-kosit-validator',
+'inv_validator_java_binary' => '/usr/bin/java',
+'inv_validator_python_binary' => '/opt/kosit/pymupdf-venv/bin/python',
+'inv_validator_jar' => '/opt/kosit/validator-standalone.jar',
+'inv_validator_repository' => '/opt/kosit/xrechnung/current',
+'inv_validator_temp_directory' => '/tmp/nextcloud-inv-validator',
 ```
 
 Ohne explizite Konfiguration verwendet die App für den Validator ausschließlich den versionsneutralen Pfad `/opt/kosit/validator-standalone.jar`. Dieser Pfad ist ein von der App verwalteter symbolischer Link auf die aktive Originaldatei nach dem kontrollierten Namensschema `validator-<Version>-standalone.jar`. Link und Ziel müssen innerhalb von `/opt/kosit` liegen.
@@ -124,7 +124,7 @@ Anschließend wird `/opt/kosit/pymupdf-venv/bin/python` als Python-Pfad in den A
 
 Nach einer Installation oder Aktualisierung externer Komponenten speichert die App pro Komponente einen persistenten Nachweis in der Nextcloud-App-Konfiguration (`external_component_validator` bzw. `external_component_configuration`). Er enthält Version, Systemzeit in UTC, Installationspfade und Prüfsummen der von der App angelegten Dateien. Die Daten liegen in der Nextcloud-Datenbank, außerhalb des App-Pakets. Vor dem Bereitstellen neuer Dateien wird der Nachweis als vorbereitet gespeichert und nach der Aktivierung als installiert markiert. Frühere, vor Einführung dieser Funktion angelegte Dateien werden nicht nachträglich als Eigentum der App eingestuft.
 
-Vor dem Entfernen der App unter **Administrationseinstellungen → prüfeXRechnung → Deinstallation vorbereiten** für jede aufgeführte Komponente entscheiden: Nur das Einschalten des jeweiligen Schalters und das Absenden des zugehörigen Formulars starten deren Deinstallation. Die Schalter sind standardmäßig ausgeschaltet. Die andere Komponente bleibt unverändert. Der betreffende Schalter für automatische Updates wird ausgeschaltet. Die App entfernt nur nachgewiesene unveränderte Dateien und verwaltete Links; fremde, nachträglich ergänzte oder veränderte Dateien werden nicht gelöscht. Bereits vorhandene, bei Installation nur wiederverwendete Release-Dateien werden ebenfalls nicht entfernt. Der Nachweis bleibt mit Deinstallationszeitpunkt bestehen.
+Vor dem Entfernen der App unter **Administrationseinstellungen → INValidator → Deinstallation vorbereiten** für jede aufgeführte Komponente entscheiden: Nur das Einschalten des jeweiligen Schalters und das Absenden des zugehörigen Formulars starten deren Deinstallation. Die Schalter sind standardmäßig ausgeschaltet. Die andere Komponente bleibt unverändert. Der betreffende Schalter für automatische Updates wird ausgeschaltet. Die App entfernt nur nachgewiesene unveränderte Dateien und verwaltete Links; fremde, nachträglich ergänzte oder veränderte Dateien werden nicht gelöscht. Bereits vorhandene, bei Installation nur wiederverwendete Release-Dateien werden ebenfalls nicht entfernt. Der Nachweis bleibt mit Deinstallationszeitpunkt bestehen.
 
 Nextcloud bietet beim normalen Entfernen einer App keinen komponentenweisen Rückfragedialog. Der sogenannte Uninstall-Repair-Step wird außerdem bereits beim Deaktivieren ausgeführt. Deshalb erfolgt dort keine automatische externe Bereinigung: Ohne vorherige Bestätigung auf der Admin-Seite bleiben die Komponenten erhalten. Die App erst nach der gewünschten Bereinigung deaktivieren und entfernen. Java, Python und PyMuPDF installiert diese App nicht; sie werden auch nicht deinstalliert.
 
@@ -160,7 +160,7 @@ Erst danach wird der Validator gestartet.
 ### Validierung
 
 ```http
-POST /apps/kosit_validator/validate
+POST /apps/inv_validator/validate
 ```
 
 ### Request
@@ -315,7 +315,7 @@ bash scripts/build-release.sh
 
 Das Archiv unter `dist/` verwendet das USTAR-Format ohne PAX-Metadaten und enthält ausschließlich die zur Laufzeit benötigten App-Dateien. Nicht in USTAR darstellbare Pfade oder Metadaten führen zum Abbruch der Paketerstellung. CI prüft das Archivformat, installiert genau dieses Archiv zusätzlich in einer frischen Nextcloud-34-Instanz, aktiviert die App und führt Framework-Smoke-Tests aus.
 
-Bei einem Push eines Versions-Tags wie `v0.5.5` veröffentlicht CI nach allen erfolgreichen Prüfungen ein GitHub-Release mit signiertem `kosit_validator-VERSION.tar.gz`, Archivsignaturen, öffentlichem Zertifikat und SHA-256-Prüfsummen als Anhängen. Tag und App-Version müssen übereinstimmen. Für ein bereits vorhandenes Tag lässt sich der Workflow **Tests** manuell mit `release_tag` starten; alternativ löst ein Push eines Branches `release/vVERSION` die Veröffentlichung des zugehörigen unveränderten Tags aus. Bestehende Anhänge werden nur bei identischem SHA-256-Digest akzeptiert.
+Bei einem Push eines Versions-Tags wie `v1.0.0` veröffentlicht CI nach allen erfolgreichen Prüfungen ein GitHub-Release mit signiertem `inv_validator-VERSION.tar.gz`, Archivsignaturen, öffentlichem Zertifikat und SHA-256-Prüfsummen als Anhängen. Tag und App-Version müssen übereinstimmen. Für ein bereits vorhandenes Tag lässt sich der Workflow **Tests** manuell mit `release_tag` starten; alternativ löst ein Push eines Branches `release/vVERSION` die Veröffentlichung des zugehörigen unveränderten Tags aus. Bestehende Anhänge werden nur bei identischem SHA-256-Digest akzeptiert.
 
 ### Signierte Releases
 
@@ -324,7 +324,7 @@ Für Veröffentlichungen benötigt GitHub Actions zwei Repository-Secrets mit PE
 - `APP_SIGNING_PRIVATE_KEY`: unverschlüsselter RSA-Schlüssel mit mindestens 4096 Bit.
 - `APP_SIGNING_CERTIFICATE`: das zugehörige von Nextcloud ausgestellte öffentliche Zertifikat.
 
-Das Zertifikat muss zur App-ID in `appinfo/info.xml` passen (derzeit `kosit_validator`). Eine spätere Änderung der App-ID erfordert ein dazu passendes Zertifikat. Den Schlüssel außerhalb des Repositorys sicher verwahren; nur den Zertifikatsantrag bei [Nextcloud einreichen](https://github.com/nextcloud/app-certificate-requests). Schlüssel und Zertifikat werden beim Release nur vorübergehend im Runner-Verzeichnis mit eingeschränkten Rechten abgelegt und anschließend auch bei Fehlern entfernt. Pull Requests und gewöhnliche Branch-Builds erhalten diese Schlüsseldateien nicht.
+Das Zertifikat muss zur App-ID in `appinfo/info.xml` passen (derzeit `inv_validator`). Eine spätere Änderung der App-ID erfordert ein dazu passendes Zertifikat. Den Schlüssel außerhalb des Repositorys sicher verwahren; nur den Zertifikatsantrag bei [Nextcloud einreichen](https://github.com/nextcloud/app-certificate-requests). Schlüssel und Zertifikat werden beim Release nur vorübergehend im Runner-Verzeichnis mit eingeschränkten Rechten abgelegt und anschließend auch bei Fehlern entfernt. Pull Requests und gewöhnliche Branch-Builds erhalten diese Schlüsseldateien nicht.
 
 Ein Release bricht bei fehlenden Secrets, falscher App-ID, abgelaufenem Zertifikat, unpassendem Schlüssel oder fehlgeschlagener Integritätsprüfung ab. Die CI initialisiert eine isolierte Nextcloud, signiert das fertige App-Verzeichnis mit `occ integrity:sign-app` und prüft es mit `occ integrity:check-app`, einschließlich Nextcloud-Zertifikatsvertrauen. Erst danach wird das Archiv erzeugt und mit OpenSSL/SHA-512 signiert. Geprüft und veröffentlicht wird genau dieses Paket. Der zusätzliche Build-Test verwendet ausschließlich temporäre Testschlüssel und einen simulierten `occ`-Aufruf; die eigentliche Nextcloud-Vertrauensprüfung erfolgt beim signierten Release.
 
@@ -332,8 +332,8 @@ Für einen lokalen signierten Build eine eingerichtete Nextcloud mit verfügbare
 
 ```bash
 APP_REQUIRE_SIGNING=1 \
-APP_SIGNING_KEY_FILE=/sicherer/pfad/kosit_validator.key \
-APP_SIGNING_CERTIFICATE_FILE=/sicherer/pfad/kosit_validator.crt \
+APP_SIGNING_KEY_FILE=/sicherer/pfad/inv_validator.key \
+APP_SIGNING_CERTIFICATE_FILE=/sicherer/pfad/inv_validator.crt \
 NEXTCLOUD_OCC=/pfad/zu/nextcloud/occ \
 bash scripts/build-release.sh
 ```
@@ -342,19 +342,19 @@ Bereits einer der beiden gesetzten Schlüssel-/Zertifikatspfade aktiviert die Si
 
 Signierte Releases enthalten:
 
-- `kosit_validator-VERSION.tar.gz`, einschließlich `appinfo/signature.json`.
-- `kosit_validator-VERSION.tar.gz.sig`: binäre SHA-512-Archivsignatur.
-- `kosit_validator-VERSION.tar.gz.sig.b64`: dieselbe Signatur in Base64 für die Store-Einreichung.
-- `kosit_validator-VERSION.tar.gz.crt`: öffentliches Zertifikat.
-- `kosit_validator-VERSION.tar.gz.sha256`: Prüfsummen für das Archiv und alle drei Begleitdateien.
+- `inv_validator-VERSION.tar.gz`, einschließlich `appinfo/signature.json`.
+- `inv_validator-VERSION.tar.gz.sig`: binäre SHA-512-Archivsignatur.
+- `inv_validator-VERSION.tar.gz.sig.b64`: dieselbe Signatur in Base64 für die Store-Einreichung.
+- `inv_validator-VERSION.tar.gz.crt`: öffentliches Zertifikat.
+- `inv_validator-VERSION.tar.gz.sha256`: Prüfsummen für das Archiv und alle drei Begleitdateien.
 
 Alle Anhänge herunterladen und zuerst die Prüfsummen prüfen. Die Archivsignatur kann zusätzlich mit dem Zertifikat geprüft werden:
 
 ```bash
-sha256sum --check kosit_validator-VERSION.tar.gz.sha256
-openssl x509 -in kosit_validator-VERSION.tar.gz.crt -pubkey -noout > public.pem
+sha256sum --check inv_validator-VERSION.tar.gz.sha256
+openssl x509 -in inv_validator-VERSION.tar.gz.crt -pubkey -noout > public.pem
 openssl dgst -sha512 -verify public.pem \
-  -signature kosit_validator-VERSION.tar.gz.sig kosit_validator-VERSION.tar.gz
+  -signature inv_validator-VERSION.tar.gz.sig inv_validator-VERSION.tar.gz
 ```
 
 Diese OpenSSL-Prüfung bestätigt die Signatur zum angegebenen Zertifikat; Nextcloud prüft zusätzlich dessen Vertrauenskette. Die Einrichtung veröffentlicht weiterhin auf GitHub. Eine automatische Registrierung oder Einreichung im Nextcloud App Store ist nicht enthalten; dafür wird zusätzlich ein Store-Konto bzw. API-Token benötigt. Details: [Nextcloud-Signierung](https://docs.nextcloud.com/server/stable/developer_manual/app_publishing_maintenance/code_signing.html) und [App-Store-Veröffentlichung](https://github.com/nextcloud/appstore/blob/master/docs/developer.rst).

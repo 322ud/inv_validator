@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Controller;
+namespace OCA\INValidator\Tests\Unit\Controller;
 
-use OCA\KoSITValidator\Controller\ValidationController;
-use OCA\KoSITValidator\Exception\DocumentInputException;
-use OCA\KoSITValidator\Exception\ValidationException;
-use OCA\KoSITValidator\Service\KoSITValidatorService;
-use OCA\KoSITValidator\Service\PdfXmlExtractor;
-use OCA\KoSITValidator\Service\ValidationResult;
+use OCA\INValidator\Controller\ValidationController;
+use OCA\INValidator\Exception\DocumentInputException;
+use OCA\INValidator\Exception\ValidationException;
+use OCA\INValidator\Service\KoSITValidatorService;
+use OCA\INValidator\Service\PdfXmlExtractor;
+use OCA\INValidator\Service\ValidationResult;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -149,7 +149,7 @@ final class ValidationControllerTest extends TestCase {
         );
 
         return new ValidationController(
-            'kosit_validator',
+            'inv_validator',
             $request,
             $service ?? $this->createStub(KoSITValidatorService::class),
             $this->createStub(PdfXmlExtractor::class),
@@ -167,7 +167,7 @@ final class ValidationControllerTest extends TestCase {
         $request->method('getUploadedFile')->willReturn($file);
 
         return new ValidationController(
-            'kosit_validator',
+            'inv_validator',
             $request,
             $service ?? $this->createStub(KoSITValidatorService::class),
             $extractor ?? $this->createStub(PdfXmlExtractor::class),

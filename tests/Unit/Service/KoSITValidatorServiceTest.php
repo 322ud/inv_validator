@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Service;
+namespace OCA\INValidator\Tests\Unit\Service;
 
-use OCA\KoSITValidator\Exception\ValidationException;
-use OCA\KoSITValidator\Service\KoSITValidatorService;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Exception\ValidationException;
+use OCA\INValidator\Service\KoSITValidatorService;
+use OCA\INValidator\Service\ValidatorConfigService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

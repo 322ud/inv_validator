@@ -2,9 +2,9 @@
 
 /** @var array<string, mixed> $_ */
 
-script('kosit_validator', 'readme');
-script('kosit_validator', 'admin');
-style('kosit_validator', 'admin');
+script('inv_validator', 'readme');
+script('inv_validator', 'admin');
+style('inv_validator', 'admin');
 
 $status = $_['status'];
 $writeCheckIds = ['temp', 'validator-write', 'configuration-write'];
@@ -21,7 +21,7 @@ $helpHeadings = [
 ];
 ?>
 <div id="kosit-admin">
-    <h2>prüfeXRechnung</h2>
+    <h2>INValidator</h2>
     <section aria-labelledby="kosit-settings-title">
         <h3 id="kosit-settings-title">Automatische Updates beim Starten der App</h3>
         <form id="kosit-settings-form">

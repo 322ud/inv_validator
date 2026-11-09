@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Support;
+namespace OCA\INValidator\Tests\Support;
 
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IClient;

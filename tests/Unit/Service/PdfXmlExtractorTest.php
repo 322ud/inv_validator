@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Service;
+namespace OCA\INValidator\Tests\Unit\Service;
 
-use OCA\KoSITValidator\Exception\DocumentInputException;
-use OCA\KoSITValidator\Service\PdfSupportService;
-use OCA\KoSITValidator\Service\PdfXmlExtractor;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Exception\DocumentInputException;
+use OCA\INValidator\Service\PdfSupportService;
+use OCA\INValidator\Service\PdfXmlExtractor;
+use OCA\INValidator\Service\ValidatorConfigService;
 use PHPUnit\Framework\TestCase;
 
 final class PdfXmlExtractorTest extends TestCase

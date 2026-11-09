@@ -10,7 +10,7 @@ const markup = `
 const loadReadme = async () => {
     vi.resetModules();
     await import('../../js/readme.js');
-    return window.OCA.KoSITValidator.initializeReadme;
+    return window.OCA.INValidator.initializeReadme;
 };
 
 describe('README rich text integration', () => {

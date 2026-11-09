@@ -17,7 +17,7 @@ const loginAsAdmin = async (page) => {
 const savePaths = async (page) => {
     const responsePromise = page.waitForResponse((response) => (
         response.request().method() === 'POST'
-        && response.url().endsWith('/apps/kosit_validator/admin/paths')
+        && response.url().endsWith('/apps/inv_validator/admin/paths')
     ));
 
     await page.locator('#kosit-save-paths').click();
@@ -33,10 +33,10 @@ test('configures interpreter paths and keeps infrastructure paths read-only', as
     page.on('pageerror', (error) => pageErrors.push(error.message));
 
     await loginAsAdmin(page);
-    await page.goto('/index.php/settings/admin/kosit_validator');
+    await page.goto('/index.php/settings/admin/inv_validator');
     const admin = page.locator('#kosit-admin');
     await expect(admin).toBeVisible();
-    await expect(admin.getByRole('heading', { name: 'prüfeXRechnung', level: 2 })).toBeVisible();
+    await expect(admin.getByRole('heading', { name: 'INValidator', level: 2 })).toBeVisible();
 
     await expect(page.locator('input[name="validatorJar"]')).toHaveCount(0);
     await expect(page.locator('input[name="repositoryPath"]')).toHaveCount(0);

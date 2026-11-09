@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Service;
+namespace OCA\INValidator\Service;
 
-use OCA\KoSITValidator\Exception\ValidationException;
+use OCA\INValidator\Exception\ValidationException;
 
 final class ValidatorProcessRunner
 {

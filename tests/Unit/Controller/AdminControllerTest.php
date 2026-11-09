@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\KoSITValidator\Tests\Unit\Controller;
+namespace OCA\INValidator\Tests\Unit\Controller;
 
-use OCA\KoSITValidator\Controller\AdminController;
-use OCA\KoSITValidator\Exception\AdministrationException;
-use OCA\KoSITValidator\Service\ValidatorAdminService;
-use OCA\KoSITValidator\Service\ValidatorConfigService;
+use OCA\INValidator\Controller\AdminController;
+use OCA\INValidator\Exception\AdministrationException;
+use OCA\INValidator\Service\ValidatorAdminService;
+use OCA\INValidator\Service\ValidatorConfigService;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -138,7 +138,7 @@ final class AdminControllerTest extends TestCase {
             static fn (string $key, mixed $default = null): mixed => $parameters[$key] ?? $default
         );
         return new AdminController(
-            'kosit_validator',
+            'inv_validator',
             $request,
             $adminService ?? $this->createStub(ValidatorAdminService::class),
             $configService ?? $this->createStub(ValidatorConfigService::class),

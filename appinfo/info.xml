@@ -2,8 +2,8 @@
 
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-    <id>kosit_validator</id>
-    <name>prüfeXRechnung</name>
+    <id>inv_validator</id>
+    <name>INValidator</name>
     <summary>Validate XRechnung invoices locally using the KoSIT Validator</summary>
     <summary lang="de">XRechnung-Rechnungen lokal mit dem KoSIT-Validator prüfen</summary>
     <description>Validate XML invoices against the XRechnung specification using the separately installed KoSIT Validator and view its validation report directly in Nextcloud.
@@ -20,20 +20,20 @@ Die Prüfung erfolgt lokal auf dem Server mit Java und den konfigurierten XRechn
 Die Servereinrichtung erfordert Java ab Version 11, die Ausführung externer Prozesse aus PHP und lesbare Validator- und Szenariodateien. Die Administration kann den KoSIT-Validator und die XRechnung-Konfiguration über die App aus den offiziellen GitHub-Releases installieren. Dafür sind beschreibbare Installationsverzeichnisse erforderlich; für Installation und Updates der Konfiguration zusätzlich PHP ZipArchive. Java und optional Python/PyMuPDF müssen separat bereitgestellt werden.
 
 Die Admin-Seite bietet Systemprüfungen, Komponenten-Versionen, manuelle Installation und Updates sowie getrennte Schalter für automatische Updates der herunterladbaren Komponenten. Updates beim Öffnen der App sind standardmäßig ausgeschaltet.</description>
-    <version>0.5.5</version>
+    <version>1.0.0</version>
     <licence>AGPL-3.0-or-later</licence>
     <author>Frank Busse</author>
-    <namespace>KoSITValidator</namespace>
+    <namespace>INValidator</namespace>
     <documentation>
-      <user>https://github.com/322ud/kosit_validator#verwendung</user>
-      <admin>https://github.com/322ud/kosit_validator#installation</admin>
-      <developer>https://github.com/322ud/kosit_validator#entwicklung-und-tests</developer>
+      <user>https://github.com/322ud/inv_validator#verwendung</user>
+      <admin>https://github.com/322ud/inv_validator#installation</admin>
+      <developer>https://github.com/322ud/inv_validator#entwicklung-und-tests</developer>
     </documentation>
     <category>tools</category>
     <category>office</category>
-    <website>https://github.com/322ud/kosit_validator</website>
-    <bugs>https://github.com/322ud/kosit_validator/issues</bugs>
-    <repository type="git">https://github.com/322ud/kosit_validator.git</repository>
+    <website>https://github.com/322ud/inv_validator</website>
+    <bugs>https://github.com/322ud/inv_validator/issues</bugs>
+    <repository type="git">https://github.com/322ud/inv_validator.git</repository>
 
     <dependencies>
       <php min-version="8.2" />
@@ -41,7 +41,7 @@ Die Admin-Seite bietet Systemprüfungen, Komponenten-Versionen, manuelle Install
     </dependencies>
 
     <settings>
-      <admin>OCA\KoSITValidator\Settings\Admin</admin>
-      <admin-section>OCA\KoSITValidator\Settings\AdminSection</admin-section>
+      <admin>OCA\INValidator\Settings\Admin</admin>
+      <admin-section>OCA\INValidator\Settings\AdminSection</admin-section>
     </settings>
 </info>
