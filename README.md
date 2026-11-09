@@ -1,6 +1,6 @@
 # prüfeXRechnung
 
-**Aktuelle Version:** [0.5.4](https://github.com/322ud/kosit_validator/tree/0.5.4)
+**Aktuelle Version:** [0.5.5](https://github.com/322ud/kosit_validator/tree/0.5.5)
 
 Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der [XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung).
 
@@ -80,7 +80,7 @@ Die Systemprüfung führt kurze Prozess- und Schreibtests mit den Rechten des We
 
 Die Installation erfolgt in der Admin-Seite unter **System** über **Installieren** in der jeweiligen Komponenten-Zeile. Validator und XRechnung-Konfiguration werden getrennt installiert. Die App ermittelt die neuesten offiziellen GitHub-Releases, lädt das zugehörige `validator-<version>-standalone.jar` und das vollständige XRechnung-Konfigurationspaket. Beide Downloads werden vor ihrer Aktivierung geprüft. Die Validator-JAR wird unter ihrem Originalnamen gespeichert und anschließend durch einen atomaren Austausch des neutralen Symlinks aktiviert; die zuvor aktive Originaldatei bleibt für ein Rollback erhalten. Das Konfigurationspaket wird geprüft, in einem versionierten Verzeichnis bereitgestellt und anschließend über den konfigurierten Repositorypfad aktiviert. PHP benötigt dafür die Erweiterung `ZipArchive`. Der Webserver-Benutzer muss für beide Zielverzeichnisse Schreibrechte besitzen.
 
-Unter **Einstellungen** kann für KoSIT-Validator und XRechnung-Konfiguration jeweils **Update beim App-Start** aktiviert werden. Beide Schalter sind standardmäßig aus. Nur für aktivierte Komponenten wird beim Öffnen der Prüfseite nach Updates gesucht und eine neuere Version automatisch installiert. Die Erstinstallation bleibt Aufgabe der Administration. Manuell verwaltete Komponenten werden nicht automatisch ersetzt. Bei einem Updatefehler bleibt die Prüfseite verfügbar; der Fehler wird im Nextcloud-Protokoll festgehalten. Manuelle Updates sind unter **System** über **Update auf VERSION** möglich; der Button erscheint nur bei einer erkannten neueren Version.
+Unter **Automatische Updates beim Starten der App** lassen sich **KoSIT-Validator** und **XRechnung-Konfiguration** unabhängig per Schiebeschalter aktivieren. Änderungen werden sofort gespeichert; ein zusätzlicher Speicherbutton entfällt. Beide Schalter sind standardmäßig aus. Nur für aktivierte Komponenten wird beim Öffnen der Prüfseite nach Updates gesucht und eine neuere Version automatisch installiert. Die Erstinstallation bleibt Aufgabe der Administration. Manuell verwaltete Komponenten werden nicht automatisch ersetzt. Bei einem Updatefehler bleibt die Prüfseite verfügbar; der Fehler wird im Nextcloud-Protokoll festgehalten. Manuelle Updates sind unter **System** über **Update auf VERSION** möglich; der Button erscheint nur bei einer erkannten neueren Version.
 
 Ein bereits vorhandenes echtes Verzeichnis am Repositorypfad wird aus Sicherheitsgründen nicht überschrieben. Für eine von der App verwaltete Installation muss der Pfad fehlen oder ein zuvor von der App angelegter symbolischer Link sein.
 
@@ -315,7 +315,7 @@ bash scripts/build-release.sh
 
 Das Archiv unter `dist/` verwendet das USTAR-Format ohne PAX-Metadaten und enthält ausschließlich die zur Laufzeit benötigten App-Dateien. Nicht in USTAR darstellbare Pfade oder Metadaten führen zum Abbruch der Paketerstellung. CI prüft das Archivformat, installiert genau dieses Archiv zusätzlich in einer frischen Nextcloud-34-Instanz, aktiviert die App und führt Framework-Smoke-Tests aus.
 
-Bei einem Push eines Versions-Tags wie `v0.5.4` veröffentlicht CI nach allen erfolgreichen Prüfungen ein GitHub-Release mit signiertem `kosit_validator-VERSION.tar.gz`, Archivsignaturen, öffentlichem Zertifikat und SHA-256-Prüfsummen als Anhängen. Tag und App-Version müssen übereinstimmen. Für ein bereits vorhandenes Tag lässt sich der Workflow **Tests** manuell mit `release_tag` starten; alternativ löst ein Push eines Branches `release/vVERSION` die Veröffentlichung des zugehörigen unveränderten Tags aus. Bestehende Anhänge werden nur bei identischem SHA-256-Digest akzeptiert.
+Bei einem Push eines Versions-Tags wie `v0.5.5` veröffentlicht CI nach allen erfolgreichen Prüfungen ein GitHub-Release mit signiertem `kosit_validator-VERSION.tar.gz`, Archivsignaturen, öffentlichem Zertifikat und SHA-256-Prüfsummen als Anhängen. Tag und App-Version müssen übereinstimmen. Für ein bereits vorhandenes Tag lässt sich der Workflow **Tests** manuell mit `release_tag` starten; alternativ löst ein Push eines Branches `release/vVERSION` die Veröffentlichung des zugehörigen unveränderten Tags aus. Bestehende Anhänge werden nur bei identischem SHA-256-Digest akzeptiert.
 
 ### Signierte Releases
 

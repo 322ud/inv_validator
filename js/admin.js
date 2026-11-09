@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const message = root.querySelector('#kosit-admin-message');
     const body = root.querySelector('#kosit-system-body');
+    const writeChecks = root.querySelector('#kosit-write-checks');
+    const writeCheckIds = ['temp', 'validator-write', 'configuration-write'];
     const viewer = root.querySelector('[data-kosit-readme]');
     window.OCA?.KoSITValidator?.initializeReadme(viewer);
     let busy = false;
@@ -77,6 +79,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const createHelp = (check) => {
+        const help = document.createElement('a');
+        help.href = `#kosit-help-${check.help}`;
+        help.dataset.readmeHelp = '';
+        help.className = 'kosit-help-link';
+        help.setAttribute('aria-label', 'Info in der README anzeigen');
+        help.append(document.createTextNode('Info '));
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 16 16');
+        svg.setAttribute('width', '16');
+        svg.setAttribute('height', '16');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('fill', 'currentColor');
+        path.setAttribute('d', 'M6.6 4H4a4 4 0 0 0 0 8h2.6v-2H4a2 2 0 0 1 0-4h2.6V4Zm2.8 0v2H12a2 2 0 1 1 0 4H9.4v2H12a4 4 0 1 0 0-8H9.4ZM5 7h6v2H5V7Z');
+        svg.append(path);
+        help.append(svg);
+        return help;
+    };
+
+    const createState = (check) => {
+        const state = document.createElement('span');
+        state.className = `kosit-state kosit-state--${check.ok ? 'available' : 'missing'}`;
+        state.setAttribute('role', 'img');
+        state.setAttribute('aria-label', check.ok ? 'Bereit' : 'Nicht bereit');
+        state.textContent = check.ok ? '✓' : '✕';
+        return state;
+    };
+
     const updateView = (status) => {
         updateManagedComponents(status.managedComponents || []);
         if (status.autoUpdates) {
@@ -84,7 +116,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 root.querySelector(`#kosit-settings-form [name="${key}"]`).checked = status.autoUpdates[key];
             }
         }
-        body.replaceChildren(...status.checks.map((check) => {
+        writeChecks.replaceChildren(...status.checks.filter(check => writeCheckIds.includes(check.id)).map(check => {
+            const item = document.createElement('li');
+            item.dataset.check = check.id;
+            const content = document.createElement('div');
+            const label = document.createElement('strong');
+            label.textContent = check.label;
+            const detail = document.createElement('span');
+            detail.className = 'kosit-check-detail';
+            detail.textContent = `(${check.detail})`;
+            content.append(label, document.createTextNode(' '), detail);
+            if (!check.ok) {
+                content.append(document.createTextNode(' '), createHelp(check));
+            }
+            item.append(createState(check), content);
+            return item;
+        }));
+        body.replaceChildren(...status.checks.filter(check => !writeCheckIds.includes(check.id)).map((check) => {
             const row = document.createElement('tr');
             row.dataset.check = check.id;
             const label = document.createElement('th');
@@ -93,13 +141,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const version = document.createElement('td');
             version.textContent = check.version || '—';
             const result = document.createElement('td');
-            const state = document.createElement('strong');
-            state.className = `kosit-state--${check.ok ? 'available' : 'missing'}`;
-            state.textContent = check.ok ? 'OK' : 'Nicht bereit';
+            const stateCell = document.createElement('td');
+            stateCell.className = 'kosit-result-column';
+            stateCell.append(createState(check));
             const detail = document.createElement('div');
             detail.className = 'kosit-check-detail';
             detail.textContent = check.detail;
-            result.append(state, detail);
+            result.append(detail);
             if (check.updateError) {
                 const error = document.createElement('div');
                 error.textContent = `Update-Prüfung: ${check.updateError}`;
@@ -114,20 +162,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 action.append(button);
             }
             if (!check.ok || check.updateError) {
-                const help = document.createElement('a');
-                help.href = `#kosit-help-${check.help}`;
-                help.dataset.readmeHelp = '';
-                help.textContent = 'Lösung in der README';
-                action.append(help);
+                action.append(createHelp(check));
             }
-            row.append(label, version, result, action);
+            row.append(stateCell, label, version, result, action);
             return row;
         }));
     };
 
     const run = async (url, options, progress) => {
         if (busy) {
-            return;
+            return false;
         }
         busy = true;
         root.querySelectorAll('button, input').forEach((element) => { element.disabled = true; });
@@ -138,21 +182,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateView(result.status);
             }
             message.textContent = result.message || 'Systemprüfung abgeschlossen.';
+            return true;
         } catch (error) {
             message.textContent = error.message;
+            return false;
         } finally {
             busy = false;
             root.querySelectorAll('button, input').forEach((element) => { element.disabled = false; });
         }
     };
 
-    root.querySelector('#kosit-settings-form').addEventListener('submit', (event) => {
-        event.preventDefault();
+    const settingsForm = root.querySelector('#kosit-settings-form');
+    settingsForm.addEventListener('submit', event => event.preventDefault());
+    settingsForm.addEventListener('change', async (event) => {
+        const input = event.target;
+        if (!input.matches('input[role="switch"]')) {
+            return;
+        }
+        const previous = !input.checked;
         const data = new FormData();
         for (const key of ['validator', 'configuration']) {
-            data.append(key, event.target.elements[key].checked ? 'yes' : 'no');
+            data.append(key, settingsForm.elements[key].checked ? 'yes' : 'no');
         }
-        run('settings', { method: 'POST', body: data }, 'Einstellungen werden gespeichert …');
+        const saved = await run('settings', { method: 'POST', body: data }, 'Update-Einstellungen werden gespeichert …');
+        if (!saved) {
+            input.checked = previous;
+        }
     });
     root.querySelector('#kosit-paths-form').addEventListener('submit', (event) => {
         event.preventDefault();

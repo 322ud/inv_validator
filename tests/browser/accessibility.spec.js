@@ -37,12 +37,12 @@ test('validation UI meets WCAG rules and supports keyboard file selection', asyn
 
     await assertNoAccessibilityViolations(page, '#kosit-validator');
 
-    const dropZone = page.locator('#kosit-drop-zone');
-    await dropZone.focus();
-    await expect(dropZone).toBeFocused();
+    const selectButton = page.locator('#kosit-select-file-button');
+    await selectButton.focus();
+    await expect(selectButton).toBeFocused();
 
     const fileChooserPromise = page.waitForEvent('filechooser');
-    await dropZone.press('Enter');
+    await selectButton.press('Enter');
     const fileChooser = await fileChooserPromise;
     expect(fileChooser.isMultiple()).toBe(false);
     await fileChooser.setFiles([]);

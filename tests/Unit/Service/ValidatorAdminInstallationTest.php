@@ -372,6 +372,7 @@ XML;
         $status = $service->installLatest();
 
         self::assertSame('2026-01-31', $status['configuration']['installedVersion']);
+        self::assertSame('Validator Configuration XRechnung 3.0.2', $status['configuration']['name']);
         self::assertSame($scenario, file_get_contents($this->repositoryPath . '/scenarios.xml'));
     }
 

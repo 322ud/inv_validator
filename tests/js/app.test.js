@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const appMarkup = `
-    <div id="kosit-validator">
+    <div id="kosit-scroll-container"><div id="kosit-validator">
         <input id="kosit-xml-file" type="file">
         <button id="kosit-select-file-button" type="button">Datei auswählen</button>
-        <div id="kosit-drop-zone"><span></span></div>
-        <small id="kosit-selected-file">Keine Datei ausgewählt</small>
         <div id="kosit-status"></div>
         <a id="kosit-readme-open" href="#kosit-readme-dialog">README</a>
         <div id="kosit-readme-dialog" hidden>
@@ -16,7 +14,7 @@ const appMarkup = `
             <button id="kosit-download-button" disabled></button>
         </div>
         <iframe id="kosit-report-frame" style="display:none"></iframe>
-    </div>
+    </div></div>
 `;
 
 const jsonResponse = (result, ok = true) => ({
@@ -35,12 +33,12 @@ const droppedFile = (name, content, size = content.length) => {
     return file;
 };
 
-const drop = (files) => {
+const drop = (files, target = document.getElementById('kosit-scroll-container')) => {
     const event = new Event('drop', { bubbles: true, cancelable: true });
     Object.defineProperty(event, 'dataTransfer', {
         value: { files, dropEffect: '' },
     });
-    document.getElementById('kosit-drop-zone').dispatchEvent(event);
+    target.dispatchEvent(event);
 };
 
 const loadApp = async () => {
@@ -57,17 +55,70 @@ describe('validation UI', () => {
         document.body.innerHTML = appMarkup;
     });
 
-    test('opens the native file dialog from button and keyboard drop zone', async () => {
+    test('replaces existing favicons with the app SVG and preserves other head links', async () => {
+        const original = document.createElement('link');
+        original.rel = 'shortcut icon';
+        original.href = '/theming/favicon.ico';
+        const touch = document.createElement('link');
+        touch.rel = 'apple-touch-icon';
+        touch.href = '/touch.png';
+        document.head.append(original, touch);
+        document.getElementById('kosit-validator').dataset.faviconUrl = '/apps/kosit_validator/img/app.svg?v=1';
+        try {
+            await loadApp();
+            const icons = document.head.querySelectorAll('link[rel~="icon"]');
+            expect(icons).toHaveLength(1);
+            expect(icons[0].getAttribute('href')).toBe('/apps/kosit_validator/img/app.svg?v=1');
+            expect(icons[0].type).toBe('image/svg+xml');
+            expect(touch.isConnected).toBe(true);
+        } finally {
+            document.head.querySelectorAll('link[rel~="icon"]').forEach(link => link.remove());
+            touch.remove();
+        }
+    });
+
+    test('opens the native file dialog only from the select button', async () => {
         const input = document.getElementById('kosit-xml-file');
         const click = vi.spyOn(input, 'click').mockImplementation(() => {});
         await loadApp();
 
         document.getElementById('kosit-select-file-button').click();
-        document.getElementById('kosit-drop-zone').dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
-        );
+        document.getElementById('kosit-scroll-container').click();
+        document.getElementById('kosit-readme-open').click();
 
-        expect(click).toHaveBeenCalledTimes(2);
+        expect(click).toHaveBeenCalledTimes(1);
+    });
+
+    test('highlights the whole page while dragging across its children', async () => {
+        await loadApp();
+        const zone = document.getElementById('kosit-scroll-container');
+        const button = document.getElementById('kosit-select-file-button');
+        const enter = new Event('dragenter', { bubbles: true, cancelable: true });
+        Object.defineProperty(enter, 'dataTransfer', { value: { dropEffect: '' } });
+        button.dispatchEvent(enter);
+        expect(enter.defaultPrevented).toBe(true);
+        expect(zone.classList.contains('is-dragover')).toBe(true);
+
+        button.dispatchEvent(new MouseEvent('dragleave', { bubbles: true, relatedTarget: zone }));
+        expect(zone.classList.contains('is-dragover')).toBe(true);
+        zone.dispatchEvent(new MouseEvent('dragleave', { bubbles: true }));
+        expect(zone.classList.contains('is-dragover')).toBe(false);
+    });
+
+    test('ignores additional drops while validation is running', async () => {
+        let resolveResponse;
+        const fetch = vi.fn().mockReturnValue(new Promise(resolve => { resolveResponse = resolve; }));
+        vi.stubGlobal('fetch', fetch);
+        await loadApp();
+        const file = droppedFile('invoice.xml', '<Invoice/>');
+        drop([file]);
+        expect(document.getElementById('kosit-select-file-button').disabled).toBe(true);
+        drop([file], document.getElementById('kosit-select-file-button'));
+        expect(fetch).toHaveBeenCalledTimes(1);
+        resolveResponse(jsonResponse({ success: true, valid: true, reportHtml: null }));
+        await vi.waitFor(() => {
+            expect(document.getElementById('kosit-select-file-button').disabled).toBe(false);
+        });
     });
 
     test('opens and closes the README dialog', async () => {
@@ -96,7 +147,6 @@ describe('validation UI', () => {
             .toBe('Bitte genau eine XML-Datei ablegen.');
 
         drop([droppedFile('large.xml', '<xml/>', 5 * 1024 * 1024 + 1)]);
-        expect(document.getElementById('kosit-selected-file').textContent).toBe('large.xml');
         expect(document.getElementById('kosit-status').textContent)
             .toBe('XML-Datei ist zu groß. Maximal erlaubt sind 5 MB.');
         expect(fetch).not.toHaveBeenCalled();
@@ -111,7 +161,7 @@ describe('validation UI', () => {
         vi.stubGlobal('fetch', fetch);
         await loadApp();
 
-        drop([droppedFile('invoice.xml', '<Invoice/>')]);
+        drop([droppedFile('invoice.xml', '<Invoice/>')], document.getElementById('kosit-validator'));
 
         await vi.waitFor(() => {
             expect(document.getElementById('kosit-status').textContent).toBe('XML ist gültig.');
@@ -132,7 +182,7 @@ describe('validation UI', () => {
         expect(document.getElementById('kosit-print-button').disabled).toBe(false);
         expect(document.getElementById('kosit-download-button').disabled).toBe(false);
         expect(document.getElementById('kosit-select-file-button').disabled).toBe(false);
-        expect(document.getElementById('kosit-drop-zone').hasAttribute('aria-disabled')).toBe(false);
+        expect(document.getElementById('kosit-scroll-container').hasAttribute('aria-busy')).toBe(false);
     });
 
     test('rejects PDF when the server capability is disabled', async () => {
@@ -212,7 +262,7 @@ describe('validation UI', () => {
             expect(document.getElementById('kosit-status').textContent).toBe('Validator ist belegt');
         });
         expect(document.getElementById('kosit-select-file-button').disabled).toBe(false);
-        expect(document.getElementById('kosit-drop-zone').hasAttribute('aria-disabled')).toBe(false);
+        expect(document.getElementById('kosit-scroll-container').hasAttribute('aria-busy')).toBe(false);
     });
 
     test('handles transport failures and can download the generated report', async () => {

@@ -92,6 +92,7 @@ class ValidatorAdminService
                     && is_file($repository . '/scenarios.xml')
                     && is_dir($repository . '/resources'),
                 'installedVersion' => $installedConfigurationVersion,
+                'name' => $this->readConfigurationName(),
                 'installedXRechnungVersion' => $installedConfiguration['xrechnung'] ?? null,
                 'latestVersion' => $latestConfigurationVersion,
                 'latestXRechnungVersion' => $configurationRelease['xrechnung'] ?? null,
@@ -561,6 +562,33 @@ class ValidatorAdminService
             throw new AdministrationException('Versionsinformation der XRechnung-Konfiguration konnte nicht gespeichert werden.');
         }
         chmod($directory . '/.kosit-xrechnung-version', 0640);
+    }
+
+    private function readConfigurationName(): ?string
+    {
+        $path = $this->config->getScenarioFile();
+        if (!is_file($path) || !is_readable($path)) {
+            return null;
+        }
+        $content = @file_get_contents($path);
+        if ($content === false || preg_match('/<!DOCTYPE\s/i', $content) === 1) {
+            return null;
+        }
+
+        $previous = libxml_use_internal_errors(true);
+        try {
+            $document = new \DOMDocument();
+            if (!$document->loadXML($content, LIBXML_NONET | LIBXML_NOBLANKS)) {
+                return null;
+            }
+            $xpath = new \DOMXPath($document);
+            $xpath->registerNamespace('s', self::SCENARIO_NAMESPACE);
+            $name = trim((string)$xpath->evaluate('string(/s:scenarios/s:name)'));
+            return $name !== '' ? $name : null;
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
     }
 
     /** @return array{release: string, xrechnung: string}|null */

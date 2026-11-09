@@ -5,7 +5,6 @@ const markup = `
 <form id="kosit-settings-form">
 <input type="checkbox" name="validator" role="switch">
 <input type="checkbox" name="configuration" role="switch">
-<button type="submit">Speichern</button>
 </form>
 <form id="kosit-paths-form">
 <input name="javaBinary" value="/usr/bin/java"><input name="pythonBinary" value="/usr/bin/python3">
@@ -13,6 +12,7 @@ const markup = `
 </form>
 <button id="kosit-check-system">Prüfen</button>
 <table><tbody id="kosit-system-body"><tr><td><button data-component="validator">Update auf 1.6.2</button></td></tr></tbody></table>
+<ul id="kosit-write-checks"></ul>
 <div id="kosit-managed-components"></div><p id="kosit-admin-message"></p>
 <div data-kosit-readme><div class="kosit-readme-rich" hidden></div><pre class="kosit-readme-fallback"><span id="kosit-help-java" data-heading="Java installieren">Java installieren</span></pre></div>
 </div>`;
@@ -44,14 +44,51 @@ describe('admin system UI', () => {
         const fetch = vi.fn().mockResolvedValue(response({ success: true, message: 'Gespeichert' }));
         vi.stubGlobal('fetch', fetch);
         await loadAdmin();
-        document.querySelector('[name="validator"]').checked = true;
-        document.querySelector('#kosit-settings-form button').click();
+        document.querySelector('[name="validator"]').click();
         await waitMessage('Gespeichert');
         const [url, options] = fetch.mock.calls[0];
         expect(url).toBe('/nextcloud/apps/kosit_validator/admin/settings');
         expect(options.body.get('validator')).toBe('yes');
         expect(options.body.get('configuration')).toBe('no');
         expect(options.headers.requesttoken).toBe('test-request-token');
+    });
+
+    test('restores a switch after saving fails and allows retrying', async () => {
+        const fetch = vi.fn().mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValueOnce(response({ success: true, message: 'Gespeichert' }));
+        vi.stubGlobal('fetch', fetch);
+        await loadAdmin();
+        const toggle = document.querySelector('[name="configuration"]');
+        toggle.click();
+        await waitMessage('offline');
+        expect(toggle.checked).toBe(false);
+        expect(toggle.disabled).toBe(false);
+        toggle.click();
+        await waitMessage('Gespeichert');
+        expect(toggle.checked).toBe(true);
+        expect(fetch.mock.calls[1][1].body.get('configuration')).toBe('yes');
+    });
+
+    test('separates writable paths and renders status symbols and compact help', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: { checks: [
+            ...checks,
+            { id: 'temp', label: 'Temporäres Verzeichnis', ok: true, detail: '/tmp/validator', help: 'paths' },
+            { id: 'configuration-write', label: 'Konfigurationsinstallation', ok: false, detail: '/opt/kosit/xrechnung', help: 'paths' },
+        ] } })));
+        await loadAdmin();
+        document.getElementById('kosit-check-system').click();
+        await waitMessage('Systemprüfung abgeschlossen.');
+        expect(document.querySelector('#kosit-system-body [data-check="temp"]')).toBeNull();
+        const entries = document.querySelectorAll('#kosit-write-checks li');
+        expect(entries).toHaveLength(2);
+        expect(entries[0].textContent).toContain('Temporäres Verzeichnis (/tmp/validator)');
+        expect(entries[0].firstElementChild.getAttribute('aria-label')).toBe('Bereit');
+        expect(entries[1].firstElementChild.getAttribute('aria-label')).toBe('Nicht bereit');
+        const help = entries[1].querySelector('a');
+        expect(help.textContent.trim()).toBe('Info');
+        expect(help.querySelector('svg')).not.toBeNull();
+        expect(help.hash).toBe('#kosit-help-paths');
+        expect(document.querySelector('[data-check="java"] td:first-child [role="img"]').textContent).toBe('✕');
     });
 
     test('saves paths and renders versions, problems and help without HTML injection', async () => {

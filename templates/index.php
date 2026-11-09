@@ -18,15 +18,13 @@
         id="kosit-validator"
         class="section"
         data-pdf-supported="<?php p($pdfAvailable ? 'true' : 'false'); ?>"
+        data-favicon-url="<?php p(image_path('kosit_validator', 'app.svg')); ?>"
     >
         <h2>prüfeXRechnung</h2>
 
         <p class="kosit-validator-intro">
-            Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator Version
-            <span id="kosit-validator-version">
-                <?php p($status['validator']['installedVersion'] ?? 'unbekannt'); ?>
-            </span>
-            auf Konformität mit der XRechnung-Spezifikation
+            Prüft XML-Rechnungsdokumente mit dem Standard
+            <span id="kosit-configuration-name"><?php p($status['configuration']['name'] ?? 'unbekannt'); ?></span>.
             <a
                 class="kosit-link-icon"
                 href="https://de.wikipedia.org/wiki/XRechnung"
@@ -39,8 +37,8 @@
                     <path fill="currentColor" d="M9 2h5v5h-2V5.41l-5.3 5.3-1.4-1.42L10.58 4H9V2Z"/>
                     <path fill="currentColor" d="M3 3h4v2H4v7h7V9h2v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/>
                 </svg>
-            </a>.
-            Weitere Informationen in der README
+            </a>
+            Weitere Info
             <a
                 class="kosit-link-icon"
                 href="#kosit-readme-dialog"
@@ -81,20 +79,9 @@
                 accept=".xml,text/xml,application/xml<?php if ($pdfAvailable): ?>,.pdf,application/pdf<?php endif; ?>"
                 hidden
             >
-            <button id="kosit-select-file-button" type="button" class="primary">
+            <button id="kosit-select-file-button" type="button" class="primary" aria-describedby="kosit-drop-hint">
                 Datei auswählen
             </button>
-
-            <div
-                id="kosit-drop-zone"
-                role="button"
-                tabindex="0"
-                aria-controls="kosit-xml-file"
-                aria-describedby="kosit-selected-file"
-            >
-                <span><?php p($pdfAvailable ? 'XML- oder PDF-Datei hier fallenlassen' : 'XML-Datei hier fallenlassen'); ?></span>
-                <small id="kosit-selected-file" aria-live="polite">Keine Datei ausgewählt</small>
-            </div>
         </div>
 
         <div id="kosit-status" role="status" aria-live="polite"></div>
@@ -115,5 +102,8 @@
             title="HTML Prüfbericht"
             style="display:none;"
         ></iframe>
+    </div>
+    <div id="kosit-drop-hint">
+        <span><?php p($pdfAvailable ? 'XML- oder PDF-Datei auf dieser Seite fallenlassen' : 'XML-Datei auf dieser Seite fallenlassen'); ?></span>
     </div>
 </div>

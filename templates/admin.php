@@ -7,6 +7,9 @@ script('kosit_validator', 'admin');
 style('kosit_validator', 'admin');
 
 $status = $_['status'];
+$writeCheckIds = ['temp', 'validator-write', 'configuration-write'];
+$systemChecks = array_filter($status['checks'], static fn (array $check): bool => !in_array($check['id'], $writeCheckIds, true));
+$writeChecks = array_filter($status['checks'], static fn (array $check): bool => in_array($check['id'], $writeCheckIds, true));
 $readme = file_get_contents(dirname(__DIR__) . '/README.md') ?: 'README konnte nicht geladen werden.';
 $helpHeadings = [
     'Java installieren' => 'java',
@@ -20,15 +23,14 @@ $helpHeadings = [
 <div id="kosit-admin">
     <h2>prüfeXRechnung</h2>
     <section aria-labelledby="kosit-settings-title">
-        <h3 id="kosit-settings-title">Einstellungen</h3>
+        <h3 id="kosit-settings-title">Automatische Updates beim Starten der App</h3>
         <form id="kosit-settings-form">
             <?php foreach (['validator' => 'KoSIT-Validator', 'configuration' => 'XRechnung-Konfiguration'] as $key => $label) : ?>
                 <label class="kosit-switch">
                     <input type="checkbox" role="switch" name="<?php p($key); ?>" <?php if ($status['autoUpdates'][$key]) : ?>checked<?php endif; ?>>
-                    <?php p($label); ?>: Update beim App-Start
+                    <?php p($label); ?>
                 </label>
             <?php endforeach; ?>
-            <button type="submit">Einstellungen speichern</button>
         </form>
         <details class="kosit-path-settings">
             <summary>Programmpfade</summary>
@@ -50,14 +52,14 @@ $helpHeadings = [
         <button id="kosit-check-system" type="button">Systemprüfung wiederholen</button>
         <div class="kosit-table-scroll" tabindex="0" role="region" aria-label="Ergebnisse der Systemprüfung">
             <table class="kosit-system">
-                <thead><tr><th scope="col">Komponente / Prüfung</th><th scope="col">Version</th><th scope="col">Ergebnis / Pfad</th><th scope="col">Aktion / Hilfe</th></tr></thead>
+                <thead><tr><th scope="col" class="kosit-result-column">Ergebnis</th><th scope="col">Komponente / Prüfung</th><th scope="col">Version</th><th scope="col">Pfad / Details</th><th scope="col">Aktion / Hilfe</th></tr></thead>
                 <tbody id="kosit-system-body">
-                <?php foreach ($status['checks'] as $check) : ?>
+                <?php foreach ($systemChecks as $check) : ?>
                     <tr data-check="<?php p($check['id']); ?>">
+                        <td class="kosit-result-column"><span class="kosit-state kosit-state--<?php p($check['ok'] ? 'available' : 'missing'); ?>" role="img" aria-label="<?php p($check['ok'] ? 'Bereit' : 'Nicht bereit'); ?>"><?php p($check['ok'] ? '✓' : '✕'); ?></span></td>
                         <th scope="row"><?php p($check['label']); ?></th>
                         <td><?php p($check['version'] ?? '—'); ?></td>
                         <td>
-                            <strong class="kosit-state--<?php p($check['ok'] ? 'available' : 'missing'); ?>"><?php p($check['ok'] ? 'OK' : 'Nicht bereit'); ?></strong>
                             <div class="kosit-check-detail"><?php p($check['detail']); ?></div>
                             <?php if (!empty($check['updateError'])) : ?><div><?php p('Update-Prüfung: ' . $check['updateError']); ?></div><?php endif; ?>
                         </td>
@@ -66,7 +68,7 @@ $helpHeadings = [
                                 <button type="button" data-component="<?php p($check['id']); ?>"><?php p($check['action'] === 'update' ? 'Update auf ' . $check['latestVersion'] : 'Installieren'); ?></button>
                             <?php endif; ?>
                             <?php if (!$check['ok'] || !empty($check['updateError'])) : ?>
-                                <a href="#kosit-help-<?php p($check['help']); ?>" data-readme-help>Lösung in der README</a>
+                                <a href="#kosit-help-<?php p($check['help']); ?>" class="kosit-help-link" data-readme-help aria-label="Info in der README anzeigen">Info <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.6 4H4a4 4 0 0 0 0 8h2.6v-2H4a2 2 0 0 1 0-4h2.6V4Zm2.8 0v2H12a2 2 0 1 1 0 4H9.4v2H12a4 4 0 1 0 0-8H9.4ZM5 7h6v2H5V7Z"/></svg></a>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -74,6 +76,18 @@ $helpHeadings = [
                 </tbody>
             </table>
         </div>
+        <h4 id="kosit-write-title">Schreibrechte</h4>
+        <ul id="kosit-write-checks" aria-labelledby="kosit-write-title">
+            <?php foreach ($writeChecks as $check) : ?>
+                <li data-check="<?php p($check['id']); ?>">
+                    <span class="kosit-state kosit-state--<?php p($check['ok'] ? 'available' : 'missing'); ?>" role="img" aria-label="<?php p($check['ok'] ? 'Bereit' : 'Nicht bereit'); ?>"><?php p($check['ok'] ? '✓' : '✕'); ?></span>
+                    <div><strong><?php p($check['label']); ?></strong>
+                        <span class="kosit-check-detail">(<?php p($check['detail']); ?>)</span>
+                        <?php if (!$check['ok']) : ?><a href="#kosit-help-<?php p($check['help']); ?>" class="kosit-help-link" data-readme-help aria-label="Info in der README anzeigen">Info <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.6 4H4a4 4 0 0 0 0 8h2.6v-2H4a2 2 0 0 1 0-4h2.6V4Zm2.8 0v2H12a2 2 0 1 1 0 4H9.4v2H12a4 4 0 1 0 0-8H9.4ZM5 7h6v2H5V7Z"/></svg></a><?php endif; ?>
+                    </div>
+                </li>
+            <?php endforeach; ?>
+        </ul>
     </section>
     <details id="kosit-component-removal">
         <summary>Deinstallation vorbereiten</summary>

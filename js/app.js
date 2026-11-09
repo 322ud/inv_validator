@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const validator = document.getElementById('kosit-validator');
     const fileInput = document.getElementById('kosit-xml-file');
-    const dropZone = document.getElementById('kosit-drop-zone');
-    const selectedFileName = document.getElementById('kosit-selected-file');
+    const dropZone = document.getElementById('kosit-scroll-container');
     const selectFileButton = document.getElementById('kosit-select-file-button');
     const status = document.getElementById('kosit-status');
     const reportActions = document.getElementById('kosit-report-actions');
@@ -13,6 +12,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const readmeDialog = document.getElementById('kosit-readme-dialog');
     const readmeClose = document.getElementById('kosit-readme-close');
     const readmeViewer = readmeDialog?.querySelector('[data-kosit-readme]');
+
+    if (validator.dataset.faviconUrl) {
+        document.head.querySelectorAll('link[rel~="icon"]').forEach((icon) => icon.remove());
+
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.type = 'image/svg+xml';
+        favicon.setAttribute('sizes', 'any');
+        favicon.href = validator.dataset.faviconUrl;
+        document.head.appendChild(favicon);
+    }
 
     const maxXmlSize = 5 * 1024 * 1024;
     const maxPdfSize = 20 * 1024 * 1024;
@@ -51,12 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const selectFile = (file) => {
-        selectedFileName.textContent = file
-            ? file.name
-            : 'Keine Datei ausgewählt';
-    };
-
     const openFileDialog = () => {
         if (selectFileButton.disabled) {
             return;
@@ -67,14 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     selectFileButton.addEventListener('click', openFileDialog);
-    dropZone.addEventListener('click', openFileDialog);
-    dropZone.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            openFileDialog();
-        }
-    });
-
     ['dragenter', 'dragover'].forEach((eventName) => {
         dropZone.addEventListener(eventName, (event) => {
             event.preventDefault();
@@ -112,7 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = event.dataTransfer.files[0];
 
         fileInput.value = '';
-        selectFile(file);
         validateFile(file);
     });
 
@@ -405,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         status.textContent = 'Validierung läuft ...';
         selectFileButton.disabled = true;
-        dropZone.setAttribute('aria-disabled', 'true');
+        dropZone.setAttribute('aria-busy', 'true');
         printButton.disabled = true;
         downloadButton.disabled = true;
         reportActions.hidden = true;
@@ -454,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
             status.textContent = 'Fehler beim Aufruf des Validators.';
         } finally {
             selectFileButton.disabled = false;
-            dropZone.removeAttribute('aria-disabled');
+            dropZone.removeAttribute('aria-busy');
         }
     };
 
@@ -465,7 +460,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        selectFile(file);
         validateFile(file);
     });
 });

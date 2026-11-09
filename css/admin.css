@@ -2,7 +2,42 @@
 #kosit-admin section { margin-top: 28px; }
 #kosit-admin h3 { margin-bottom: 12px; }
 .kosit-switch { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
-.kosit-switch input { appearance: auto; width: 20px; height: 20px; }
+#kosit-admin .kosit-switch input {
+appearance: none;
+-webkit-appearance: none;
+position: relative;
+flex: 0 0 44px;
+width: 44px;
+height: 24px;
+min-height: 24px;
+margin: 0;
+padding: 0;
+border: 2px solid #767676;
+border-radius: 999px;
+background: #767676;
+cursor: pointer;
+transition: background-color 0.15s, border-color 0.15s;
+}
+#kosit-admin .kosit-switch input::before { content: none; }
+#kosit-admin .kosit-switch input::after {
+content: "";
+position: absolute;
+top: 2px;
+left: 2px;
+width: 16px;
+height: 16px;
+border-radius: 50%;
+background: #fff;
+transform: translateX(0);
+transition: transform 0.15s;
+}
+#kosit-admin .kosit-switch input:checked { background: var(--color-primary-element, #00679e); border-color: var(--color-primary-element, #00679e); }
+#kosit-admin .kosit-switch input:checked::after { transform: translateX(20px); }
+#kosit-admin .kosit-switch input:focus-visible { outline: 2px solid var(--color-main-text, #222); outline-offset: 3px; }
+#kosit-admin .kosit-switch input:disabled { opacity: 0.5; cursor: wait; }
+@media (prefers-reduced-motion: reduce) {
+#kosit-admin .kosit-switch input, #kosit-admin .kosit-switch input::after { transition: none; }
+}
 .kosit-path-settings { margin-top: 20px; }
 .kosit-path-settings summary { cursor: pointer; }
 #kosit-paths-form label { display: block; margin: 12px 0; }
@@ -12,9 +47,18 @@
 .kosit-system th, .kosit-system td { padding: 10px; border-bottom: 1px solid var(--color-border); text-align: left; vertical-align: top; }
 .kosit-system th { min-width: 150px; }
 .kosit-check-detail { overflow-wrap: anywhere; }
-.kosit-system td:last-child a { display: block; margin-top: 6px; }
-.kosit-state--available { color: var(--color-success-text); }
-.kosit-state--missing { color: var(--color-error-text); }
+#kosit-admin .kosit-help-link { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; vertical-align: middle; }
+.kosit-help-link svg { width: 1em; height: 1em; flex: 0 0 auto; }
+.kosit-system td:last-child button + .kosit-help-link { margin-top: 6px; }
+.kosit-state--available { color: #16833b; }
+.kosit-state--missing { color: #c62828; }
+.kosit-state { font-size: 22px; font-weight: 700; line-height: 1; }
+.kosit-system .kosit-result-column { min-width: 0; width: 36px; }
+#kosit-write-title { margin: 24px 0 12px; }
+#kosit-write-checks { list-style: none; padding: 0; margin: 0; }
+#kosit-write-checks li { display: flex; gap: 16px; align-items: flex-start; padding: 10px; border-bottom: 1px solid var(--color-border); }
+#kosit-write-checks .kosit-state { flex: 0 0 36px; }
+#kosit-write-checks li > div { min-width: 0; }
 #kosit-admin-message { min-height: 1.5em; margin: 16px 0; }
 .kosit-readme-embed {
 margin-top: 36px;

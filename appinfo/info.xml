@@ -20,7 +20,7 @@ Die Prüfung erfolgt lokal auf dem Server mit Java und den konfigurierten XRechn
 Die Servereinrichtung erfordert Java ab Version 11, die Ausführung externer Prozesse aus PHP und lesbare Validator- und Szenariodateien. Die Administration kann den KoSIT-Validator und die XRechnung-Konfiguration über die App aus den offiziellen GitHub-Releases installieren. Dafür sind beschreibbare Installationsverzeichnisse erforderlich; für Installation und Updates der Konfiguration zusätzlich PHP ZipArchive. Java und optional Python/PyMuPDF müssen separat bereitgestellt werden.
 
 Die Admin-Seite bietet Systemprüfungen, Komponenten-Versionen, manuelle Installation und Updates sowie getrennte Schalter für automatische Updates der herunterladbaren Komponenten. Updates beim Öffnen der App sind standardmäßig ausgeschaltet.</description>
-    <version>0.5.4</version>
+    <version>0.5.5</version>
     <licence>AGPL-3.0-or-later</licence>
     <author>Frank Busse</author>
     <namespace>KoSITValidator</namespace>

@@ -66,8 +66,7 @@ class SystemCheckService
                 'configuration',
                 'XRechnung-Konfiguration',
                 $scenarioOk,
-                $status['configuration']['installedVersion'] !== null
-                    ? 'XRechnung ' . $status['configuration']['installedXRechnungVersion'] . ' / ' . $status['configuration']['installedVersion'] : null,
+                $status['configuration']['installedXRechnungVersion'] ?? null,
                 $scenario,
                 'components'
             ),
@@ -81,7 +80,7 @@ class SystemCheckService
             ),
             $this->row(
                 'validator-write',
-                'Validator-Installation: Schreibtest',
+                'Validator-Installation',
                 $this->probeWritableDirectory(dirname($jar)),
                 null,
                 dirname($jar),
@@ -89,7 +88,7 @@ class SystemCheckService
             ),
             $this->row(
                 'configuration-write',
-                'Konfigurationsinstallation: Schreibtest',
+                'Konfigurationsinstallation',
                 $this->probeWritableDirectory(dirname($this->config->getRepositoryPath()) . '/releases')
                     && $this->probeWritableDirectory(dirname($this->config->getRepositoryPath())),
                 null,
