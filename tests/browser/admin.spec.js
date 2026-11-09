@@ -52,6 +52,14 @@ test('configures interpreter paths and keeps infrastructure paths read-only', as
     await expect(page.locator('input[name="pythonBinary"]'))
         .toHaveValue(browserPythonBinary);
 
+    const readme = admin.locator('.kosit-readme-rich');
+    await expect(readme).toBeVisible();
+    await admin.locator('[data-readme-help][href="#kosit-help-pdf"]').first().click();
+    await expect(admin.locator('.kosit-readme-fallback')).toBeHidden();
+    await expect(readme).toBeVisible();
+    await expect(readme.getByRole('heading', { level: 3 }).filter({ hasText: 'Optionale PDF-Unterstützung' }))
+        .toBeInViewport();
+
     await page.locator('input[name="pythonBinary"]').fill(originalPythonBinary);
     await savePaths(page);
     await expect(page.locator('input[name="pythonBinary"]'))

@@ -28,6 +28,7 @@ const response = (body, httpStatus = 200) => ({
 const loadAdmin = async () => {
     const listener = vi.spyOn(document, 'addEventListener');
     vi.resetModules();
+    await import('../../js/readme.js');
     await import('../../js/admin.js');
     const initialize = listener.mock.calls.findLast(([event]) => event === 'DOMContentLoaded')[1];
     listener.mockRestore();
@@ -38,7 +39,7 @@ const waitMessage = async (text) => {
 };
 
 describe('admin system UI', () => {
-    beforeEach(() => { document.body.innerHTML = markup; });
+    beforeEach(() => { document.body.innerHTML = markup; window.OCA = {}; });
 
     test('saves independent switches with a CSRF token', async () => {
         const fetch = vi.fn().mockResolvedValue(response({ success: true, message: 'Gespeichert' }));
@@ -175,6 +176,61 @@ describe('admin system UI', () => {
         const scroll = vi.fn();
         document.getElementById('kosit-help-java').scrollIntoView = scroll;
         document.querySelector('[data-readme-help]').click();
-        expect(scroll).toHaveBeenCalledOnce();
+        await vi.waitFor(() => expect(scroll).toHaveBeenCalledOnce());
     });
+    test('help keeps formatted Markdown and ignores Nextcloud heading decorations', async () => {
+        const scroll = vi.fn();
+        window.OCA.Text = { createEditor: vi.fn(async ({ el }) => {
+            el.innerHTML = '<div class="ProseMirror"><h3><span>###</span>Java installieren<button>Link kopieren</button></h3><p><strong>Formatierte Hilfe</strong></p></div>';
+            el.querySelector('h3').scrollIntoView = scroll;
+            return { setReadOnly: vi.fn() };
+        }) };
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: { checks } })));
+        await loadAdmin();
+        document.getElementById('kosit-check-system').click();
+        await waitMessage('Systemprüfung abgeschlossen.');
+        document.querySelector('[data-readme-help]').click();
+        await vi.waitFor(() => expect(scroll).toHaveBeenCalledOnce());
+        expect(document.querySelector('.kosit-readme-rich').hidden).toBe(false);
+        expect(document.querySelector('.kosit-readme-fallback').hidden).toBe(true);
+        expect(document.querySelector('.kosit-readme-rich strong').textContent).toBe('Formatierte Hilfe');
+    });
+
+    test('help waits for initialization and headings rendered later', async () => {
+        const scroll = vi.fn();
+        let finishEditor;
+        window.OCA.Text = { createEditor: vi.fn(() => new Promise((resolve) => { finishEditor = resolve; })) };
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: { checks } })));
+        await loadAdmin();
+        document.getElementById('kosit-check-system').click();
+        await waitMessage('Systemprüfung abgeschlossen.');
+        document.querySelector('[data-readme-help]').click();
+        finishEditor({ setReadOnly: vi.fn() });
+        await vi.waitFor(() => expect(document.querySelector('.kosit-readme-rich').hidden).toBe(false));
+        const heading = document.createElement('h3');
+        heading.innerHTML = '<span aria-hidden="true">###</span>Java installieren';
+        heading.scrollIntoView = scroll;
+        document.querySelector('.kosit-readme-rich').append(heading);
+        await vi.waitFor(() => expect(scroll).toHaveBeenCalledOnce());
+        expect(document.querySelector('.kosit-readme-fallback').hidden).toBe(true);
+    });
+
+    test('missing formatted heading never exposes raw Markdown', async () => {
+        vi.useFakeTimers();
+        const scroll = vi.fn();
+        const rich = document.querySelector('.kosit-readme-rich');
+        rich.scrollIntoView = scroll;
+        window.OCA.Text = { createEditor: vi.fn(async () => ({ setReadOnly: vi.fn() })) };
+        const help = document.createElement('a');
+        help.href = '#kosit-help-java';
+        help.dataset.readmeHelp = '';
+        document.getElementById('kosit-admin').append(help);
+        await loadAdmin();
+        help.click();
+        await vi.advanceTimersByTimeAsync(2100);
+        expect(scroll).toHaveBeenCalledOnce();
+        expect(rich.hidden).toBe(false);
+        expect(document.querySelector('.kosit-readme-fallback').hidden).toBe(true);
+    });
+
 });

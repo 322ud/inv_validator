@@ -116,7 +116,7 @@ python3 -m venv /opt/kosit/pymupdf-venv
 /opt/kosit/pymupdf-venv/bin/python -m pip install pymupdf
 ```
 
-Anschließend wird `/opt/kosit/pymupdf-venv/bin/python` als Python-Pfad in den Administrationseinstellungen gespeichert. Fehlt Python oder PyMuPDF, bleibt der XML-Upload ohne Einschränkung verfügbar und PDF wird nicht angeboten.
+Dann muss `/opt/kosit/pymupdf-venv/bin/python` als Python-Pfad in den Administrationseinstellungen gesetzt werden. Fehlt Python oder PyMuPDF, bleibt der XML-Upload ohne Einschränkung verfügbar und PDF wird nicht angeboten.
 
 ---
 

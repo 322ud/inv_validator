@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const writeChecks = root.querySelector('#kosit-write-checks');
     const writeCheckIds = ['temp', 'validator-write', 'configuration-write'];
     const viewer = root.querySelector('[data-kosit-readme]');
-    window.OCA?.INValidator?.initializeReadme(viewer);
+    const readmeReady = window.OCA?.INValidator?.initializeReadme(viewer);
     let busy = false;
 
     const request = async (url, options = {}) => {
@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         run('components/remove', { method: 'POST', body: new FormData(event.target) }, 'Bestätigte Komponente wird entfernt …');
     });
-    root.addEventListener('click', (event) => {
+    root.addEventListener('click', async (event) => {
         const button = event.target.closest('button[data-component]');
         if (button) {
             const data = new FormData();
@@ -241,16 +241,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             event.preventDefault();
+            await readmeReady;
             const rich = viewer.querySelector('.kosit-readme-rich');
-            const heading = [...rich.querySelectorAll('h1, h2, h3, h4')]
-                .find((element) => element.textContent.trim() === target.dataset.heading);
-            if (heading && !rich.hidden) {
-                heading.scrollIntoView({ block: 'center' });
-            } else {
-                rich.hidden = true;
-                viewer.querySelector('.kosit-readme-fallback').hidden = false;
+            if (rich.hidden) {
                 target.scrollIntoView({ block: 'center' });
+                return;
             }
+
+            const normalize = (text) => text.replace(/[\u200B-\u200D\uFEFF]/g, '')
+                .replace(/^\s*#{1,6}\s*/, '').replace(/\s+/g, ' ').trim();
+            const findHeading = () => {
+                const content = rich.querySelector('.ProseMirror') || rich;
+                return [...content.querySelectorAll('h1, h2, h3, h4, h5, h6')].find((element) => {
+                    const heading = element.cloneNode(true);
+                    heading.querySelectorAll('button, [aria-hidden="true"]').forEach((decoration) => decoration.remove());
+                    return normalize(heading.textContent) === normalize(target.dataset.heading);
+                });
+            };
+            let heading = findHeading();
+            if (!heading) {
+                // Nextcloud Text can mount its headings after createEditor has resolved.
+                heading = await new Promise((resolve) => {
+                    const finish = (element) => {
+                        observer.disconnect();
+                        clearTimeout(timeout);
+                        resolve(element);
+                    };
+                    const observer = new MutationObserver(() => {
+                        const element = findHeading();
+                        if (element) {
+                            finish(element);
+                        }
+                    });
+                    const timeout = setTimeout(() => finish(null), 2000);
+                    observer.observe(rich, { childList: true, subtree: true, characterData: true });
+                });
+            }
+            // A missing anchor must never replace the rendered Markdown with raw source.
+            (heading || rich).scrollIntoView({ block: 'center' });
         }
     });
 });
