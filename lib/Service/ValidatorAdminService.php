@@ -80,6 +80,7 @@ class ValidatorAdminService
             'validator' => [
                 'installed' => $installedValidatorVersion !== null,
                 'installedVersion' => $installedValidatorVersion,
+                'displayVersion' => $this->readValidatorDisplayVersion($jar) ?? $installedValidatorVersion,
                 'latestVersion' => $latestValidatorVersion,
                 'updateAvailable' => $installedValidatorVersion !== null
                     && $latestValidatorVersion !== null
@@ -664,6 +665,19 @@ class ValidatorAdminService
                 'Der konfigurierte Validator-Pfad existiert und ist kein von der App verwalteter Symlink: ' . $jar
             );
         }
+    }
+
+    private function readValidatorDisplayVersion(string $jar): ?string
+    {
+        $contents = @file_get_contents($jar . '.version');
+        if ($contents === false) {
+            return null;
+        }
+        $metadata = json_decode($contents, true);
+        $version = is_array($metadata) ? ($metadata['version'] ?? null) : null;
+        return is_string($version) && preg_match('/^[0-9]+(?:\.[0-9]+)+(?:[-+][A-Za-z0-9.-]+)?$/', $version) === 1
+            ? $version
+            : null;
     }
 
     private function readInstalledValidatorVersion(string $jar): ?string

@@ -47,6 +47,15 @@ align-self: stretch;
 
 .inv-validator-intro {
 display: block;
+padding-right: 44px;
+}
+
+#kosit-readme-open {
+position: absolute;
+top: 16px;
+right: 16px;
+width: 32px;
+height: 32px;
 }
 
 .kosit-link-icon {
@@ -146,6 +155,7 @@ display: none;
 
 #kosit-select-file-button {
 flex: 0 0 auto;
+pointer-events: auto;
 }
 
 #kosit-status {

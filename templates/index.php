@@ -6,6 +6,7 @@
     style('inv_validator', 'app');
 
     $status = $_['status'];
+    preg_match('/XRechnung\s+(\d+(?:\.\d+)+)/i', (string)($status['configuration']['name'] ?? ''), $scenarioVersion);
     $pdfAvailable = (bool)($status['pdfSupport']['available'] ?? false);
     $readme = file_get_contents(dirname(__DIR__) . '/README.md') ?: 'README konnte nicht geladen werden.';
 ?>
@@ -23,34 +24,24 @@
         <h2>INValidator</h2>
 
         <p class="inv-validator-intro">
-            Prüft XML-Rechnungsdokumente mit dem Standard
-            <span id="kosit-configuration-name"><?php p($status['configuration']['name'] ?? 'unbekannt'); ?></span>.
-            <a
-                class="kosit-link-icon"
-                href="https://de.wikipedia.org/wiki/XRechnung"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Informationen zu XRechnung bei Wikipedia öffnen (externer Link)"
-                title="XRechnung bei Wikipedia (externer Link)"
-            >
-                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M9 2h5v5h-2V5.41l-5.3 5.3-1.4-1.42L10.58 4H9V2Z"/>
-                    <path fill="currentColor" d="M3 3h4v2H4v7h7V9h2v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/>
-                </svg>
-            </a>
-            Weitere Info
-            <a
-                class="kosit-link-icon"
-                href="#kosit-readme-dialog"
-                id="kosit-readme-open"
-                aria-label="README in diesem Fenster öffnen (interner Link)"
-                title="README öffnen (interner Link)"
-            >
-                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M6.6 4H4a4 4 0 0 0 0 8h2.6v-2H4a2 2 0 0 1 0-4h2.6V4Zm2.8 0v2H12a2 2 0 1 1 0 4H9.4v2H12a4 4 0 1 0 0-8H9.4ZM5 7h6v2H5V7Z"/>
-                </svg>
-            </a>
+            Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator
+            <?php p($status['validator']['displayVersion'] ?? $status['validator']['installedVersion'] ?? 'unbekannt'); ?>,
+            XRechnung-Szenario <span id="kosit-configuration-name"><?php p($scenarioVersion[1] ?? 'unbekannt'); ?></span>
+            der Koordinierungsstelle für IT-Standards (<a href="http://www.xoev.de" target="_blank" rel="noopener noreferrer">KoSIT</a>).
         </p>
+        <a
+            class="kosit-link-icon"
+            href="#kosit-readme-dialog"
+            id="kosit-readme-open"
+            aria-label="README in diesem Fenster öffnen (interner Link)"
+            title="README öffnen (interner Link)"
+        >
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+                <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="8" cy="4.5" r="1" fill="currentColor"/>
+                <path fill="currentColor" d="M7 7h2v5H7z"/>
+            </svg>
+        </a>
 
         <div
             id="kosit-readme-dialog"
@@ -79,9 +70,6 @@
                 accept=".xml,text/xml,application/xml<?php if ($pdfAvailable): ?>,.pdf,application/pdf<?php endif; ?>"
                 hidden
             >
-            <button id="kosit-select-file-button" type="button" class="primary" aria-describedby="kosit-drop-hint">
-                Datei auswählen
-            </button>
         </div>
 
         <div id="kosit-status" role="status" aria-live="polite"></div>
@@ -104,6 +92,9 @@
         ></iframe>
     </div>
     <div id="kosit-drop-hint">
-        <span><?php p($pdfAvailable ? 'XML- oder PDF-Datei auf dieser Seite fallenlassen' : 'XML-Datei auf dieser Seite fallenlassen'); ?></span>
+        <span id="kosit-drop-text"><?php p($pdfAvailable ? 'XML- oder PDF-Datei auf dieser Seite fallenlassen oder' : 'XML-Datei auf dieser Seite fallenlassen oder'); ?></span>
+        <button id="kosit-select-file-button" type="button" class="primary" aria-describedby="kosit-drop-text">
+            Datei auswählen
+        </button>
     </div>
 </div>
