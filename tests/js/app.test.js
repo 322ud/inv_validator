@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const appMarkup = `
-    <div id="kosit-scroll-container"><div id="inv-validator">
+    <div id="kosit-scroll-container"><div id="inv-validator" data-validation-available="true">
         <input id="kosit-xml-file" type="file">
         <button id="kosit-select-file-button" type="button">Datei auswählen</button>
         <div id="kosit-status"></div>
@@ -75,6 +75,25 @@ describe('validation UI', () => {
             document.head.querySelectorAll('link[rel~="icon"]').forEach(link => link.remove());
             touch.remove();
         }
+    });
+
+    test('does not handle dropped files when validation is unavailable and keeps README usable', async () => {
+        vi.stubGlobal('fetch', vi.fn());
+        document.getElementById('inv-validator').dataset.validationAvailable = 'false';
+        document.getElementById('kosit-xml-file').remove();
+        document.getElementById('kosit-select-file-button').remove();
+        await loadApp();
+
+        const zone = document.getElementById('kosit-scroll-container');
+        const drag = new Event('dragover', { bubbles: true, cancelable: true });
+        zone.dispatchEvent(drag);
+        drop([droppedFile('invoice.xml', '<Invoice/>')]);
+
+        expect(drag.defaultPrevented).toBe(false);
+        expect(zone.classList.contains('is-dragover')).toBe(false);
+        expect(fetch).not.toHaveBeenCalled();
+        document.getElementById('kosit-readme-open').click();
+        expect(document.getElementById('kosit-readme-dialog').hidden).toBe(false);
     });
 
     test('opens the native file dialog only from the select button', async () => {

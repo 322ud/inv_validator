@@ -61,6 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    if (validator.dataset.validationAvailable !== 'true') {
+        return;
+    }
+
     const openFileDialog = () => {
         if (selectFileButton.disabled) {
             return;

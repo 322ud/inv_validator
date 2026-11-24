@@ -42,6 +42,8 @@ class ValidatorAdminService
         $repository = $this->config->getRepositoryPath();
         $installedValidatorVersion = $this->readInstalledValidatorVersion($jar);
         $installedConfiguration = $this->readInstalledConfiguration($repository);
+        $configurationName = $this->readConfigurationName();
+        preg_match('/XRechnung\s+(\d+(?:\.\d+)+)/i', $configurationName ?? '', $scenarioVersion);
         $validatorRelease = null;
         $configurationRelease = null;
         $validatorError = null;
@@ -93,8 +95,8 @@ class ValidatorAdminService
                     && is_file($repository . '/scenarios.xml')
                     && is_dir($repository . '/resources'),
                 'installedVersion' => $installedConfigurationVersion,
-                'name' => $this->readConfigurationName(),
-                'installedXRechnungVersion' => $installedConfiguration['xrechnung'] ?? null,
+                'name' => $configurationName,
+                'installedXRechnungVersion' => $installedConfiguration['xrechnung'] ?? $scenarioVersion[1] ?? null,
                 'latestVersion' => $latestConfigurationVersion,
                 'latestXRechnungVersion' => $configurationRelease['xrechnung'] ?? null,
                 'updateAvailable' => $installedConfigurationVersion !== null
@@ -682,7 +684,13 @@ class ValidatorAdminService
 
     private function readInstalledValidatorVersion(string $jar): ?string
     {
-        if (!is_link($jar) || !$this->isWithinValidatorRoot(dirname($jar))) {
+        if (!is_link($jar)) {
+            return is_file($jar) && is_readable($jar)
+                && preg_match(self::VALIDATOR_FILENAME_PATTERN, basename($jar), $matches) === 1
+                ? $matches[1]
+                : null;
+        }
+        if (!$this->isWithinValidatorRoot(dirname($jar))) {
             return null;
         }
 

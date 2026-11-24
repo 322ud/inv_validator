@@ -57,6 +57,30 @@ final class ValidatorAdminInstallationTest extends TestCase {
         $this->removeDirectory($this->temporaryDirectory);
     }
 
+    public function testDetectsDirectVersionedJarOutsideManagedRoot(): void {
+        $jar = $this->temporaryDirectory . '/validator-1.6.3-standalone.jar';
+        file_put_contents($jar, 'validator');
+        $config = $this->createStub(ValidatorConfigService::class);
+        $config->method('getValidatorJar')->willReturn($jar);
+        $config->method('getPythonBinary')->willReturn('/missing-python');
+        $service = new ValidatorAdminService(
+            $config,
+            new QueuedHttpClientService([]),
+            validatorRoot: $this->temporaryDirectory . '/managed'
+        );
+
+        $status = $service->getStatus(false);
+
+        self::assertTrue($status['validator']['installed']);
+        self::assertSame('1.6.3', $status['validator']['installedVersion']);
+        self::assertSame('1.6.3', $status['validator']['displayVersion']);
+
+        unlink($jar);
+        $status = $service->getStatus(false);
+        self::assertFalse($status['validator']['installed']);
+        self::assertNull($status['validator']['installedVersion']);
+    }
+
     public function testDefaultStartupDoesNotContactReleaseServers(): void {
         $this->config->method('getAutoUpdates')->willReturn(['validator' => false, 'configuration' => false]);
         [$service, $client] = $this->serviceWith([]);
@@ -188,6 +212,21 @@ final class ValidatorAdminInstallationTest extends TestCase {
         self::assertStringContainsString('Standalone-JAR', $status['validator']['updateError']);
     }
 
+    public function testManualConfigurationReportsScenarioVersionWithoutReleaseMarker(): void {
+        mkdir($this->repositoryPath . '/resources', 0700, true);
+        file_put_contents($this->repositoryPath . '/scenarios.xml',
+            '<scenarios xmlns="http://www.xoev.de/de/validator/framework/1/scenarios">'
+            . '<name>Validator Configuration XRechnung 3.0.2</name></scenarios>');
+        [$service] = $this->serviceWith([]);
+
+        $status = $service->getStatus(false);
+
+        self::assertTrue($status['configuration']['installed']);
+        self::assertSame('3.0.2', $status['configuration']['installedXRechnungVersion']);
+        self::assertNull($status['configuration']['installedVersion']);
+        self::assertFalse($status['configuration']['updateAvailable']);
+    }
+
     public function testManualConfigurationIsReportedWithoutInventingVersion(): void {
         mkdir($this->repositoryPath . '/resources', 0700, true);
         file_put_contents($this->repositoryPath . '/scenarios.xml', '<scenarios/>');
@@ -197,6 +236,7 @@ final class ValidatorAdminInstallationTest extends TestCase {
 
         self::assertTrue($status['configuration']['installed']);
         self::assertNull($status['configuration']['installedVersion']);
+        self::assertNull($status['configuration']['installedXRechnungVersion']);
     }
 
     public function testInstallRequiresZipArchive(): void {

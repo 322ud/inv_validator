@@ -1,6 +1,6 @@
 # INValidator
 
-**Aktuelle Version:** [1.0.1](https://github.com/322ud/inv_validator/tree/v1.0.1)
+**Aktuelle Version:** [1.0.2](https://github.com/322ud/inv_validator/tree/v1.0.2)
 
 Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator auf Konformität mit der [XRechnung-Spezifikation](https://de.wikipedia.org/wiki/XRechnung).
 
@@ -293,6 +293,12 @@ Technische Validator-Fehler werden serverseitig protokolliert und als HTTP 503 z
 
 ---
 
+## Änderungen in 1.0.2
+
+- Fehlende Pflichtkomponenten werden auf der Startseite mit Begründung angezeigt; Dateiauswahl und Drag-and-drop-Prüfung sind dann deaktiviert.
+- Versionen direkt konfigurierter Validator-JARs und XRechnung-Szenarien werden auch ohne verwaltete Installationsmetadaten erkannt.
+- Nextcloud 35 nach manuellem Funktionstest als unterstützt freigegeben; Nextcloud 34 bleibt unterstützt.
+
 ## Entwicklung und Tests
 
 Die Abhängigkeiten installieren und die PHP- sowie JavaScript-Tests ausführen:
@@ -315,7 +321,7 @@ bash scripts/build-release.sh
 
 Das Archiv unter `dist/` verwendet das USTAR-Format ohne PAX-Metadaten und enthält ausschließlich die zur Laufzeit benötigten App-Dateien. Nicht in USTAR darstellbare Pfade oder Metadaten führen zum Abbruch der Paketerstellung. CI prüft das Archivformat, installiert genau dieses Archiv zusätzlich in einer frischen Nextcloud-34-Instanz, aktiviert die App und führt Framework-Smoke-Tests aus.
 
-Bei einem Push eines Versions-Tags wie `v1.0.1` veröffentlicht CI nach allen erfolgreichen Prüfungen ein GitHub-Release mit signiertem `inv_validator-VERSION.tar.gz`, Archivsignaturen, öffentlichem Zertifikat und SHA-256-Prüfsummen als Anhängen. Tag und App-Version müssen übereinstimmen. Für ein bereits vorhandenes Tag lässt sich der Workflow **Tests** manuell mit `release_tag` starten; alternativ löst ein Push eines Branches `release/vVERSION` die Veröffentlichung des zugehörigen unveränderten Tags aus. Bestehende Anhänge werden nur bei identischem SHA-256-Digest akzeptiert.
+Bei einem Push eines Versions-Tags wie `v1.0.2` veröffentlicht CI nach allen erfolgreichen Prüfungen ein GitHub-Release mit signiertem `inv_validator-VERSION.tar.gz`, Archivsignaturen, öffentlichem Zertifikat und SHA-256-Prüfsummen als Anhängen. Tag und App-Version müssen übereinstimmen. Für ein bereits vorhandenes Tag lässt sich der Workflow **Tests** manuell mit `release_tag` starten; alternativ löst ein Push eines Branches `release/vVERSION` die Veröffentlichung des zugehörigen unveränderten Tags aus. Bestehende Anhänge werden nur bei identischem SHA-256-Digest akzeptiert.
 
 ### Signierte Releases
 

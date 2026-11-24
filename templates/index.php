@@ -7,6 +7,25 @@
 
     $status = $_['status'];
     preg_match('/XRechnung\s+(\d+(?:\.\d+)+)/i', (string)($status['configuration']['name'] ?? ''), $scenarioVersion);
+    $validationErrors = [];
+    if (!($status['validator']['installed'] ?? false)) {
+        $validationErrors[] = 'Der KoSIT-Validator ist nicht installiert.';
+    }
+    if (!($status['configuration']['installed'] ?? false)) {
+        $validationErrors[] = 'Die XRechnung-Konfiguration fehlt oder ist unvollständig.';
+    }
+    foreach ($status['paths'] ?? [] as $path) {
+        if (($path['key'] ?? '') === 'javaBinary' && $path['state'] !== 'available') {
+            $validationErrors[] = 'Java fehlt oder ist nicht ausführbar.';
+        }
+        if (in_array($path['label'], ['Validator-JAR', 'Szenario-Datei'], true) && $path['state'] !== 'available') {
+            $validationErrors[] = $path['label'] . ' ist nicht verfügbar.';
+        }
+    }
+    if (!function_exists('proc_open')) {
+        $validationErrors[] = 'Der Server erlaubt keinen PHP-Prozessstart (proc_open).';
+    }
+    $validationAvailable = $validationErrors === [];
     $pdfAvailable = (bool)($status['pdfSupport']['available'] ?? false);
     $readme = file_get_contents(dirname(__DIR__) . '/README.md') ?: 'README konnte nicht geladen werden.';
 ?>
@@ -18,17 +37,30 @@
     <div
         id="inv-validator"
         class="section"
+        data-validation-available="<?php p($validationAvailable ? 'true' : 'false'); ?>"
         data-pdf-supported="<?php p($pdfAvailable ? 'true' : 'false'); ?>"
         data-favicon-url="<?php p(image_path('inv_validator', 'app.svg')); ?>"
     >
         <h2>INValidator</h2>
 
+        <?php if ($validationAvailable): ?>
         <p class="inv-validator-intro">
             Prüft XML-Rechnungsdokumente mit dem KoSIT-Validator
             <?php p($status['validator']['displayVersion'] ?? $status['validator']['installedVersion'] ?? 'unbekannt'); ?>,
             XRechnung-Szenario <span id="kosit-configuration-name"><?php p($scenarioVersion[1] ?? 'unbekannt'); ?></span>
             der Koordinierungsstelle für IT-Standards (<a href="http://www.xoev.de" target="_blank" rel="noopener noreferrer">KoSIT</a>).
         </p>
+        <?php else: ?>
+        <div role="alert">
+            <p>Eine Prüfung ist derzeit nicht möglich:</p>
+            <ul>
+                <?php foreach ($validationErrors as $error): ?>
+                <li><?php p($error); ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <p>Bitte wenden Sie sich an die Administration, um die benötigten Komponenten bereitzustellen.</p>
+        </div>
+        <?php endif; ?>
         <a
             class="kosit-link-icon"
             href="#kosit-readme-dialog"
@@ -63,6 +95,7 @@
             </div>
         </div>
 
+        <?php if ($validationAvailable): ?>
         <div id="kosit-upload-options">
             <input
                 type="file"
@@ -71,6 +104,8 @@
                 hidden
             >
         </div>
+
+        <?php endif; ?>
 
         <div id="kosit-status" role="status" aria-live="polite"></div>
 
@@ -91,10 +126,12 @@
             style="display:none;"
         ></iframe>
     </div>
+    <?php if ($validationAvailable): ?>
     <div id="kosit-drop-hint">
         <span id="kosit-drop-text"><?php p($pdfAvailable ? 'XML- oder PDF-Datei auf dieser Seite fallenlassen oder' : 'XML-Datei auf dieser Seite fallenlassen oder'); ?></span>
         <button id="kosit-select-file-button" type="button" class="primary" aria-describedby="kosit-drop-text">
             Datei auswählen
         </button>
     </div>
+    <?php endif; ?>
 </div>
