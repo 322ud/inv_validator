@@ -103,6 +103,11 @@ class ValidatorConfigService
             return $configured;
         }
 
+        $venvPython = $this->validatorRoot . '/pymupdf-venv/bin/python';
+        if (is_file($venvPython) && is_executable($venvPython)) {
+            return $venvPython;
+        }
+
         return $this->findExecutable('python3') ?? '/usr/bin/python3';
     }
 

@@ -60,6 +60,40 @@ final class ValidatorConfigServiceTest extends TestCase {
         self::assertSame('/opt/kosit/validator-standalone.jar', $service->getValidatorJar());
     }
 
+    public function testPythonDiscoveryPrefersDocumentedVenvButHonorsExplicitPaths(): void {
+        $root = sys_get_temp_dir() . '/inv-python-' . bin2hex(random_bytes(8));
+        $bin = $root . '/pymupdf-venv/bin';
+        mkdir($bin, 0700, true);
+        $python = $bin . '/python';
+        file_put_contents($python, '#!/bin/sh');
+        chmod($python, 0700);
+        $appPath = '';
+        $systemPath = '';
+        $app = $this->createStub(IAppConfig::class);
+        $app->method('getAppValueString')->willReturnCallback(static function () use (&$appPath): string { return $appPath; });
+        $system = $this->createStub(IConfig::class);
+        $system->method('getSystemValueString')->willReturnCallback(static function () use (&$systemPath): string { return $systemPath; });
+        $service = new ValidatorConfigService($system, $app, $root);
+        try {
+            self::assertSame($python, $service->getPythonBinary());
+            $systemPath = '/custom/python';
+            self::assertSame($systemPath, $service->getPythonBinary());
+            $appPath = '/saved/python';
+            self::assertSame($appPath, $service->getPythonBinary());
+            $appPath = $systemPath = '';
+            chmod($python, 0600);
+            clearstatcache();
+            self::assertNotSame($python, $service->getPythonBinary());
+            unlink($python);
+            self::assertNotSame($python, $service->getPythonBinary());
+        } finally {
+            if (is_file($python)) unlink($python);
+            rmdir($bin);
+            rmdir(dirname($bin));
+            rmdir($root);
+        }
+    }
+
     public function testSavePathsNormalizesAndPersistsEveryPath(): void {
         $stored = [];
         $appConfig = $this->createMock(IAppConfig::class);

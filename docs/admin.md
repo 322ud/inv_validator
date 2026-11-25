@@ -17,7 +17,7 @@ Ohne explizite Konfiguration verwendet die Anwendung folgende Pfade:
 | Komponente | Pfad |
 |------------|-------|
 | Java | `java` aus dem `PATH` des Webservers; Fallback `/usr/bin/java` |
-| Python (optional) | `python3` aus dem `PATH` des Webservers; Fallback `/usr/bin/python3` |
+| Python (optional) | `/opt/kosit/pymupdf-venv/bin/python`, falls ausführbar; sonst `python3` aus dem Webserver-`PATH`, Fallback `/usr/bin/python3` |
 | Validator-Zielverzeichnis | `/opt/kosit` |
 | Validator JAR | `/opt/kosit/validator-standalone.jar` |
 | XRechnung-Installationsverzeichnis | `/opt/kosit/xrechnung` |
@@ -27,9 +27,9 @@ Ohne explizite Konfiguration verwendet die Anwendung folgende Pfade:
 
 | Temporäre Arbeitsverzeichnisse | Von Nextcloud über `ITempManager` bereitgestellt; zentrale Einstellung `tempdirectory` und Nextcloud-Fallbacks |
 
-Für PHP-Prozessstart und ZipArchive gibt es keinen separat konfigurierbaren Programmpfad: Beide werden in der PHP-Umgebung des Webservers geprüft. PyMuPDF wird aus der ausgewählten Python-Umgebung geladen; `/opt/kosit/pymupdf-venv` ist das unten beschriebene Installationsbeispiel, kein automatisch gewählter Standardpfad.
+Für PHP-Prozessstart und ZipArchive gibt es keinen separat konfigurierbaren Programmpfad: Beide werden in der PHP-Umgebung des Webservers geprüft. PyMuPDF wird aus der ausgewählten Python-Umgebung geladen; Die unten beschriebene Umgebung `/opt/kosit/pymupdf-venv` wird ohne ausdrücklich gesetzten Python-Pfad automatisch bevorzugt.
 
-Die Admin-Seite unter **Administrationseinstellungen → INValidator** zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht. Dasselbe gilt für das optionale Python. Die Admin-Seite prüft mit dem konfigurierten Interpreter, ob PyMuPDF importiert werden kann. Nur dann wird PDF als Eingabe angeboten.
+Die Admin-Seite unter **Administrationseinstellungen → INValidator** zeigt die tatsächlich ermittelten Pfade und deren Status. Java wird, sofern nicht explizit konfiguriert, über den `PATH` des Webserver-Prozesses gesucht. Für Python wird zuerst die ausführbare virtuelle Umgebung `/opt/kosit/pymupdf-venv/bin/python` berücksichtigt, danach der `PATH`. Die Admin-Seite prüft mit dem konfigurierten Interpreter, ob PyMuPDF importiert werden kann. Nur dann wird PDF als Eingabe angeboten.
 
 Die Pfade für Java und das optionale Python können direkt auf der Admin-Seite bearbeitet und gespeichert werden. Validator-JAR und XRechnung-Repository werden über die folgenden Optionen in der Nextcloud-`config.php` konfiguriert. Die Szenariodatei ist immer `scenarios.xml` innerhalb des konfigurierten XRechnung-Repositorys:
 
@@ -110,11 +110,11 @@ Die Pfade müssen mit den in den Administrationseinstellungen hinterlegten Pfade
 PyMuPDF wird nicht durch die Nextcloud-App installiert. Empfohlen wird eine eigene virtuelle Python-Umgebung:
 
 ```bash
-python3 -m venv /opt/kosit/pymupdf-venv
-/opt/kosit/pymupdf-venv/bin/python -m pip install pymupdf
+sudo python3 -m venv /opt/kosit/pymupdf-venv
+sudo /opt/kosit/pymupdf-venv/bin/python -m pip install pymupdf
 ```
 
-Dann muss `/opt/kosit/pymupdf-venv/bin/python` als Python-Pfad in den Administrationseinstellungen gesetzt werden. Fehlt Python oder PyMuPDF, bleibt der XML-Upload ohne Einschränkung verfügbar und PDF wird nicht angeboten.
+Ohne ausdrücklich gesetzten Python-Pfad erkennt die App `/opt/kosit/pymupdf-venv/bin/python` automatisch. Anschließend **Systemprüfung wiederholen**. Bereits gespeicherte Python-Pfade (auch `/usr/bin/python3`) behalten Vorrang und müssen gegebenenfalls auf diesen Interpreter geändert werden. Der Webserver-Benutzer benötigt Lese- und Ausführungsrechte auf die Umgebung. Fehlt Python oder PyMuPDF, bleibt der XML-Upload ohne Einschränkung verfügbar und PDF wird nicht angeboten.
 
 ## Deinstallation
 
