@@ -144,14 +144,20 @@ namespace OCP\AppFramework\Http {
     }
 
     class TemplateResponse {
+        public const RENDER_AS_BASE = 'base';
         /** @param array<string, mixed> $parameters */
         public function __construct(
             private string $appName,
             private string $templateName,
-            private array $parameters = []
+            private array $parameters = [],
+            private string $renderAs = 'user'
         ) {}
 
         /** @return array<string, mixed> */
+        public function getRenderAs(): string {
+            return $this->renderAs;
+        }
+
         public function getParams(): array {
             return $this->parameters;
         }

@@ -3,6 +3,7 @@
     const pending = new WeakMap();
     const documentImages = new WeakMap();
     const helpWindows = new Map();
+    const scrolledTargets = new WeakMap();
 
     const slug = text => text.toLowerCase().replace(/[^\p{L}\p{N}_\s-]/gu, '').replace(/ /g, '-');
     const localLink = (viewer, href) => {
@@ -79,10 +80,16 @@
             try { hash = decodeURIComponent(window.location.hash.slice(1)); } catch { return; }
             if (!hash || viewer.closest('.kosit-readme-modal')) return;
             const root = rich && !rich.hidden ? rich : fallback;
+            const previous = scrolledTargets.get(viewer);
+            if (previous?.hash === hash && previous.root === root) return;
+            const scrollTo = heading => {
+                heading.scrollIntoView({block: 'start'});
+                scrolledTargets.set(viewer, {hash, root});
+            };
             if (root === rich && hash.startsWith('h-')) {
                 // Use Text's actual anchor (and its scroll styling), not our heading slug.
                 const anchor = [...rich.querySelectorAll('[id]')].find(node => node.id === hash);
-                anchor?.scrollIntoView({block: 'start'});
+                if (anchor) scrollTo(anchor);
                 return;
             }
             // Plain Markdown has no Text-generated anchors; retain legacy links as well.
@@ -101,7 +108,7 @@
                 const count = counts.get(base) || 0;
                 counts.set(base, count + 1);
                 if ((count ? base + (viewerAnchor ? '--' : '-') + count : base) === hash) {
-                    heading.scrollIntoView({block: 'start'});
+                    scrollTo(heading);
                     break;
                 }
             }
@@ -111,8 +118,9 @@
         if (!viewer.navigationObserver) {
             viewer.navigationObserver = new MutationObserver(() => { update(); scroll(); });
             viewer.navigationObserver.observe(rich, {childList: true, subtree: true});
-            window.addEventListener('hashchange', scroll);
-            window.addEventListener('kosit-help-focus', scroll);
+            const navigate = () => { scrolledTargets.delete(viewer); scroll(); };
+            window.addEventListener('hashchange', navigate);
+            window.addEventListener('kosit-help-focus', navigate);
         }
     };
 
@@ -121,6 +129,12 @@
             return editors.get(viewer) || null;
         }
 
+        if (viewer.closest('.kosit-readme-page')) {
+            viewer.tabIndex = 0;
+            viewer.setAttribute('role', 'region');
+            viewer.setAttribute('aria-label', 'Dokumentation');
+            viewer.focus({preventScroll: true});
+        }
         prepareNavigation(viewer);
         const richContent = viewer.querySelector('.kosit-readme-rich');
         const fallback = viewer.querySelector('.kosit-readme-fallback');

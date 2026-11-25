@@ -1,0 +1,37 @@
+/* Only loaded by the standalone documentation route, never the admin settings. */
+body#body-public.layout-base {
+    margin: 0;
+    padding: 0;
+    background: var(--color-main-background);
+    color: var(--color-main-text);
+}
+body.layout-base #content.app-public {
+    position: relative;
+    top: auto;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+body.layout-base .kosit-readme-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 16px;
+}
+body.layout-base .kosit-readme-page > .kosit-readme-viewer {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    margin-top: 0;
+    background: var(--color-main-background);
+}
+
+.kosit-readme-page > .kosit-readme-viewer { overflow: auto; overscroll-behavior: contain; }

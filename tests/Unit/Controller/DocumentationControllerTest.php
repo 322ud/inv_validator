@@ -19,6 +19,7 @@ final class DocumentationControllerTest extends TestCase
         $urls->method('linkToRoute')->willReturn('/apps/inv_validator/readme');
         $loader = new TextEditorLoader($this->createStub(IEventDispatcher::class));
         $controller = new DocumentationController('inv_validator', $this->createStub(IRequest::class), $loader, $urls);
+        self::assertSame('base', $controller->index('admin')->getRenderAs());
         self::assertSame('admin', $controller->index('admin')->getParams()['document']);
         self::assertSame('readme', $controller->index('../../config/config.php')->getParams()['document']);
     }

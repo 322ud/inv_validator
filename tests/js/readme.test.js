@@ -115,6 +115,26 @@ describe('README rich text integration', () => {
         window.history.replaceState({}, '', window.location.pathname);
     });
 
+    test('waits for the chapter anchor and does not undo manual scrolling on editor mutations', async () => {
+        const viewer = document.querySelector('[data-kosit-readme]');
+        const rich = viewer.querySelector('.kosit-readme-rich');
+        window.history.replaceState({}, '', '#h-java-installieren');
+        window.OCA.Text = { createEditor: vi.fn(async () => ({ setReadOnly: vi.fn() })) };
+        const initializeReadme = await loadReadme();
+        await initializeReadme(viewer);
+        const heading = document.createElement('h3');
+        heading.id = 'h-java-installieren';
+        heading.scrollIntoView = vi.fn();
+        rich.append(heading);
+        await vi.waitFor(() => expect(heading.scrollIntoView).toHaveBeenCalledTimes(1));
+        rich.append(document.createElement('p'));
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(heading.scrollIntoView).toHaveBeenCalledTimes(1);
+        window.dispatchEvent(new Event('kosit-help-focus'));
+        expect(heading.scrollIntoView).toHaveBeenCalledTimes(2);
+        window.history.replaceState({}, '', window.location.pathname);
+    });
+
     test('keeps the plaintext fallback when Nextcloud Text is unavailable', async () => {
         const initializeReadme = await loadReadme();
         const viewer = document.querySelector('[data-kosit-readme]');

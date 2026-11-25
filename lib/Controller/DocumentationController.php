@@ -31,6 +31,6 @@ class DocumentationController extends Controller
         return new TemplateResponse('inv_validator', 'readme', [
             'document' => in_array($document, ['admin', 'user', 'developer'], true) ? $document : 'readme',
             'readmeUrl' => $this->urls->linkToRoute('inv_validator.documentation.index'),
-        ]);
+        ], TemplateResponse::RENDER_AS_BASE);
     }
 }
