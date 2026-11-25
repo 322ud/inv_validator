@@ -10,7 +10,16 @@ $status = $_['status'];
 $writeCheckIds = ['temp', 'validator-write', 'configuration-write'];
 $systemChecks = array_filter($status['checks'], static fn (array $check): bool => !in_array($check['id'], $writeCheckIds, true));
 $writeChecks = array_filter($status['checks'], static fn (array $check): bool => in_array($check['id'], $writeCheckIds, true));
-$readme = file_get_contents(dirname(__DIR__) . '/README.md') ?: 'README konnte nicht geladen werden.';
+$readme = file_get_contents(dirname(__DIR__) . '/docs/admin.md') ?: 'Administrationsanleitung konnte nicht geladen werden.';
+$readme = str_replace(
+    ['](admin.md', '](user.md', '](developer.md'],
+    [
+        '](https://github.com/322ud/inv_validator/blob/HEAD/docs/admin.md',
+        '](https://github.com/322ud/inv_validator/blob/HEAD/docs/user.md',
+        '](https://github.com/322ud/inv_validator/blob/HEAD/docs/developer.md',
+    ],
+    $readme
+);
 $helpHeadings = [
     'Java installieren' => 'java',
     'PHP und Prozessstart' => 'php',
@@ -68,7 +77,7 @@ $helpHeadings = [
                                 <button type="button" data-component="<?php p($check['id']); ?>"><?php p($check['action'] === 'update' ? 'Update auf ' . $check['latestVersion'] : 'Installieren'); ?></button>
                             <?php endif; ?>
                             <?php if (!$check['ok'] || !empty($check['updateError'])) : ?>
-                                <a href="#kosit-help-<?php p($check['help']); ?>" class="kosit-help-link" data-readme-help aria-label="Info in der README anzeigen">Info <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.6 4H4a4 4 0 0 0 0 8h2.6v-2H4a2 2 0 0 1 0-4h2.6V4Zm2.8 0v2H12a2 2 0 1 1 0 4H9.4v2H12a4 4 0 1 0 0-8H9.4ZM5 7h6v2H5V7Z"/></svg></a>
+                                <a href="#kosit-help-<?php p($check['help']); ?>" class="kosit-help-link" data-readme-help aria-label="Info in der Administrationsanleitung anzeigen">Info <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.6 4H4a4 4 0 0 0 0 8h2.6v-2H4a2 2 0 0 1 0-4h2.6V4Zm2.8 0v2H12a2 2 0 1 1 0 4H9.4v2H12a4 4 0 1 0 0-8H9.4ZM5 7h6v2H5V7Z"/></svg></a>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -83,7 +92,7 @@ $helpHeadings = [
                     <span class="kosit-state kosit-state--<?php p($check['ok'] ? 'available' : 'missing'); ?>" role="img" aria-label="<?php p($check['ok'] ? 'Bereit' : 'Nicht bereit'); ?>"><?php p($check['ok'] ? '✓' : '✕'); ?></span>
                     <div><strong><?php p($check['label']); ?></strong>
                         <span class="kosit-check-detail">(<?php p($check['detail']); ?>)</span>
-                        <?php if (!$check['ok']) : ?><a href="#kosit-help-<?php p($check['help']); ?>" class="kosit-help-link" data-readme-help aria-label="Info in der README anzeigen">Info <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.6 4H4a4 4 0 0 0 0 8h2.6v-2H4a2 2 0 0 1 0-4h2.6V4Zm2.8 0v2H12a2 2 0 1 1 0 4H9.4v2H12a4 4 0 1 0 0-8H9.4ZM5 7h6v2H5V7Z"/></svg></a><?php endif; ?>
+                        <?php if (!$check['ok']) : ?><a href="#kosit-help-<?php p($check['help']); ?>" class="kosit-help-link" data-readme-help aria-label="Info in der Administrationsanleitung anzeigen">Info <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.6 4H4a4 4 0 0 0 0 8h2.6v-2H4a2 2 0 0 1 0-4h2.6V4Zm2.8 0v2H12a2 2 0 1 1 0 4H9.4v2H12a4 4 0 1 0 0-8H9.4ZM5 7h6v2H5V7Z"/></svg></a><?php endif; ?>
                     </div>
                 </li>
             <?php endforeach; ?>
@@ -114,10 +123,10 @@ $helpHeadings = [
     </details>
     <p id="kosit-admin-message" role="status" aria-live="polite"></p>
     <section class="kosit-readme-embed" aria-labelledby="kosit-admin-readme-title">
-        <h3 id="kosit-admin-readme-title">README</h3>
+        <h3 id="kosit-admin-readme-title">Administrationsanleitung</h3>
         <div class="kosit-readme-viewer" data-kosit-readme>
-            <div class="kosit-readme-rich" aria-label="Formatierter Inhalt der README" hidden></div>
-            <pre class="kosit-readme-fallback" tabindex="0" aria-label="Inhalt der README"><?php
+            <div class="kosit-readme-rich" aria-label="Formatierter Inhalt der Administrationsanleitung" hidden></div>
+            <pre class="kosit-readme-fallback" tabindex="0" aria-label="Inhalt der Administrationsanleitung"><?php
             foreach (explode("\n", $readme) as $line) {
                 $heading = preg_replace('/^#+\s+/', '', $line);
                 if (isset($helpHeadings[$heading])) {

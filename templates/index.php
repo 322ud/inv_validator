@@ -27,7 +27,16 @@
     }
     $validationAvailable = $validationErrors === [];
     $pdfAvailable = (bool)($status['pdfSupport']['available'] ?? false);
-    $readme = file_get_contents(dirname(__DIR__) . '/README.md') ?: 'README konnte nicht geladen werden.';
+    $readme = file_get_contents(dirname(__DIR__) . '/docs/user.md') ?: 'Benutzeranleitung konnte nicht geladen werden.';
+    $readme = str_replace(
+        ['](admin.md', '](user.md', '](developer.md'],
+        [
+            '](https://github.com/322ud/inv_validator/blob/HEAD/docs/admin.md',
+            '](https://github.com/322ud/inv_validator/blob/HEAD/docs/user.md',
+            '](https://github.com/322ud/inv_validator/blob/HEAD/docs/developer.md',
+        ],
+        $readme
+    );
 ?>
 
 <div
@@ -65,8 +74,8 @@
             class="kosit-link-icon"
             href="#kosit-readme-dialog"
             id="kosit-readme-open"
-            aria-label="README in diesem Fenster öffnen (interner Link)"
-            title="README öffnen (interner Link)"
+            aria-label="Benutzeranleitung in diesem Fenster öffnen (interner Link)"
+            title="Benutzeranleitung öffnen (interner Link)"
         >
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
                 <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -85,12 +94,12 @@
         >
             <div class="kosit-readme-dialog-panel" role="document">
                 <div class="kosit-readme-dialog-header">
-                    <h3 id="kosit-readme-title">README</h3>
-                    <button id="kosit-readme-close" type="button" aria-label="README schließen">Schließen</button>
+                    <h3 id="kosit-readme-title">Benutzeranleitung</h3>
+                    <button id="kosit-readme-close" type="button" aria-label="Benutzeranleitung schließen">Schließen</button>
                 </div>
                 <div class="kosit-readme-viewer" data-kosit-readme>
-                    <div class="kosit-readme-rich" aria-label="Formatierter Inhalt der README" hidden></div>
-                    <pre class="kosit-readme-fallback" tabindex="0" aria-label="Inhalt der README"><?php p($readme); ?></pre>
+                    <div class="kosit-readme-rich" aria-label="Formatierter Inhalt der Benutzeranleitung" hidden></div>
+                    <pre class="kosit-readme-fallback" tabindex="0" aria-label="Inhalt der Benutzeranleitung"><?php p($readme); ?></pre>
                 </div>
             </div>
         </div>

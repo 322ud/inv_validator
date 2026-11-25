@@ -49,6 +49,7 @@ output_directory="$(cd "$output_directory" && pwd)"
 release_entries=(
     appinfo
     css
+    docs
     img
     js
     lib
