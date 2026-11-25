@@ -76,8 +76,6 @@ Die Systemprüfung führt kurze Prozess- und Schreibtests mit den Rechten des We
 
 Für jede XML-Prüfung und PDF-Extraktion fordert die App über Nextclouds `ITempManager` ein lokales Arbeitsverzeichnis an. Es enthält die Rechnungs-XML und die erzeugten Prüfberichte beziehungsweise das aus einer PDF extrahierte XML. Die App entfernt diese Arbeitsverzeichnisse nach Abschluss und bei behandelten Fehlern; zusätzlich werden sie von Nextclouds Temp-Verwaltung erfasst.
 
-Es gibt keinen separaten Temp-Pfad der App mehr. Die bisherige Option `inv_validator_temp_directory` wird nicht mehr ausgewertet und kann aus `config.php` entfernt werden. Maßgeblich ist Nextclouds zentrale Temp-Verwaltung, insbesondere `tempdirectory`. Der PHP-Benutzer muss dort schreiben können; zusätzliche Root-Rechte benötigt die App nicht. Alte Arbeitsdateien im bisherigen App-Temp-Verzeichnis werden nicht automatisch migriert oder gelöscht.
-
 Eine kleine Sperrdatei `inv-validator-<Hash des App-Pfads>.lock` bleibt im von Nextcloud ermittelten Temp-Basisverzeichnis. Alle Prüfungen dieser App-Installation verwenden dieselbe Datei, damit weiterhin nur ein Validator-Prozess gleichzeitig läuft. Die Betriebssystem-Sperre wird nach der Prüfung und auch bei einem Prozessende freigegeben. Die Datei wird absichtlich nicht nach jeder Prüfung gelöscht, damit parallele Anfragen nicht unterschiedliche Sperrdateien verwenden. Sie enthält keine Rechnungsdaten.
 
 ### KoSIT-Validator und XRechnung-Konfiguration installieren
