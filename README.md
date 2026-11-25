@@ -6,6 +6,16 @@ INValidator ist ein Nextcloud-Frontend für den [KoSIT-Validator](https://github
 
 Optional kann die App ein in hybriden PDF-Rechnungen eingebettetes XML-Rechnungsdokument extrahieren. Geprüft wird ausschließlich das extrahierte XML, nicht die PDF-Datei.
 
+## Screenshots
+
+### Startseite
+
+![Startseite von INValidator](img/startpage.png)
+
+### Prüfbericht
+
+![Prüfbericht einer Rechnung in INValidator](img/report.png)
+
 ## Dokumentation
 
 - [Benutzeranleitung](docs/user.md): Rechnungen prüfen, Berichte verwenden und Eingabegrenzen beachten.

@@ -58,6 +58,8 @@
     <website>https://github.com/322ud/inv_validator</website>
     <bugs>https://github.com/322ud/inv_validator/issues</bugs>
     <repository type="git">https://github.com/322ud/inv_validator.git</repository>
+    <screenshot>https://raw.githubusercontent.com/322ud/inv_validator/HEAD/img/startpage.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/322ud/inv_validator/HEAD/img/report.png</screenshot>
 
     <dependencies>
       <php min-version="8.2" />
