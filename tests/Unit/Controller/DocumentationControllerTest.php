@@ -16,7 +16,7 @@ final class DocumentationControllerTest extends TestCase
     public function testOnlyPackagedDocumentsCanBeSelected(): void
     {
         $urls = $this->createStub(IURLGenerator::class);
-        $urls->method('linkToRoute')->willReturn('/apps/inv_validator/documentation');
+        $urls->method('linkToRoute')->willReturn('/apps/inv_validator/readme');
         $loader = new TextEditorLoader($this->createStub(IEventDispatcher::class));
         $controller = new DocumentationController('inv_validator', $this->createStub(IRequest::class), $loader, $urls);
         self::assertSame('admin', $controller->index('admin')->getParams()['document']);

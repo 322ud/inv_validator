@@ -65,3 +65,19 @@ test('configures interpreter paths and keeps infrastructure paths read-only', as
 
     await expect(pageErrors).toEqual([]);
 });
+
+test('opens local administration help and its requested chapter', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/index.php/settings/admin/inv_validator');
+    const link = page.locator('#kosit-paths-form [data-kosit-help]').first();
+    const href = await link.getAttribute('href');
+    expect(href).toContain('/apps/inv_validator/readme?document=admin#h-java-installieren');
+    const response = await page.request.get(href.split('#')[0]);
+    expect(response.status()).toBe(200);
+    const popupPromise = page.waitForEvent('popup');
+    await link.click();
+    const popup = await popupPromise;
+    await expect(popup.locator('.kosit-readme-page')).toBeVisible();
+    await expect(popup.locator('[id="h-java-installieren"]')).toBeInViewport();
+    await popup.close();
+});
