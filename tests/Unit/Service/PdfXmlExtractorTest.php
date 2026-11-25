@@ -9,6 +9,7 @@ use OCA\INValidator\Service\PdfSupportService;
 use OCA\INValidator\Service\PdfXmlExtractor;
 use OCA\INValidator\Service\ValidatorConfigService;
 use PHPUnit\Framework\TestCase;
+use OCP\ITempManager;
 
 final class PdfXmlExtractorTest extends TestCase
 {
@@ -18,6 +19,18 @@ final class PdfXmlExtractorTest extends TestCase
     {
         $this->temporaryDirectory = sys_get_temp_dir() . '/kosit-pdf-test-' . bin2hex(random_bytes(8));
         mkdir($this->temporaryDirectory, 0700, true);
+    }
+
+    private function tempManager(): ITempManager
+    {
+        $manager = $this->createStub(ITempManager::class);
+        $manager->method('getTempBaseDir')->willReturn($this->temporaryDirectory);
+        $manager->method('getTemporaryFolder')->willReturnCallback(function (): string {
+            $directory = $this->temporaryDirectory . '/oc_tmp_' . bin2hex(random_bytes(8));
+            mkdir($directory, 0700);
+            return $directory . '/';
+        });
+        return $manager;
     }
 
     protected function tearDown(): void
@@ -42,7 +55,8 @@ final class PdfXmlExtractorTest extends TestCase
 
         $extractor = new PdfXmlExtractor(
             $this->config(),
-            $this->availableSupport()
+            $this->availableSupport(),
+            $this->tempManager()
         );
 
         self::assertSame('<invoice/>', $extractor->extract($input));
@@ -63,7 +77,16 @@ final class PdfXmlExtractorTest extends TestCase
 
         $this->expectException(DocumentInputException::class);
         $this->expectExceptionMessage('nicht verfügbar');
-        (new PdfXmlExtractor($this->config(), $support))->extract('/unused.pdf');
+        (new PdfXmlExtractor($this->config(), $support, $this->tempManager()))->extract('/unused.pdf');
+    }
+
+    public function testReportsFailureToAllocateNextcloudTemporaryFolder(): void
+    {
+        $manager = $this->createStub(ITempManager::class);
+        $manager->method('getTemporaryFolder')->willReturn(false);
+        $this->expectException(\OCA\INValidator\Exception\ValidationException::class);
+        $this->expectExceptionMessage('Nextcloud konnte kein temporäres Arbeitsverzeichnis anlegen.');
+        (new PdfXmlExtractor($this->config(), $this->availableSupport(), $manager))->extract('/unused.pdf');
     }
 
     private function config(): ValidatorConfigService
@@ -73,7 +96,6 @@ final class PdfXmlExtractorTest extends TestCase
             dirname(__DIR__, 2) . '/fixtures/fake-python.php'
         );
         $config->method('getPdfExtractorScript')->willReturn('/extractor.py');
-        $config->method('getTempDirectory')->willReturn($this->temporaryDirectory);
 
         return $config;
     }

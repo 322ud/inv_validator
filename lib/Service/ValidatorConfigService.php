@@ -124,14 +124,6 @@ class ValidatorConfigService
         return $this->getRepositoryPath() . '/scenarios.xml';
     }
 
-    public function getTempDirectory(): string
-    {
-        return $this->config->getSystemValueString(
-            'inv_validator_temp_directory',
-            sys_get_temp_dir() . '/nextcloud-inv-validator'
-        );
-    }
-
     public function getPhpBinary(): string
     {
         return PHP_BINARY;

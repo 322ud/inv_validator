@@ -211,7 +211,7 @@ jobs:
           php occ config:system:set inv_validator_jar \
             --value="$KOSIT_ASSET_DIRECTORY/validator-${KOSIT_VALIDATOR_VERSION}-standalone.jar"
           php occ config:system:set inv_validator_repository --value="$KOSIT_REPOSITORY"
-          php occ config:system:set inv_validator_temp_directory \
+          php occ config:system:set tempdirectory \
             --value="$NEXTCLOUD_ROOT/data/inv-validator-temp"
       - name: Run browser end-to-end test
         env:

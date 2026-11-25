@@ -40,16 +40,14 @@ transition: transform 0.15s;
 }
 .kosit-path-settings { margin-top: 20px; }
 .kosit-path-settings summary { cursor: pointer; }
-#kosit-paths-form label { display: block; margin: 12px 0; }
-.kosit-path-input { display: block; width: 100%; max-width: 650px; box-sizing: border-box; }
+#kosit-paths-form label { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+#kosit-paths-form label > span { flex: 0 0 140px; }
+.kosit-path-input { display: inline-block; width: 100%; min-width: 0; max-width: 650px; box-sizing: border-box; }
 .kosit-table-scroll { overflow-x: auto; margin-top: 12px; }
 .kosit-system { width: 100%; border-collapse: collapse; }
 .kosit-system th, .kosit-system td { padding: 10px; border-bottom: 1px solid var(--color-border); text-align: left; vertical-align: top; }
 .kosit-system th { min-width: 150px; }
 .kosit-check-detail { overflow-wrap: anywhere; }
-#kosit-admin .kosit-help-link { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; vertical-align: middle; }
-.kosit-help-link svg { width: 1em; height: 1em; flex: 0 0 auto; }
-.kosit-system td:last-child button + .kosit-help-link { margin-top: 6px; }
 .kosit-state--available { color: #16833b; }
 .kosit-state--missing { color: #c62828; }
 .kosit-state { font-size: 22px; font-weight: 700; line-height: 1; }
@@ -99,3 +97,38 @@ display: none !important;
 .kosit-remove-component code { overflow-wrap: anywhere; }
 .kosit-remove-component label { display: block; margin: 12px 0; }
 .kosit-remove-component label.kosit-switch { display: flex; }
+
+#kosit-settings-form h4 { margin-top: 24px; }
+.kosit-system .kosit-switch { margin: 0 0 8px; }
+
+#kosit-admin .kosit-admin-help {
+    display: inline-flex;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-main-text);
+    text-decoration: none;
+}
+#kosit-admin .kosit-admin-help span {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1;
+}
+#kosit-admin .kosit-admin-help:hover { color: var(--color-primary-element); }
+#kosit-admin .kosit-admin-help:focus-visible {
+    outline: 2px solid var(--color-main-text);
+    outline-offset: 2px;
+    border-radius: 50%;
+}
+
+
+.kosit-help-cell { width: 24px; }

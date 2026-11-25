@@ -25,7 +25,6 @@ final class SystemCheckServiceTest extends TestCase
         $config->method('getValidatorJar')->willReturn($root . '/validator.jar');
         $config->method('getRepositoryPath')->willReturn($root);
         $config->method('getScenarioFile')->willReturn($root . '/scenarios.xml');
-        $config->method('getTempDirectory')->willReturn($root . '/missing/temp');
         $config->method('getPythonBinary')->willReturn('/missing/python');
         $status = [
             'validator' => ['installedVersion' => '1.6.1', 'installed' => true, 'latestVersion' => '1.6.2', 'updateAvailable' => true, 'updateError' => null],
@@ -37,7 +36,6 @@ final class SystemCheckServiceTest extends TestCase
             $checks = array_column($service->check($status), null, 'id');
             self::assertTrue($checks['java']['ok']);
             self::assertSame('17.0.1', $checks['java']['version']);
-            self::assertTrue($checks['temp']['ok']);
             self::assertDirectoryDoesNotExist($root . '/missing');
             self::assertSame('update', $checks['validator']['action']);
             self::assertTrue($checks['configuration']['ok']);

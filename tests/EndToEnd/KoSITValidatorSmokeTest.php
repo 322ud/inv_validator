@@ -8,6 +8,7 @@ use OCA\INValidator\Service\KoSITValidatorService;
 use OCA\INValidator\Service\ValidatorConfigService;
 use OCA\INValidator\Service\ValidatorProcessRunner;
 use PHPUnit\Framework\TestCase;
+use OCP\ITempManager;
 
 final class KoSITValidatorSmokeTest extends TestCase {
     private string $temporaryDirectory = '';
@@ -35,12 +36,24 @@ final class KoSITValidatorSmokeTest extends TestCase {
         $config->method('getValidatorJar')->willReturn($validatorJar);
         $config->method('getRepositoryPath')->willReturn($repositoryPath);
         $config->method('getScenarioFile')->willReturn($scenarioFile);
-        $config->method('getTempDirectory')->willReturn($this->temporaryDirectory);
 
         $this->service = new KoSITValidatorService(
             $config,
+            $this->tempManager(),
             new ValidatorProcessRunner(timeoutSeconds: 120.0)
         );
+    }
+
+    private function tempManager(): ITempManager
+    {
+        $manager = $this->createStub(ITempManager::class);
+        $manager->method('getTempBaseDir')->willReturn($this->temporaryDirectory);
+        $manager->method('getTemporaryFolder')->willReturnCallback(function (): string {
+            $directory = $this->temporaryDirectory . '/oc_tmp_' . bin2hex(random_bytes(8));
+            mkdir($directory, 0700);
+            return $directory . '/';
+        });
+        return $manager;
     }
 
     protected function tearDown(): void {
@@ -106,7 +119,7 @@ final class KoSITValidatorSmokeTest extends TestCase {
     }
 
     private function assertNoWorkingDirectoriesRemain(): void {
-        self::assertSame([], glob($this->temporaryDirectory . '/inv-validator-*') ?: []);
+        self::assertSame([], glob($this->temporaryDirectory . '/oc_tmp_*') ?: []);
     }
 
     private function removeDirectory(string $directory): void {

@@ -9,6 +9,7 @@ use OCA\INValidator\Service\KoSITValidatorService;
 use OCA\INValidator\Service\ValidatorConfigService;
 use OCA\INValidator\Service\ValidatorProcessRunner;
 use PHPUnit\Framework\TestCase;
+use OCP\ITempManager;
 
 final class KoSITValidatorProcessIntegrationTest extends TestCase {
     private const VALIDATOR_FIXTURE = __DIR__ . '/../../fixtures/fake-validator.php';
@@ -30,12 +31,24 @@ final class KoSITValidatorProcessIntegrationTest extends TestCase {
         $config->method('getValidatorJar')->willReturn($this->temporaryDirectory . '/validator.jar');
         $config->method('getRepositoryPath')->willReturn($this->temporaryDirectory . '/repository');
         $config->method('getScenarioFile')->willReturn($this->temporaryDirectory . '/repository/scenarios.xml');
-        $config->method('getTempDirectory')->willReturn($this->temporaryDirectory);
 
         $this->service = new KoSITValidatorService(
             $config,
+            $this->tempManager(),
             new ValidatorProcessRunner(timeoutSeconds: 0.2, terminationGraceSeconds: 0.05)
         );
+    }
+
+    private function tempManager(): ITempManager
+    {
+        $manager = $this->createStub(ITempManager::class);
+        $manager->method('getTempBaseDir')->willReturn($this->temporaryDirectory);
+        $manager->method('getTemporaryFolder')->willReturnCallback(function (): string {
+            $directory = $this->temporaryDirectory . '/oc_tmp_' . bin2hex(random_bytes(8));
+            mkdir($directory, 0700);
+            return $directory . '/';
+        });
+        return $manager;
     }
 
     protected function tearDown(): void {
@@ -90,7 +103,7 @@ final class KoSITValidatorProcessIntegrationTest extends TestCase {
 
     public function testConcurrentProcessIsRejectedAndLockCanBeReused(): void {
         $process = proc_open(
-            [PHP_BINARY, self::LOCK_FIXTURE, $this->temporaryDirectory . '/validator.lock'],
+            [PHP_BINARY, self::LOCK_FIXTURE, $this->temporaryDirectory . '/inv-validator-' . hash('sha256', '') . '.lock'],
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes
         );
@@ -119,11 +132,11 @@ final class KoSITValidatorProcessIntegrationTest extends TestCase {
     }
 
     private function assertNoWorkingDirectoriesRemain(): void {
-        self::assertSame([], glob($this->temporaryDirectory . '/inv-validator-*') ?: []);
+        self::assertSame([], glob($this->temporaryDirectory . '/oc_tmp_*') ?: []);
     }
 
     private function assertLockIsAvailable(): void {
-        $lock = fopen($this->temporaryDirectory . '/validator.lock', 'c');
+        $lock = fopen($this->temporaryDirectory . '/inv-validator-' . hash('sha256', '') . '.lock', 'c');
         self::assertIsResource($lock);
         self::assertTrue(flock($lock, LOCK_EX | LOCK_NB));
         flock($lock, LOCK_UN);

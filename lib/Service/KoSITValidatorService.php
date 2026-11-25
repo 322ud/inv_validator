@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\INValidator\Service;
 
 use OCA\INValidator\Exception\ValidationException;
+use OCP\ITempManager;
 
 class KoSITValidatorService
 {
@@ -14,6 +15,7 @@ class KoSITValidatorService
 
     public function __construct(
         private ValidatorConfigService $config,
+        private ITempManager $tempManager,
         ?ValidatorProcessRunner $processRunner = null
     ) {
         $this->processRunner = $processRunner ?? new ValidatorProcessRunner();
@@ -46,7 +48,8 @@ class KoSITValidatorService
     /** @return resource */
     private function acquireExecutionLock()
     {
-        $lockPath = $this->config->getTempDirectory() . '/validator.lock';
+        $lockPath = $this->tempManager->getTempBaseDir() . '/inv-validator-'
+            . hash('sha256', $this->config->getAppDirectory()) . '.lock';
         $lock = fopen($lockPath, 'c');
 
         if ($lock === false) {
@@ -145,15 +148,11 @@ class KoSITValidatorService
 
     private function createTempDirectory(): string
     {
-        $tempDir = $this->config->getTempDirectory()
-        . '/inv-validator-'
-        . bin2hex(random_bytes(16));
-
-        if (!mkdir($tempDir, 0700, true) && !is_dir($tempDir)) {
-            throw new ValidationException('Could not create temporary directory');
+        $directory = $this->tempManager->getTemporaryFolder('inv-validator');
+        if ($directory === false) {
+            throw new ValidationException('Nextcloud konnte kein temporäres Arbeitsverzeichnis anlegen.');
         }
-
-        return $tempDir;
+        return rtrim($directory, '/');
     }
 
     private function writeXmlFile(

@@ -77,7 +77,8 @@ Prozessausgaben und Berichte besitzen serverseitige Größenlimits. XML-Berichte
   - Liefert JSON-Antworten zurück.
 
 - `KoSITValidatorService`
-  - Erzeugt temporäre Dateien.
+  - Fordert lokale Arbeitsverzeichnisse über `OCP\ITempManager` an.
+  - Verhindert parallele Validator-Läufe über eine gemeinsame `flock`-Sperre im Nextcloud-Temp-Basisverzeichnis; der Dateiname enthält einen Hash des App-Pfads.
   - Führt den Validator-Prozess aus.
   - Extrahiert den HTML-Bericht mit der Validator-Option `-h`.
   - Begrenzt Laufzeit, Parallelität und Speichernutzung für Ausgaben.

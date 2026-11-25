@@ -50,7 +50,6 @@ final class ValidatorAdminInstallationTest extends TestCase {
         $this->config->method('getPythonBinary')->willReturn(PHP_BINARY);
         $this->config->method('getRepositoryPath')->willReturn($this->repositoryPath);
         $this->config->method('getScenarioFile')->willReturn($this->repositoryPath . '/scenarios.xml');
-        $this->config->method('getTempDirectory')->willReturn($this->temporaryDirectory);
     }
 
     protected function tearDown(): void {
@@ -165,7 +164,7 @@ final class ValidatorAdminInstallationTest extends TestCase {
         self::assertArrayHasKey('key', $paths['Python (optional)']);
         self::assertArrayNotHasKey('key', $paths['Validator-JAR']);
         self::assertArrayNotHasKey('key', $paths['XRechnung-Repository']);
-        self::assertArrayNotHasKey('key', $paths['Temporäres Verzeichnis']);
+        self::assertArrayNotHasKey('Temporäres Verzeichnis', $paths);
         self::assertSame(self::VALIDATOR_API, $client->requests[0]['url']);
         self::assertSame(self::CONFIGURATION_API, $client->requests[1]['url']);
     }

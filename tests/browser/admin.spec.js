@@ -42,7 +42,8 @@ test('configures interpreter paths and keeps infrastructure paths read-only', as
     await expect(page.locator('input[name="repositoryPath"]')).toHaveCount(0);
     await expect(page.locator('input[name="tempDirectory"]')).toHaveCount(0);
 
-    await admin.locator('summary').filter({ hasText: 'Programmpfade' }).click();
+    await expect(admin.getByRole('heading', { name: 'Einstellungen', exact: true })).toBeVisible();
+    await expect(admin.locator('table.kosit-system')).toHaveCount(4);
     const pythonBinary = page.locator('input[name="pythonBinary"]');
     const originalPythonBinary = await pythonBinary.inputValue();
     const browserPythonBinary = `${nextcloudRoot}/data/test-python`;
@@ -54,11 +55,8 @@ test('configures interpreter paths and keeps infrastructure paths read-only', as
 
     const readme = admin.locator('.kosit-readme-rich');
     await expect(readme).toBeVisible();
-    await admin.locator('[data-readme-help][href="#kosit-help-pdf"]').first().click();
     await expect(admin.locator('.kosit-readme-fallback')).toBeHidden();
-    await expect(readme).toBeVisible();
-    await expect(readme.getByRole('heading', { level: 3 }).filter({ hasText: 'Optionale PDF-Unterstützung' }))
-        .toBeInViewport();
+    await expect(readme.getByRole('heading', { name: 'INValidator', exact: true })).toBeVisible();
 
     await page.locator('input[name="pythonBinary"]').fill(originalPythonBinary);
     await savePaths(page);

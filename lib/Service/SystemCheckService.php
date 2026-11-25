@@ -71,14 +71,6 @@ class SystemCheckService
                 'components'
             ),
             $this->row(
-                'temp',
-                'Temporäres Verzeichnis',
-                $this->probeWritableDirectory($this->config->getTempDirectory()),
-                null,
-                $this->config->getTempDirectory(),
-                'paths'
-            ),
-            $this->row(
                 'validator-write',
                 'Validator-Installation',
                 $this->probeWritableDirectory(dirname($jar)),

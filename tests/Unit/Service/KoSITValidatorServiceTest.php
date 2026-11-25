@@ -9,6 +9,7 @@ use OCA\INValidator\Service\KoSITValidatorService;
 use OCA\INValidator\Service\ValidatorConfigService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCP\ITempManager;
 
 final class KoSITValidatorServiceTest extends TestCase {
     private string $temporaryDirectory;
@@ -19,7 +20,19 @@ final class KoSITValidatorServiceTest extends TestCase {
         mkdir($this->temporaryDirectory, 0700, true);
 
         $config = $this->createStub(ValidatorConfigService::class);
-        $this->service = new KoSITValidatorService($config);
+        $this->service = new KoSITValidatorService($config, $this->tempManager());
+    }
+
+    private function tempManager(): ITempManager
+    {
+        $manager = $this->createStub(ITempManager::class);
+        $manager->method('getTempBaseDir')->willReturn($this->temporaryDirectory);
+        $manager->method('getTemporaryFolder')->willReturnCallback(function (): string {
+            $directory = $this->temporaryDirectory . '/oc_tmp_' . bin2hex(random_bytes(8));
+            mkdir($directory, 0700);
+            return $directory . '/';
+        });
+        return $manager;
     }
 
     protected function tearDown(): void {
@@ -139,6 +152,15 @@ final class KoSITValidatorServiceTest extends TestCase {
         $reports = $this->invoke('findReportFiles', $this->temporaryDirectory);
 
         self::assertNull($reports['xml']);
+    }
+
+    public function testReportsFailureToAllocateNextcloudTemporaryFolder(): void {
+        $manager = $this->createStub(ITempManager::class);
+        $manager->method('getTemporaryFolder')->willReturn(false);
+        $this->service = new KoSITValidatorService($this->createStub(ValidatorConfigService::class), $manager);
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Nextcloud konnte kein temporäres Arbeitsverzeichnis anlegen.');
+        $this->invoke('createTempDirectory');
     }
 
     private function writeReport(string $content): string {

@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 namespace OCP {
+    interface ITempManager {
+        public function getTemporaryFolder(string $postFix = ''): string|false;
+        public function getTempBaseDir(): string;
+    }
+
     interface IL10N {
         public function t(string $text, array $parameters = [], ?int $count = null): string;
     }

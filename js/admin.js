@@ -4,11 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     const message = root.querySelector('#kosit-admin-message');
-    const body = root.querySelector('#kosit-system-body');
-    const writeChecks = root.querySelector('#kosit-write-checks');
-    const writeCheckIds = ['temp', 'validator-write', 'configuration-write'];
+    let autoUpdates = JSON.parse(root.querySelector('#kosit-settings-form').dataset.autoUpdates || 'null') || Object.fromEntries(['validator', 'configuration'].map(key =>
+        [key, root.querySelector(`[name="${key}"]`)?.checked || false]));
     const viewer = root.querySelector('[data-kosit-readme]');
-    const readmeReady = window.OCA?.INValidator?.initializeReadme(viewer);
+    window.OCA?.INValidator?.initializeReadme(viewer);
     let busy = false;
 
     const request = async (url, options = {}) => {
@@ -79,94 +78,88 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const createHelp = (check) => {
+    const helpSections = JSON.parse(root.dataset.helpSections || '{}');
+    const createHelp = (id, label) => {
         const help = document.createElement('a');
-        help.href = `#kosit-help-${check.help}`;
-        help.dataset.readmeHelp = '';
-        help.className = 'kosit-help-link';
-        help.setAttribute('aria-label', 'Info in der README anzeigen');
-        help.append(document.createTextNode('Info '));
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('viewBox', '0 0 16 16');
-        svg.setAttribute('width', '16');
-        svg.setAttribute('height', '16');
-        svg.setAttribute('aria-hidden', 'true');
-        svg.setAttribute('focusable', 'false');
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('fill', 'currentColor');
-        path.setAttribute('d', 'M6.6 4H4a4 4 0 0 0 0 8h2.6v-2H4a2 2 0 0 1 0-4h2.6V4Zm2.8 0v2H12a2 2 0 1 1 0 4H9.4v2H12a4 4 0 1 0 0-8H9.4ZM5 7h6v2H5V7Z');
-        svg.append(path);
-        help.append(svg);
+        help.href = `https://github.com/322ud/inv_validator/blob/HEAD/docs/admin.md#${helpSections[id]}`;
+        help.className = 'kosit-admin-help';
+        help.target = '_blank';
+        help.rel = 'noopener noreferrer';
+        const description = `Hilfe zu „${label}“ (öffnet ein neues Fenster)`;
+        help.setAttribute('aria-label', description);
+        help.title = description;
+        const icon = document.createElement('span');
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = 'i';
+        help.append(icon);
         return help;
-    };
-
-    const createState = (check) => {
-        const state = document.createElement('span');
-        state.className = `kosit-state kosit-state--${check.ok ? 'available' : 'missing'}`;
-        state.setAttribute('role', 'img');
-        state.setAttribute('aria-label', check.ok ? 'Bereit' : 'Nicht bereit');
-        state.textContent = check.ok ? '✓' : '✕';
-        return state;
     };
 
     const updateView = (status) => {
         updateManagedComponents(status.managedComponents || []);
-        if (status.autoUpdates) {
-            for (const key of ['validator', 'configuration']) {
-                root.querySelector(`#kosit-settings-form [name="${key}"]`).checked = status.autoUpdates[key];
+        autoUpdates = status.autoUpdates || autoUpdates;
+        const checks = Object.fromEntries(status.checks.map(check => [check.id, check]));
+        const groups = {
+            requirements: ['php', 'java'], validation: ['validator', 'configuration'],
+            pdf: ['pymupdf', 'python'], installation: ['zip', 'validator-write', 'configuration-write'],
+        };
+        const labels = { php: 'PHP-Prozessstart', java: 'Java', validator: 'KoSIT-Validator',
+            configuration: 'XRechnung-Szenario', pymupdf: 'PyMuPDF', python: 'Python', zip: 'PHP ZipArchive' };
+        for (const [group, ids] of Object.entries(groups)) {
+            const body = root.querySelector(`[data-group="${group}"]`);
+            body.replaceChildren();
+            for (const id of ids) {
+                const check = checks[id];
+                if (!check || (id === 'python' && !checks.pymupdf?.ok)
+                    || (id.endsWith('-write') && !checks.zip?.ok)) continue;
+                const row = document.createElement('tr');
+                row.dataset.check = id;
+                const label = document.createElement('th');
+                label.scope = 'row';
+                label.textContent = labels[id] || check.detail;
+                const value = document.createElement('td');
+                const missing = id === 'php' ? 'nicht verfügbar' : id === 'java' ? '>= v11 nicht verfügbar' : 'nicht installiert';
+                value.textContent = id.endsWith('-write') ? (check.ok ? 'Schreibrecht' : 'kein Schreibrecht')
+                    : check.ok ? (check.version || 'Version unbekannt') : missing;
+                const actions = document.createElement('td');
+                if (['validator', 'configuration'].includes(id) && check.ok && checks.zip?.ok && checks[`${id}-write`]?.ok) {
+                    const toggle = document.createElement('label');
+                    toggle.className = 'kosit-switch';
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.name = id;
+                    input.setAttribute('role', 'switch');
+                    input.setAttribute('aria-label', `${labels[id]} automatisch aktualisieren`);
+                    input.checked = autoUpdates[id];
+                    toggle.append(input, document.createTextNode('automatisch aktualisieren'));
+                    actions.append(toggle);
+                }
+                if (check.action) {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.dataset.component = id;
+                    button.textContent = check.action === 'update' ? `Update auf ${check.latestVersion}` : 'Installieren';
+                    actions.append(button);
+                }
+                if (check.updateError) {
+                    const error = document.createElement('p');
+                    error.textContent = `Update-Prüfung: ${check.updateError}`;
+                    actions.append(error);
+                }
+                const details = document.createElement('details');
+                const summary = document.createElement('summary');
+                summary.textContent = 'Details';
+                const detail = document.createElement('p');
+                detail.textContent = check.detail;
+                details.append(summary, detail);
+                actions.append(details);
+                const helpCell = document.createElement('td');
+                helpCell.className = 'kosit-help-cell';
+                helpCell.append(createHelp(id, label.textContent));
+                row.append(label, value, actions, helpCell);
+                body.append(row);
             }
         }
-        writeChecks.replaceChildren(...status.checks.filter(check => writeCheckIds.includes(check.id)).map(check => {
-            const item = document.createElement('li');
-            item.dataset.check = check.id;
-            const content = document.createElement('div');
-            const label = document.createElement('strong');
-            label.textContent = check.label;
-            const detail = document.createElement('span');
-            detail.className = 'kosit-check-detail';
-            detail.textContent = `(${check.detail})`;
-            content.append(label, document.createTextNode(' '), detail);
-            if (!check.ok) {
-                content.append(document.createTextNode(' '), createHelp(check));
-            }
-            item.append(createState(check), content);
-            return item;
-        }));
-        body.replaceChildren(...status.checks.filter(check => !writeCheckIds.includes(check.id)).map((check) => {
-            const row = document.createElement('tr');
-            row.dataset.check = check.id;
-            const label = document.createElement('th');
-            label.scope = 'row';
-            label.textContent = check.label;
-            const version = document.createElement('td');
-            version.textContent = check.version || '—';
-            const result = document.createElement('td');
-            const stateCell = document.createElement('td');
-            stateCell.className = 'kosit-result-column';
-            stateCell.append(createState(check));
-            const detail = document.createElement('div');
-            detail.className = 'kosit-check-detail';
-            detail.textContent = check.detail;
-            result.append(detail);
-            if (check.updateError) {
-                const error = document.createElement('div');
-                error.textContent = `Update-Prüfung: ${check.updateError}`;
-                result.append(error);
-            }
-            const action = document.createElement('td');
-            if (check.action) {
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.dataset.component = check.id;
-                button.textContent = check.action === 'update' ? `Update auf ${check.latestVersion}` : 'Installieren';
-                action.append(button);
-            }
-            if (!check.ok || check.updateError) {
-                action.append(createHelp(check));
-            }
-            row.append(stateCell, label, version, result, action);
-            return row;
-        }));
     };
 
     const run = async (url, options, progress) => {
@@ -200,13 +193,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const previous = !input.checked;
+        autoUpdates[input.name] = input.checked;
         const data = new FormData();
         for (const key of ['validator', 'configuration']) {
-            data.append(key, settingsForm.elements[key].checked ? 'yes' : 'no');
+            data.append(key, (settingsForm.elements[key]?.checked ?? autoUpdates[key]) ? 'yes' : 'no');
         }
         const saved = await run('settings', { method: 'POST', body: data }, 'Update-Einstellungen werden gespeichert …');
         if (!saved) {
             input.checked = previous;
+            autoUpdates[input.name] = previous;
         }
     });
     root.querySelector('#kosit-paths-form').addEventListener('submit', (event) => {
@@ -233,52 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = new FormData();
             data.append('component', button.dataset.component);
             run('install', { method: 'POST', body: data }, 'Komponente wird installiert / aktualisiert …');
-        }
-        const help = event.target.closest('[data-readme-help]');
-        if (help) {
-            const target = document.getElementById(help.hash.slice(1));
-            if (!target || !viewer) {
-                return;
-            }
-            event.preventDefault();
-            await readmeReady;
-            const rich = viewer.querySelector('.kosit-readme-rich');
-            if (rich.hidden) {
-                target.scrollIntoView({ block: 'center' });
-                return;
-            }
-
-            const normalize = (text) => text.replace(/[\u200B-\u200D\uFEFF]/g, '')
-                .replace(/^\s*#{1,6}\s*/, '').replace(/\s+/g, ' ').trim();
-            const findHeading = () => {
-                const content = rich.querySelector('.ProseMirror') || rich;
-                return [...content.querySelectorAll('h1, h2, h3, h4, h5, h6')].find((element) => {
-                    const heading = element.cloneNode(true);
-                    heading.querySelectorAll('button, [aria-hidden="true"]').forEach((decoration) => decoration.remove());
-                    return normalize(heading.textContent) === normalize(target.dataset.heading);
-                });
-            };
-            let heading = findHeading();
-            if (!heading) {
-                // Nextcloud Text can mount its headings after createEditor has resolved.
-                heading = await new Promise((resolve) => {
-                    const finish = (element) => {
-                        observer.disconnect();
-                        clearTimeout(timeout);
-                        resolve(element);
-                    };
-                    const observer = new MutationObserver(() => {
-                        const element = findHeading();
-                        if (element) {
-                            finish(element);
-                        }
-                    });
-                    const timeout = setTimeout(() => finish(null), 2000);
-                    observer.observe(rich, { childList: true, subtree: true, characterData: true });
-                });
-            }
-            // A missing anchor must never replace the rendered Markdown with raw source.
-            (heading || rich).scrollIntoView({ block: 'center' });
         }
     });
 });

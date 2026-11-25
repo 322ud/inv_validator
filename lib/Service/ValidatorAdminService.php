@@ -77,7 +77,6 @@ class ValidatorAdminService
                 ['label' => 'Validator-JAR', 'path' => $jar, 'state' => $this->fileState($jar)],
                 ['label' => 'XRechnung-Repository', 'path' => $repository, 'state' => $this->directoryState($repository)],
                 ['label' => 'Szenario-Datei', 'path' => $this->config->getScenarioFile(), 'state' => $this->fileState($this->config->getScenarioFile())],
-                ['label' => 'Temporäres Verzeichnis', 'path' => $this->config->getTempDirectory(), 'state' => $this->directoryState($this->config->getTempDirectory(), true)],
             ],
             'validator' => [
                 'installed' => $installedValidatorVersion !== null,

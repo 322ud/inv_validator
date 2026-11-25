@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const markup = `
-<div id="kosit-admin">
+<div id="kosit-admin" data-help-sections='{"java":"java-installieren","validator":"kosit-validator-und-xrechnung-konfiguration-installieren"}'>
 <form id="kosit-settings-form">
 <input type="checkbox" name="validator" role="switch">
 <input type="checkbox" name="configuration" role="switch">
@@ -11,8 +11,11 @@ const markup = `
 <button type="submit" id="kosit-save-paths">Pfade speichern</button>
 </form>
 <button id="kosit-check-system">Prüfen</button>
-<table><tbody id="kosit-system-body"><tr><td><button data-component="validator">Update auf 1.6.2</button></td></tr></tbody></table>
-<ul id="kosit-write-checks"></ul>
+
+<table><tbody data-group="requirements"></tbody></table>
+<table><tbody data-group="validation"><tr><td><button data-component="validator">Update auf 1.6.2</button></td></tr></tbody></table>
+<table><tbody data-group="pdf"></tbody></table>
+<table><tbody data-group="installation"></tbody></table>
 <div id="kosit-managed-components"></div><p id="kosit-admin-message"></p>
 <div data-kosit-readme><div class="kosit-readme-rich" hidden></div><pre class="kosit-readme-fallback"><span id="kosit-help-java" data-heading="Java installieren">Java installieren</span></pre></div>
 </div>`;
@@ -70,26 +73,31 @@ describe('admin system UI', () => {
         expect(fetch.mock.calls[1][1].body.get('configuration')).toBe('yes');
     });
 
-    test('separates writable paths and renders status symbols and compact help', async () => {
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: { checks: [
+    test('conditionally shows Python, writable paths and independent update switches', async () => {
+        const status = { autoUpdates: { validator: false, configuration: true }, checks: [
             ...checks,
-            { id: 'temp', label: 'Temporäres Verzeichnis', ok: true, detail: '/tmp/validator', help: 'paths' },
-            { id: 'configuration-write', label: 'Konfigurationsinstallation', ok: false, detail: '/opt/kosit/xrechnung', help: 'paths' },
-        ] } })));
+            { id: 'configuration', ok: true, version: '3' },
+            { id: 'zip', ok: true, version: '1' },
+            { id: 'validator-write', ok: true, detail: '/opt/kosit' },
+            { id: 'configuration-write', ok: false, detail: '/opt/kosit/xrechnung' },
+            { id: 'pymupdf', ok: true, version: '1' },
+            { id: 'python', ok: true, version: '3' },
+        ] };
+        vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => response({ success: true, status })));
         await loadAdmin();
         document.getElementById('kosit-check-system').click();
         await waitMessage('Systemprüfung abgeschlossen.');
-        expect(document.querySelector('#kosit-system-body [data-check="temp"]')).toBeNull();
-        const entries = document.querySelectorAll('#kosit-write-checks li');
-        expect(entries).toHaveLength(2);
-        expect(entries[0].textContent).toContain('Temporäres Verzeichnis (/tmp/validator)');
-        expect(entries[0].firstElementChild.getAttribute('aria-label')).toBe('Bereit');
-        expect(entries[1].firstElementChild.getAttribute('aria-label')).toBe('Nicht bereit');
-        const help = entries[1].querySelector('a');
-        expect(help.textContent.trim()).toBe('Info');
-        expect(help.querySelector('svg')).not.toBeNull();
-        expect(help.hash).toBe('#kosit-help-paths');
-        expect(document.querySelector('[data-check="java"] td:first-child [role="img"]').textContent).toBe('✕');
+        expect(document.querySelector('[data-check="python"]')).not.toBeNull();
+        expect(document.querySelector('[data-check="validator"] input').checked).toBe(false);
+        expect(document.querySelector('[data-check="configuration"] input')).toBeNull();
+        expect(document.querySelector('[data-check="configuration-write"]').textContent).toContain('kein Schreibrecht');
+        status.checks.find(check => check.id === 'zip').ok = false;
+        status.checks.find(check => check.id === 'pymupdf').ok = false;
+        document.getElementById('kosit-check-system').click();
+        await vi.waitFor(() => expect(document.querySelector('[data-check="python"]')).toBeNull());
+        expect(document.querySelector('[data-check="validator-write"]')).toBeNull();
+        expect(document.querySelector('[data-check="validator"] input')).toBeNull();
+        expect(document.querySelector('[data-check="java"]').textContent).toContain('>= v11 nicht verfügbar');
     });
 
     test('saves paths and renders versions, problems and help without HTML injection', async () => {
@@ -101,10 +109,15 @@ describe('admin system UI', () => {
         document.getElementById('kosit-save-paths').click();
         await waitMessage('Gespeichert');
         expect(fetch.mock.calls[0][1].body.get('javaBinary')).toBe('/usr/bin/java');
-        expect(document.querySelector('#kosit-system-body img')).toBeNull();
+        expect(document.querySelector('#kosit-admin img')).toBeNull();
         expect(document.querySelector('[data-check="validator"]').textContent).toContain('1.6.2');
         expect(document.querySelector('[data-check="validator"] button')).toBeNull();
-        expect(document.querySelector('[data-check="java"] a').hash).toBe('#kosit-help-java');
+        const help = document.querySelector('[data-check="java"] td:last-child a');
+        expect(help.href).toContain('/docs/admin.md#java-installieren');
+        expect(help.textContent).toBe('i');
+        expect(help.target).toBe('_blank');
+        expect(help.rel).toBe('noopener noreferrer');
+        expect(help.getAttribute('aria-label')).toContain('Java');
     });
 
     test('installs only the requested component and removes the update button after success', async () => {
@@ -166,71 +179,6 @@ describe('admin system UI', () => {
         expect(fetch.mock.calls[1][1].body.get('recordToken')).toBe('validator-record');
         expect(document.querySelector('[data-remove-component="configuration"]')).not.toBeNull();
         expect(document.querySelector('[data-remove-component="configuration"] [name="confirmed"]').checked).toBe(false);
-    });
-
-    test('help links navigate to the solution in the embedded README', async () => {
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: { checks } })));
-        await loadAdmin();
-        document.getElementById('kosit-check-system').click();
-        await waitMessage('Systemprüfung abgeschlossen.');
-        const scroll = vi.fn();
-        document.getElementById('kosit-help-java').scrollIntoView = scroll;
-        document.querySelector('[data-readme-help]').click();
-        await vi.waitFor(() => expect(scroll).toHaveBeenCalledOnce());
-    });
-    test('help keeps formatted Markdown and ignores Nextcloud heading decorations', async () => {
-        const scroll = vi.fn();
-        window.OCA.Text = { createEditor: vi.fn(async ({ el }) => {
-            el.innerHTML = '<div class="ProseMirror"><h3><span>###</span>Java installieren<button>Link kopieren</button></h3><p><strong>Formatierte Hilfe</strong></p></div>';
-            el.querySelector('h3').scrollIntoView = scroll;
-            return { setReadOnly: vi.fn() };
-        }) };
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: { checks } })));
-        await loadAdmin();
-        document.getElementById('kosit-check-system').click();
-        await waitMessage('Systemprüfung abgeschlossen.');
-        document.querySelector('[data-readme-help]').click();
-        await vi.waitFor(() => expect(scroll).toHaveBeenCalledOnce());
-        expect(document.querySelector('.kosit-readme-rich').hidden).toBe(false);
-        expect(document.querySelector('.kosit-readme-fallback').hidden).toBe(true);
-        expect(document.querySelector('.kosit-readme-rich strong').textContent).toBe('Formatierte Hilfe');
-    });
-
-    test('help waits for initialization and headings rendered later', async () => {
-        const scroll = vi.fn();
-        let finishEditor;
-        window.OCA.Text = { createEditor: vi.fn(() => new Promise((resolve) => { finishEditor = resolve; })) };
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({ success: true, status: { checks } })));
-        await loadAdmin();
-        document.getElementById('kosit-check-system').click();
-        await waitMessage('Systemprüfung abgeschlossen.');
-        document.querySelector('[data-readme-help]').click();
-        finishEditor({ setReadOnly: vi.fn() });
-        await vi.waitFor(() => expect(document.querySelector('.kosit-readme-rich').hidden).toBe(false));
-        const heading = document.createElement('h3');
-        heading.innerHTML = '<span aria-hidden="true">###</span>Java installieren';
-        heading.scrollIntoView = scroll;
-        document.querySelector('.kosit-readme-rich').append(heading);
-        await vi.waitFor(() => expect(scroll).toHaveBeenCalledOnce());
-        expect(document.querySelector('.kosit-readme-fallback').hidden).toBe(true);
-    });
-
-    test('missing formatted heading never exposes raw Markdown', async () => {
-        vi.useFakeTimers();
-        const scroll = vi.fn();
-        const rich = document.querySelector('.kosit-readme-rich');
-        rich.scrollIntoView = scroll;
-        window.OCA.Text = { createEditor: vi.fn(async () => ({ setReadOnly: vi.fn() })) };
-        const help = document.createElement('a');
-        help.href = '#kosit-help-java';
-        help.dataset.readmeHelp = '';
-        document.getElementById('kosit-admin').append(help);
-        await loadAdmin();
-        help.click();
-        await vi.advanceTimersByTimeAsync(2100);
-        expect(scroll).toHaveBeenCalledOnce();
-        expect(rich.hidden).toBe(false);
-        expect(document.querySelector('.kosit-readme-fallback').hidden).toBe(true);
     });
 
 });
