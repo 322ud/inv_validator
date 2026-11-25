@@ -44,7 +44,7 @@
     und Updates sowie getrennte Schalter für automatische Updates der herunterladbaren 
     Komponenten. Updates beim Öffnen der App sind standardmäßig 
     ausgeschaltet.</description>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <licence>AGPL-3.0-or-later</licence>
     <author>Frank Busse</author>
     <namespace>INValidator</namespace>
