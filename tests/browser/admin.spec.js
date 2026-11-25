@@ -81,8 +81,8 @@ test('opens local administration help and its requested chapter', async ({ page 
     await expect(popup.locator('[id="h-java-installieren"]')).toBeInViewport();
     const viewer = popup.locator('.kosit-readme-page > .kosit-readme-viewer');
     await expect.poll(() => viewer.evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true);
-    await viewer.focus();
-    await popup.keyboard.press('Home');
+    // Home starts a keyboard scroll animation that can swallow the following
+    // wheel input in Chromium, even after scrollTop is reset synchronously.
     await viewer.evaluate(el => { el.scrollTop = 0; });
     await viewer.hover();
     await popup.mouse.wheel(0, 500);
