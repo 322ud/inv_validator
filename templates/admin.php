@@ -16,30 +16,42 @@ $groups = [
 ];
 $labels = ['php' => 'PHP-Prozessstart', 'java' => 'Java', 'validator' => 'KoSIT-Validator',
     'configuration' => 'XRechnung-Szenario', 'pymupdf' => 'PyMuPDF', 'python' => 'Python', 'zip' => 'PHP ZipArchive'];
+$defaultComponentPaths = ['validator' => '/opt/kosit/validator-standalone.jar', 'configuration' => '/opt/kosit/xrechnung/current/scenarios.xml'];
 $helpSections = [
     'php' => 'php-und-prozessstart', 'java' => 'java-installieren',
     'validator' => 'kosit-validator-und-xrechnung-konfiguration-installieren',
     'configuration' => 'kosit-validator-und-xrechnung-konfiguration-installieren',
-    'pymupdf' => 'optionale-pdf-unterstützung', 'python' => 'optionale-pdf-unterstützung',
+    'pymupdf' => 'optionale-pdf-unterstutzung', 'python' => 'optionale-pdf-unterstutzung',
     'zip' => 'php-ziparchive', 'validator-write' => 'verzeichnisse-und-berechtigungen',
     'configuration-write' => 'verzeichnisse-und-berechtigungen',
 ];
-$readme = file_get_contents(dirname(__DIR__) . '/README.md') ?: 'README konnte nicht geladen werden.';
-$readme = preg_replace('~(\]\()(?!https?://|#)([^)]+)~', '$1https://github.com/322ud/inv_validator/blob/HEAD/$2', $readme);
+$helpBase = $_['readmeUrl'] . (str_contains($_['readmeUrl'], '?') ? '&' : '?') . 'document=admin#h-';
+$adminHelp = static function (string $section, string $label) use ($helpBase): void {
+    $description = 'Hilfe zu „' . $label . '“ (öffnet ein neues Fenster)';
+    ?>
+    <a class="kosit-admin-help" data-kosit-help href="<?php p($helpBase . $section); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php p($description); ?>" title="<?php p($description); ?>"><span aria-hidden="true">i</span></a>
+    <?php
+};
 ?>
-<div id="kosit-admin" data-help-sections="<?php p(json_encode($helpSections)); ?>">
+<div id="kosit-admin" data-help-base="<?php p($helpBase); ?>" data-help-sections="<?php p(json_encode($helpSections)); ?>">
     <h2>INValidator</h2>
     <section aria-labelledby="kosit-settings-title">
         <h3 id="kosit-settings-title">Einstellungen</h3>
         <form id="kosit-paths-form">
+            <div class="kosit-table-scroll">
+            <table class="kosit-system" aria-labelledby="kosit-settings-title"><tbody>
             <?php foreach ($status['paths'] as $path) : ?>
                 <?php if (isset($path['key'])) : ?>
-                    <label><span><?php p($path['label']); ?></span>
-                        <input class="kosit-path-input" type="text" name="<?php p($path['key']); ?>"
-                               value="<?php p($path['path']); ?>" autocomplete="off" spellcheck="false">
-                    </label>
+                    <tr>
+                        <th scope="row"><label for="kosit-path-<?php p($path['key']); ?>"><?php p($path['label']); ?></label></th>
+                        <td><input id="kosit-path-<?php p($path['key']); ?>" class="kosit-path-input" type="text" name="<?php p($path['key']); ?>"
+                               value="<?php p($path['path']); ?>" autocomplete="off" spellcheck="false"></td>
+                        <td class="kosit-help-cell"><?php $adminHelp($helpSections[$path['key'] === 'javaBinary' ? 'java' : 'python'], $path['label']); ?></td>
+                    </tr>
                 <?php endif; ?>
             <?php endforeach; ?>
+            </tbody></table>
+            </div>
             <button id="kosit-save-paths" type="submit">Pfade speichern</button>
         </form>
     </section>
@@ -78,13 +90,10 @@ $readme = preg_replace('~(\]\()(?!https?://|#)([^)]+)~', '$1https://github.com/3
                             <button type="button" data-component="<?php p($id); ?>"><?php p($check['action'] === 'update' ? 'Update auf ' . $check['latestVersion'] : 'Installieren'); ?></button>
                         <?php endif; ?>
                         <?php if (!empty($check['updateError'])) : ?><p><?php p('Update-Prüfung: ' . $check['updateError']); ?></p><?php endif; ?>
-                        <details><summary>Details</summary>
-                            <p><?php p($check['detail']); ?></p>
-                        </details>
+                        <?php if (($id === 'pymupdf' && !$check['ok']) || (isset($defaultComponentPaths[$id]) && $check['detail'] !== $defaultComponentPaths[$id])) : ?><p><?php p($check['detail']); ?></p><?php endif; ?>
                     </td>
                     <td class="kosit-help-cell">
-                        <?php $helpDescription = 'Hilfe zu „' . $label . '“ (öffnet ein neues Fenster)'; ?>
-                        <a class="kosit-admin-help" href="https://github.com/322ud/inv_validator/blob/HEAD/docs/admin.md#<?php p($helpSections[$id]); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php p($helpDescription); ?>" title="<?php p($helpDescription); ?>"><span aria-hidden="true">i</span></a>
+                        <?php $adminHelp($helpSections[$id], $label); ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -120,11 +129,6 @@ $readme = preg_replace('~(\]\()(?!https?://|#)([^)]+)~', '$1https://github.com/3
     <p id="kosit-admin-message" role="status" aria-live="polite"></p>
     <section class="kosit-readme-embed" aria-labelledby="kosit-admin-readme-title">
         <h3 id="kosit-admin-readme-title">README</h3>
-        <div class="kosit-readme-viewer" data-kosit-readme>
-            <div class="kosit-readme-rich" aria-label="Formatierter Inhalt der README" hidden></div>
-            <pre class="kosit-readme-fallback" tabindex="0" aria-label="Inhalt der README"><?php
-            p($readme);
-            ?></pre>
-        </div>
+        <?php require __DIR__ . '/readme-content.php'; ?>
     </section>
 </div>

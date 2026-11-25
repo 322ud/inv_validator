@@ -2,6 +2,7 @@
 
 return [
     'routes' => [
+        ['name' => 'documentation#index', 'url' => '/documentation', 'verb' => 'GET'],
         ['name' => 'admin#removeComponent', 'url' => '/admin/components/remove', 'verb' => 'POST'],
         ['name' => 'admin#saveSettings', 'url' => '/admin/settings', 'verb' => 'POST'],
         [

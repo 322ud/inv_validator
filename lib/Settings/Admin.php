@@ -8,12 +8,14 @@ use OCA\INValidator\Service\ValidatorAdminService;
 use OCA\INValidator\Service\TextEditorLoader;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\Settings\ISettings;
+use OCP\IURLGenerator;
 
 class Admin implements ISettings
 {
     public function __construct(
         private ValidatorAdminService $adminService,
-        private TextEditorLoader $textEditorLoader
+        private TextEditorLoader $textEditorLoader,
+        private IURLGenerator $urls
     ) {
     }
 
@@ -23,6 +25,7 @@ class Admin implements ISettings
 
         return new TemplateResponse('inv_validator', 'admin', [
             'status' => $this->adminService->getAdminStatus(),
+            'readmeUrl' => $this->urls->linkToRoute('inv_validator.documentation.index'),
         ]);
     }
 

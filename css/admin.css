@@ -132,3 +132,8 @@ display: none !important;
 
 
 .kosit-help-cell { width: 24px; }
+
+.kosit-readme-page { padding: 24px; width: 100%; box-sizing: border-box; }
+.kosit-readme-page .kosit-readme-viewer { max-height: none; }
+.kosit-document-image { max-width: 100%; height: auto; }
+#kosit-paths-form th label { margin: 0; }

@@ -43,7 +43,7 @@ test('configures interpreter paths and keeps infrastructure paths read-only', as
     await expect(page.locator('input[name="tempDirectory"]')).toHaveCount(0);
 
     await expect(admin.getByRole('heading', { name: 'Einstellungen', exact: true })).toBeVisible();
-    await expect(admin.locator('table.kosit-system')).toHaveCount(4);
+    await expect(admin.locator('table.kosit-system')).toHaveCount(5);
     const pythonBinary = page.locator('input[name="pythonBinary"]');
     const originalPythonBinary = await pythonBinary.inputValue();
     const browserPythonBinary = `${nextcloudRoot}/data/test-python`;

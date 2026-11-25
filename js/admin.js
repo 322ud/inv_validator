@@ -81,8 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const helpSections = JSON.parse(root.dataset.helpSections || '{}');
     const createHelp = (id, label) => {
         const help = document.createElement('a');
-        help.href = `https://github.com/322ud/inv_validator/blob/HEAD/docs/admin.md#${helpSections[id]}`;
+        help.href = `${root.dataset.helpBase}${helpSections[id]}`;
         help.className = 'kosit-admin-help';
+        help.dataset.kositHelp = '';
         help.target = '_blank';
         help.rel = 'noopener noreferrer';
         const description = `Hilfe zu „${label}“ (öffnet ein neues Fenster)`;
@@ -146,13 +147,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     error.textContent = `Update-Prüfung: ${check.updateError}`;
                     actions.append(error);
                 }
-                const details = document.createElement('details');
-                const summary = document.createElement('summary');
-                summary.textContent = 'Details';
-                const detail = document.createElement('p');
-                detail.textContent = check.detail;
-                details.append(summary, detail);
-                actions.append(details);
+                const defaultPaths = { validator: '/opt/kosit/validator-standalone.jar', configuration: '/opt/kosit/xrechnung/current/scenarios.xml' };
+                if ((id === 'pymupdf' && !check.ok) || (defaultPaths[id] && check.detail !== defaultPaths[id])) {
+                    const reason = document.createElement('p');
+                    reason.textContent = check.detail;
+                    actions.append(reason);
+                }
                 const helpCell = document.createElement('td');
                 helpCell.className = 'kosit-help-cell';
                 helpCell.append(createHelp(id, label.textContent));

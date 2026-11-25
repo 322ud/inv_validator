@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const markup = `
-<div id="kosit-admin" data-help-sections='{"java":"java-installieren","validator":"kosit-validator-und-xrechnung-konfiguration-installieren"}'>
+<div id="kosit-admin" data-help-base="/nextcloud/apps/inv_validator/documentation?document=admin#h-" data-help-sections='{"java":"java-installieren","validator":"kosit-validator-und-xrechnung-konfiguration-installieren"}'>
 <form id="kosit-settings-form">
 <input type="checkbox" name="validator" role="switch">
 <input type="checkbox" name="configuration" role="switch">
@@ -113,7 +113,7 @@ describe('admin system UI', () => {
         expect(document.querySelector('[data-check="validator"]').textContent).toContain('1.6.2');
         expect(document.querySelector('[data-check="validator"] button')).toBeNull();
         const help = document.querySelector('[data-check="java"] td:last-child a');
-        expect(help.href).toContain('/docs/admin.md#java-installieren');
+        expect(help.href).toContain('/documentation?document=admin#h-java-installieren');
         expect(help.textContent).toBe('i');
         expect(help.target).toBe('_blank');
         expect(help.rel).toBe('noopener noreferrer');
