@@ -6,45 +6,21 @@
     <name>INValidator</name>
     <summary>Validates XRechnung invoices</summary>
     <summary lang="de">validiert Rechnungen auf den Standard XRechnung</summary>
-    <description>Validate XML invoices against the XRechnung specification using the 
-    separately installed KoSIT Validator and view its validation report directly in 
-    Nextcloud.
+    <description>Validate XML invoices against the XRechnung specification using the separately installed KoSIT Validator and view its validation report directly in Nextcloud.
 
-    Validation runs locally on the server with Java and the configured XRechnung 
-    validation scenarios. For hybrid PDF invoices, optional Python/PyMuPDF support 
-    extracts the embedded invoice XML. Only that XML is validated, not the PDF itself.
+ Validation runs locally on the server with Java and the configured XRechnung validation scenarios. For hybrid PDF invoices, optional Python/PyMuPDF support extracts the embedded invoice XML. Only that XML is validated, not the PDF itself.
 
-    Server setup is required: Java 11 or later, PHP process execution, and readable 
-    validator and scenario files. Administrators can install the KoSIT Validator and the 
-    XRechnung configuration from their official GitHub releases through the app. This 
-    requires writable installation directories; installing or updating the configuration 
-    also requires PHP ZipArchive. Java and optional Python/PyMuPDF must be provided 
-    separately.
+ Server setup is required: Java 11 or later, PHP process execution, and readable validator and scenario files. Administrators can install the KoSIT Validator and the XRechnung configuration from their official GitHub releases through the app. This requires writable installation directories; installing or updating the configuration also requires PHP ZipArchive. Java and optional Python/PyMuPDF must be provided separately.
 
-    The administration page includes system checks, component versions, manual 
-    installation and updates, and separate automatic-update switches for each downloadable 
-    component. Automatic updates on opening the app are disabled by default.</description>
-    <description lang="de">Prüft XML-Rechnungen mit dem separat installierten 
-    KoSIT-Validator auf Konformität mit der XRechnung-Spezifikation und zeigt den 
-    erzeugten Prüfbericht direkt in Nextcloud an.
+The administration page includes system checks, component versions, manual installation and updates, and separate automatic-update switches for each downloadable component. Automatic updates on opening the app are disabled by default.</description>
+    <description lang="de">Prüft XML-Rechnungen mit dem separat installierten KoSIT-Validator auf Konformität mit der XRechnung-Spezifikation und zeigt den erzeugten Prüfbericht direkt in Nextcloud an.
 
-    Die Prüfung erfolgt lokal auf dem Server mit Java und den konfigurierten 
-    XRechnung-Validierungsszenarien. Bei hybriden PDF-Rechnungen extrahiert die optionale 
-    Python-/PyMuPDF-Unterstützung das eingebettete Rechnungs-XML. Ausschließlich dieses 
-    XML wird geprüft, nicht die PDF-Datei selbst.
+Die Prüfung erfolgt lokal auf dem Server mit Java und den konfigurierten XRechnung-Validierungsszenarien. Bei hybriden PDF-Rechnungen extrahiert die optionale Python-/PyMuPDF-Unterstützung das eingebettete Rechnungs-XML. Ausschließlich dieses XML wird geprüft, nicht die PDF-Datei selbst.
 
-    Die Servereinrichtung erfordert Java ab Version 11, die Ausführung externer Prozesse 
-    aus PHP und lesbare Validator- und Szenariodateien. Die Administration kann den 
-    KoSIT-Validator und die XRechnung-Konfiguration über die App aus den offiziellen 
-    GitHub-Releases installieren. Dafür sind beschreibbare Installationsverzeichnisse 
-    erforderlich; für Installation und Updates der Konfiguration zusätzlich PHP 
-    ZipArchive. Java und optional Python/PyMuPDF müssen separat bereitgestellt werden.
+Die Servereinrichtung erfordert Java ab Version 11, die Ausführung externer Prozesse aus PHP und lesbare Validator- und Szenariodateien. Die Administration kann den KoSIT-Validator und die XRechnung-Konfiguration über die App aus den offiziellen GitHub-Releases installieren. Dafür sind beschreibbare Installationsverzeichnisse erforderlich; für Installation und Updates der Konfiguration zusätzlich PHP ZipArchive. Java und optional Python/PyMuPDF müssen separat bereitgestellt werden.
 
-    Die Admin-Seite bietet Systemprüfungen, Komponenten-Versionen, manuelle Installation 
-    und Updates sowie getrennte Schalter für automatische Updates der herunterladbaren 
-    Komponenten. Updates beim Öffnen der App sind standardmäßig 
-    ausgeschaltet.</description>
-    <version>1.0.4</version>
+Die Admin-Seite bietet Systemprüfungen, Komponenten-Versionen, manuelle Installation und Updates sowie getrennte Schalter für automatische Updates der herunterladbaren Komponenten. Updates beim Öffnen der App sind standardmäßig ausgeschaltet.</description>
+    <version>1.0.5</version>
     <licence>AGPL-3.0-or-later</licence>
     <author>Frank Busse</author>
     <namespace>INValidator</namespace>
